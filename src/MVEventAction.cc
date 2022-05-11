@@ -8,16 +8,16 @@
 #include "G4SDManager.hh"
 #include "G4THitsMap.hh"
 
-MuonVeto::EventAction::EventAction()
+MuonVeto::MVEventAction::MVEventAction()
 {}
 
-MuonVeto::EventAction::~EventAction()
+MuonVeto::MVEventAction::~MVEventAction()
 {}
 
-void MuonVeto::EventAction::BeginOfEventAction(const G4Event*)
+void MuonVeto::MVEventAction::BeginOfEventAction(const G4Event*)
 {}
 
-void MuonVeto::EventAction::EndOfEventAction(const G4Event* event)
+void MuonVeto::MVEventAction::EndOfEventAction(const G4Event* event)
 {
     // get number of stored trajectories
 
@@ -37,24 +37,25 @@ void MuonVeto::EventAction::EndOfEventAction(const G4Event* event)
     G4int SiPM_0_id = SDMan->GetCollectionID("SiPM_0/photon_counter_0");
     G4int SiPM_1_id = SDMan->GetCollectionID("SiPM_1/photon_counter_1");
 
-    G4cout << ">>> SiPM_0_id: "  << SiPM_0_id << G4endl;
-    G4cout << ">>> SiPM_1_id: "  << SiPM_1_id << G4endl;
-
-    G4THitsMap<G4double>* SiPM_0_hm =
-        (G4THitsMap<G4double>*)(hce->GetHC(SiPM_0_id));
-    G4THitsMap<G4double>* SiPM_1_hm =
-        (G4THitsMap<G4double>*)(hce->GetHC(SiPM_1_id));
-    if(!SiPM_0_hm || !SiPM_1_hm)    return;
+    G4THitsMap<G4int>* SiPM_0_hm =
+        (G4THitsMap<G4int>*)(hce->GetHC(SiPM_0_id));
+    G4THitsMap<G4int>* SiPM_1_hm =
+        (G4THitsMap<G4int>*)(hce->GetHC(SiPM_1_id));
+    if(!SiPM_0_hm || !SiPM_1_hm)
+    {   
+        G4cout << "    " << "HitsMap not found!" << G4endl;
+        return;
+    }
     for (auto itr = SiPM_0_hm->GetMap()->begin(); itr != SiPM_0_hm->GetMap()->end(); itr++) 
     {
         G4int copyNb  = (itr->first);
-        G4double current = *(itr->second);
-        G4cout << "SiPM_0 with copyNb " << copyNb << ": " << current << " /mm2 " << G4endl;
+        G4int count = *(itr->second);
+        G4cout << "SiPM_0 with copyNb " << copyNb << ": " << count << " photons " << G4endl;
     }
     for (auto itr = SiPM_1_hm->GetMap()->begin(); itr != SiPM_1_hm->GetMap()->end(); itr++) 
     {
         G4int copyNb  = (itr->first);
-        G4double current = *(itr->second);
-        G4cout << "SiPM_1 with copyNb " << copyNb << ": " << current << " /mm2 " << G4endl;
+        G4int count = *(itr->second);
+        G4cout << "SiPM_1 with copyNb " << copyNb << ": " << count << " photons " << G4endl;
     }
 }

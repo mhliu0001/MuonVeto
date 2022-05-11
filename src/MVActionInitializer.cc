@@ -2,14 +2,14 @@
 #include "MVPrimaryGeneratorAction.hh"
 #include "MVEventAction.hh"
 
-MuonVeto::testActionInitializer::testActionInitializer()
+MuonVeto::MVActionInitializer::MVActionInitializer()
 {}
 
-MuonVeto::testActionInitializer::~testActionInitializer()
+MuonVeto::MVActionInitializer::~MVActionInitializer()
 {}
 
-void MuonVeto::testActionInitializer::Build() const
+void MuonVeto::MVActionInitializer::Build() const
 {
     SetUserAction(new PrimaryGeneratorAction);
-    SetUserAction(new EventAction);
+    SetUserAction(new MVEventAction);
 }

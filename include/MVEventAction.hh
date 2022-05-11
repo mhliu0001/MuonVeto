@@ -7,11 +7,11 @@
 namespace MuonVeto
 {
 
-class EventAction : public G4UserEventAction
+class MVEventAction : public G4UserEventAction
 {
   public:
-    EventAction();
-    ~EventAction() override;
+    MVEventAction();
+    ~MVEventAction() override;
 
     void  BeginOfEventAction(const G4Event* ) override;
     void    EndOfEventAction(const G4Event* ) override;

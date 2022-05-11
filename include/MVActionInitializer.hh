@@ -6,12 +6,12 @@
 namespace MuonVeto
 {
 
-class testActionInitializer : public G4VUserActionInitialization
+class MVActionInitializer : public G4VUserActionInitialization
 {
     public:
 
-    testActionInitializer();
-    ~testActionInitializer();
+    MVActionInitializer();
+    ~MVActionInitializer();
 
     void Build() const;
     

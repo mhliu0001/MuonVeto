@@ -16,7 +16,7 @@
 #include "G4SDManager.hh"
 #include "G4MultiFunctionalDetector.hh"
 #include "G4VPrimitiveScorer.hh"
-#include "G4PSFlatSurfaceCurrent.hh"
+#include "SiPMPhotonAccumulator.hh"
 
 MuonVeto::MVDetectorConstruction::MVDetectorConstruction()
 {
@@ -187,10 +187,9 @@ void MuonVeto::MVDetectorConstruction::ConstructSDandField()
         new G4SDParticleFilter("photon_filter","opticalphoton");
 
     // Definition for SiPM_0 (the upper one)
-    // Using G4PSFlatSurfaceCurrent as the primitive scorer
-    // This may cause problems, as it only counts the current in the -Z surface!
+    // Using SiPMPhotonAccumulator as the primitive scorer
     G4MultiFunctionalDetector* SiPM_0 = new G4MultiFunctionalDetector(SiPM_name+"_0");
-    G4VPrimitiveScorer* photon_counter_in = new G4PSFlatSurfaceCurrent("photon_counter_0", 1);
+    G4VPrimitiveScorer* photon_counter_in = new SiPMPhotonAccumulator("photon_counter_0", XY_minus);
     photon_counter_in->SetFilter(photon_filter);
     SiPM_0->RegisterPrimitive(photon_counter_in);
 
@@ -199,7 +198,7 @@ void MuonVeto::MVDetectorConstruction::ConstructSDandField()
 
     // Definition for SiPM_1 (the lower one)
     G4MultiFunctionalDetector* SiPM_1 = new G4MultiFunctionalDetector(SiPM_name+"_1");
-    G4VPrimitiveScorer* photon_counter_out = new G4PSFlatSurfaceCurrent("photon_counter_1", 2);
+    G4VPrimitiveScorer* photon_counter_out = new SiPMPhotonAccumulator("photon_counter_1", XY_plus);
     photon_counter_out->SetFilter(photon_filter);
     SiPM_1->RegisterPrimitive(photon_counter_out);
 

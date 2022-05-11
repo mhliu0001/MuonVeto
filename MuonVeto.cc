@@ -23,7 +23,7 @@ int main(int argc, char** argv)
     physicsList->RegisterPhysics(opticalPhysics);
     runManager->SetUserInitialization(physicsList);
 
-    runManager->SetUserInitialization(new testActionInitializer);
+    runManager->SetUserInitialization(new MVActionInitializer);
 
     runManager->Initialize();
 
