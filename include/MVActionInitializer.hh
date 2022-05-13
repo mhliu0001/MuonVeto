@@ -13,7 +13,8 @@ class MVActionInitializer : public G4VUserActionInitialization
     MVActionInitializer();
     ~MVActionInitializer();
 
-    void Build() const;
+    void Build() const override;
+    void BuildForMaster() const override;
     
     private:
 };

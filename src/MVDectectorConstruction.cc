@@ -193,12 +193,12 @@ void MuonVeto::MVDetectorConstruction::ConstructSDandField()
         new G4SDParticleFilter("photon_filter","opticalphoton");
 
     // Use SiPMSD as the sensitive detector
-    SiPMSD* SiPMSD_0  = new SiPMSD(SiPM_name+"_0", "upperCollection", XY_minus);
+    SiPMSD* SiPMSD_0  = new SiPMSD(SiPM_name+"_0", "collection_0", XY_minus);
     SiPMSD_0->SetFilter(photon_filter);
     G4SDManager::GetSDMpointer()->AddNewDetector(SiPMSD_0);
     SetSensitiveDetector("SiPM_0_log", SiPMSD_0);
 
-    SiPMSD* SiPMSD_1  = new SiPMSD(SiPM_name+"_1", "lowerCollection", XY_plus);
+    SiPMSD* SiPMSD_1  = new SiPMSD(SiPM_name+"_1", "collection_1", XY_plus);
     SiPMSD_1->SetFilter(photon_filter);
     G4SDManager::GetSDMpointer()->AddNewDetector(SiPMSD_1);
     SetSensitiveDetector("SiPM_1_log", SiPMSD_1);

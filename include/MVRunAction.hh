@@ -18,14 +18,12 @@ class MVRunAction : public G4UserRunAction
         MVRunAction(G4int SiPMCount);
         ~MVRunAction();
 
+        G4Run* GenerateRun() override;
         void BeginOfRunAction(const G4Run* run) override;
         void EndOfRunAction(const G4Run* run) override;
-        void AddSiPMPhotonCount(const G4int* photonCount);
-        void ClearSiPMPhotonCount();
     
     private:
         G4int fSiPMCount;
-        std::vector<G4int>* fSiPMPhotonCount; 
 };
 
 }
