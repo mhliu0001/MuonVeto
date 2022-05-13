@@ -35,6 +35,9 @@
 /vis/modeling/trajectories/drawByCharge-0/default/setDrawStepPts true
 /vis/modeling/trajectories/drawByCharge-0/default/setStepPtsSize 2
 
+# Draw hits at end of event:
+/vis/scene/add/hits
+
 # Re-establish auto refreshing and verbosity:
 /vis/viewer/set/autoRefresh true
 /vis/verbose warnings

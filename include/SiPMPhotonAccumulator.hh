@@ -38,6 +38,7 @@ class SiPMPhotonAccumulator: public G4VPrimitiveScorer
         G4int HCID;
         SiPM_surface fSurface;
         G4THitsMap<G4int>* PhotonCountMap;
+        G4ThreeVectorList fpos;
 };
 
 }

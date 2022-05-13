@@ -15,8 +15,9 @@
 #include "G4SDParticleFilter.hh"
 #include "G4SDManager.hh"
 #include "G4MultiFunctionalDetector.hh"
-#include "G4VPrimitiveScorer.hh"
-#include "SiPMPhotonAccumulator.hh"
+//#include "G4VPrimitiveScorer.hh"
+//#include "SiPMPhotonAccumulator.hh"
+#include "SiPMSD.hh"
 
 MuonVeto::MVDetectorConstruction::MVDetectorConstruction()
 {
@@ -186,6 +187,17 @@ void MuonVeto::MVDetectorConstruction::ConstructSDandField()
     G4SDParticleFilter* photon_filter =
         new G4SDParticleFilter("photon_filter","opticalphoton");
 
+    SiPMSD* SiPMSD_0  = new SiPMSD(SiPM_name+"_0", "upperCollection", XY_minus);
+    SiPMSD_0->SetFilter(photon_filter);
+    G4SDManager::GetSDMpointer()->AddNewDetector(SiPMSD_0);
+    SetSensitiveDetector("SiPM_0_log", SiPMSD_0);
+
+    SiPMSD* SiPMSD_1  = new SiPMSD(SiPM_name+"_1", "lowerCollection", XY_plus);
+    SiPMSD_1->SetFilter(photon_filter);
+    G4SDManager::GetSDMpointer()->AddNewDetector(SiPMSD_1);
+    SetSensitiveDetector("SiPM_1_log", SiPMSD_1);
+
+    /*
     // Definition for SiPM_0 (the upper one)
     // Using SiPMPhotonAccumulator as the primitive scorer
     G4MultiFunctionalDetector* SiPM_0 = new G4MultiFunctionalDetector(SiPM_name+"_0");
@@ -204,4 +216,6 @@ void MuonVeto::MVDetectorConstruction::ConstructSDandField()
 
     G4SDManager::GetSDMpointer()->AddNewDetector(SiPM_1);
     SetSensitiveDetector("SiPM_1_log", SiPM_1);
+    */
+
 }
