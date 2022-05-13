@@ -165,7 +165,7 @@ G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::ConstructDetector() const
     new G4LogicalBorderSurface(
         "LAB_teflon_surface", pscint_phys, shell_phys, op_LAB_teflon_surface
     );
-    
+
     /*
     new G4LogicalBorderSurface(
         "teflon_air_surface", groove_phys, shell_phys, op_teflon_air_surface
@@ -192,6 +192,7 @@ void MuonVeto::MVDetectorConstruction::ConstructSDandField()
     G4SDParticleFilter* photon_filter =
         new G4SDParticleFilter("photon_filter","opticalphoton");
 
+    // Use SiPMSD as the sensitive detector
     SiPMSD* SiPMSD_0  = new SiPMSD(SiPM_name+"_0", "upperCollection", XY_minus);
     SiPMSD_0->SetFilter(photon_filter);
     G4SDManager::GetSDMpointer()->AddNewDetector(SiPMSD_0);

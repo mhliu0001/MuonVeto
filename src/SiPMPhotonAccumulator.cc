@@ -1,3 +1,5 @@
+/// !!!!!!CURRENTLY NOT USED!!!!!!
+
 #include "SiPMPhotonAccumulator.hh"
 
 #include "G4SystemOfUnits.hh"

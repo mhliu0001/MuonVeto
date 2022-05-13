@@ -20,6 +20,7 @@ file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/output/)
 set(MUONVETO_SCRIPTS
     ./macro/vis.mac
     ./macro/init_vis.mac
+    ./macro/gui.mac
 )
 
 foreach(_script ${MUONVETO_SCRIPTS})

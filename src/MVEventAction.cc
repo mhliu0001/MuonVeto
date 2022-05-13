@@ -41,6 +41,8 @@ void MuonVeto::MVEventAction::EndOfEventAction(const G4Event* event)
     G4HCofThisEvent* hce = event->GetHCofThisEvent();
     G4SDManager* SDMan = G4SDManager::GetSDMpointer();
 
+
+    // Get the photon count of each SiPM
     G4int SiPMCID_0 = SDMan->GetCollectionID("upperCollection");
     G4int SiPMCID_1 = SDMan->GetCollectionID("lowerCollection");
 

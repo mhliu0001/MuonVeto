@@ -14,8 +14,6 @@
 
 #include "SiPMHit.hh"
 
-#include <vector>
-
 class G4Step;
 class G4HCofThisEvent;
 class G4Box;
@@ -23,7 +21,7 @@ class G4Box;
 namespace MuonVeto
 {
 
-
+// SiPM_surface: six sides can be specified
 typedef enum { XY_plus, XY_minus, XZ_plus, XZ_minus, YZ_plus, YZ_minus} SiPM_surface;
 
 /// Tracker sensitive detector class
@@ -45,7 +43,7 @@ class SiPMSD : public G4VSensitiveDetector
 
     private:
         SiPMHitsCollection* fHitsCollection = nullptr;
-        G4bool IsSelectedSurface(G4Step*, G4Box*);
+        G4bool IsSelectedSurface(G4Step*, G4Box*); // Used to judge whether a hit should be recorded
         const SiPM_surface fSurface;
 
 };

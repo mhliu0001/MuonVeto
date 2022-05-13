@@ -1,5 +1,3 @@
-///!!!!!!!CURRENTLY NOT USED!!!!!!!!!!!
-
 #include "SiPMSD.hh"
 #include "G4HCofThisEvent.hh"
 #include "G4Step.hh"

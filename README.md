@@ -8,14 +8,14 @@
 
 ## Usage
 
-Source the `geant4.sh` and `geant4make.sh`  in the geant4 installation directory, and then run the following code in the terminal:
+Source the `geant4.sh` and `geant4make.sh`  in the geant4 installation directory, and then run the following code in the terminal (with GUI):
 
 ```shell
 mkdir build/
 cd build/
 cmake ../
 make
-./MuonVeto
+./MuonVeto # or ./MuonVeto ${some macro file} for batch mode
 ```
 
-Currently the code only works with UI.
+The code can work both in interactive mode and batch mode.

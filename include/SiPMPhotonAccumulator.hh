@@ -1,3 +1,5 @@
+/// !!!!!!CURRENTLY NOT USED!!!!!!
+
 /// SiPMPhotonAccumulator.hh: Primitive scorer for SiPM
 /// SiPM is defined as a G4Box 
 /// A surface is defined as a scoring surface, and optical photons coming inside the surface
