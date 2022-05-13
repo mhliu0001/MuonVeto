@@ -8,11 +8,16 @@
 #include "G4VisExecutive.hh"
 #include "G4UImanager.hh"
 #include "G4UIExecutive.hh"
+#include "time.h"
 
 using namespace MuonVeto;
 
 int main(int argc, char** argv)
 {
+    CLHEP::HepRandom::setTheEngine(new CLHEP::RanecuEngine());
+    G4long seed = time(NULL);
+    CLHEP::HepRandom::setTheSeed(seed);
+
     auto* runManager = G4RunManagerFactory::CreateRunManager(G4RunManagerType::Default);
 
     auto* detector = new MVDetectorConstruction();

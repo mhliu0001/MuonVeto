@@ -147,9 +147,11 @@ G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::ConstructDetector() const
     G4LogicalVolume* pscint_log = new G4LogicalVolume(pscint_solid, LAB, "pscint_log");
 
     // Groove for fiber
+    /*
     G4Box* groove_solid = new G4Box("groove_solid", 0.5*groove_width, 0.5*groove_depth, 0.5*pscint_z);
     G4LogicalVolume* groove_log = new G4LogicalVolume(groove_solid, air, "groove_log");
     G4VPhysicalVolume* groove_phys = new G4PVPlacement(0,G4ThreeVector(0*mm, 0.5*(pscint_y-groove_depth),0*mm), groove_log, "groove_phys", pscint_log, false, 0, checkOverlaps);
+    */
 	G4VPhysicalVolume* pscint_phys =new G4PVPlacement(0,G4ThreeVector(0*mm,0*mm,0*mm), pscint_log,"pscint_phys",experimentalHall_log,false,0,checkOverlaps);
 
     // SiPM on both sides
@@ -163,9 +165,12 @@ G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::ConstructDetector() const
     new G4LogicalBorderSurface(
         "LAB_teflon_surface", pscint_phys, shell_phys, op_LAB_teflon_surface
     );
+    
+    /*
     new G4LogicalBorderSurface(
         "teflon_air_surface", groove_phys, shell_phys, op_teflon_air_surface
     );
+    */
 
     return experimentalHall_phys;
 }
