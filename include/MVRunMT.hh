@@ -3,6 +3,7 @@
 
 #include "G4Run.hh"
 #include <vector>
+#include "G4ThreeVector.hh"
 
 namespace MuonVeto
 {
@@ -14,12 +15,17 @@ class MVRunMT : public G4Run
         ~MVRunMT() override;
         void RecordEvent(const G4Event*) override;
         void Merge(const G4Run*) override;
-        void MergeSiPMPhotonCount();
-        inline std::vector<G4int>* GetSiPMPhotonCount(){ return fSiPMPhotonCount; };
-    
+        inline std::vector<G4int>* GetSiPMPhotonCount() const { return fSiPMPhotonCount; }
+        inline G4ThreeVector GetParticlePosition() const { return fParticlePosition; }
+        inline G4double GetParticleEnergy() const { return fParticleEnergy; }
+        G4String GetParticleName() const { return fParticleName; }
+
     private:
         G4int fSiPMCount;
         std::vector<G4int>* fSiPMPhotonCount;
+        G4ThreeVector fParticlePosition;
+        G4double fParticleEnergy = 0;
+        G4String fParticleName;
 };
 
 }

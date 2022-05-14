@@ -30,8 +30,6 @@ void MuonVeto::MVEventAction::EndOfEventAction(const G4Event* event)
     if (trajectoryContainer) n_trajectories = trajectoryContainer->entries();
 
     G4int eventID = event->GetEventID();
-    G4double kCarTolerance = G4GeometryTolerance::GetInstance()->GetSurfaceTolerance();
-    G4cout << ">>> Surface tolerance is " << G4BestUnit(kCarTolerance, "Length") << G4endl;
     G4cout << ">>> Event: " << eventID  << G4endl;
     if ( trajectoryContainer ) 
     {

@@ -3,6 +3,9 @@
 #include "G4SDManager.hh"
 #include "G4VHitsCollection.hh"
 #include "G4Event.hh"
+#include "MVPrimaryGeneratorAction.hh"
+#include "G4RunManager.hh"
+#include "G4ParticleGun.hh"
 #include <string>
 
 using namespace MuonVeto;
@@ -11,6 +14,19 @@ MVRunMT::MVRunMT(G4int SiPMCount): fSiPMCount(SiPMCount)
 {
     std::vector<G4int>* SiPMPhotonCount = new std::vector<G4int>[SiPMCount];
     fSiPMPhotonCount = SiPMPhotonCount;
+
+    const MVPrimaryGeneratorAction* generatorAction
+        = static_cast<const MVPrimaryGeneratorAction*>
+            (G4RunManager::GetRunManager()->GetUserPrimaryGeneratorAction());
+    if(generatorAction)
+    {
+        G4cout << "<<<< This is not a master thread" << G4endl;
+        G4ParticleGun* particleGun = generatorAction->GetParticleGun();
+        fParticleEnergy = particleGun->GetParticleEnergy();
+        fParticlePosition = particleGun->GetParticlePosition();
+        fParticleName = particleGun->GetParticleDefinition()->GetParticleName();
+    }
+
 }
 
 MVRunMT::~MVRunMT()
@@ -44,5 +60,10 @@ void MVRunMT::Merge(const G4Run* run)
             localRun->fSiPMPhotonCount[SiPMNb].end()
         );
     }
+
+    if(fParticleEnergy != localRun->fParticleEnergy)    fParticleEnergy = localRun->fParticleEnergy;
+    if(fParticlePosition != localRun->fParticlePosition)    fParticlePosition = localRun->fParticlePosition;
+    if(fParticleName != localRun->fParticleName)    fParticleName = localRun->fParticleName;
+
     G4Run::Merge(run);
 }
