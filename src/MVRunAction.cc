@@ -50,13 +50,16 @@ void MVRunAction::EndOfRunAction(const G4Run* aRun)
 
             std::vector<G4int> singleSiPMPhotonCount = SiPMPhotonCount[SiPMNb];
 
-            int sum = std::accumulate(singleSiPMPhotonCount.begin(), singleSiPMPhotonCount.end(), 0);
+            long long sum = 0;
+            long long squaredSum = 0;
+            for (auto itr = singleSiPMPhotonCount.begin(); itr != singleSiPMPhotonCount.end(); itr++)
+            {
+                sum += ((long long) *itr);
+                squaredSum += ((long long) *itr) * ((long long) *itr);
+            }
             mean.push_back((double)sum / eventCount);
-            G4cout << ">>> Mean photon number for SiPM " << SiPMNb << " is " << mean[SiPMNb] << G4endl;
-
-            int squaredSum = std::accumulate(singleSiPMPhotonCount.begin(), singleSiPMPhotonCount.end(), 0, 
-                [](int a, int b){return a+b*b;});
             rms.push_back(std::sqrt(-mean[SiPMNb]*mean[SiPMNb] + (double)squaredSum/eventCount));
+            G4cout << ">>> Mean photon number for SiPM " << SiPMNb << " is " << mean[SiPMNb] << G4endl;
             G4cout << ">>> rms for SiPM " << SiPMNb << " is " << rms[SiPMNb] << G4endl;
         }
         

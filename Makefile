@@ -1,7 +1,7 @@
 PARTICLE=mu-
 ENERGY=3 GeV
 ZPOSITION:=$(shell seq -90 10 90)
-RUNCOUNT=10
+RUNCOUNT=1000
 
 .PHONY: all
 
@@ -26,6 +26,7 @@ all: ./data/muon_z.csv
 
 ./data/muon_z.csv: ./macro/run1.mac
 	touch $@
+	mkdir -p build/
 	cd build;cmake ../;make -j8
 	./build/MuonVeto $^ | grep ">>>>" | sed 's/>>>> //g' > $@
 
