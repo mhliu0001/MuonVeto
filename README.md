@@ -3,6 +3,7 @@
 ## Dependencies
 
 **geant4** version >= 11.0 (with support for OpenGL), **CMake** version >=3.16
+
 Also, the analysis of the data needs **python** support. Python packages **jupyter notebook**, **numpy**, **matplotlib** are required.
 
 ## Usage
