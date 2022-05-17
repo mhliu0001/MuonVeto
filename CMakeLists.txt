@@ -21,7 +21,8 @@ set(MUONVETO_SCRIPTS
     ./macro/vis.mac
     ./macro/init_vis.mac
     ./macro/gui.mac
-    ./macro/run1.mac
+    ./macro/muon_z.mac
+    ./macro/muon_energy.mac
 )
 
 foreach(_script ${MUONVETO_SCRIPTS})

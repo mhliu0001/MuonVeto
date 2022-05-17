@@ -36,7 +36,6 @@ MVRunMT::~MVRunMT()
 
 void MVRunMT::RecordEvent(const G4Event* event)
 {
-    G4int eventID = event->GetEventID();
     G4HCofThisEvent* hce = event->GetHCofThisEvent();
     G4SDManager* SDMan = G4SDManager::GetSDMpointer();
 

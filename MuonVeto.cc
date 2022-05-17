@@ -23,7 +23,8 @@ int main(int argc, char** argv)
     CLHEP::HepRandom::setTheSeed(seed);
 
     // Run manager
-    auto* runManager = G4RunManagerFactory::CreateRunManager(G4RunManagerType::Default);
+    auto* runManager = G4RunManagerFactory::CreateRunManager(G4RunManagerType::MT);
+    runManager->SetNumberOfThreads(20);
 
     // Detector construction
     auto* detector = new MVDetectorConstruction();
