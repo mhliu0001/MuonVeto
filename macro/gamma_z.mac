@@ -1,0 +1,162 @@
+/run/initialize
+/control/verbose 0
+/run/verbose 0
+/event/verbose 0
+/tracking/verbose 0
+/gun/particle gamma
+/gun/energy 0.2 MeV
+/gun/position 0 -20 -90 cm
+/run/beamOn 10000
+/gun/position 0 -20 -80 cm
+/run/beamOn 10000
+/gun/position 0 -20 -70 cm
+/run/beamOn 10000
+/gun/position 0 -20 -60 cm
+/run/beamOn 10000
+/gun/position 0 -20 -50 cm
+/run/beamOn 10000
+/gun/position 0 -20 -40 cm
+/run/beamOn 10000
+/gun/position 0 -20 -30 cm
+/run/beamOn 10000
+/gun/position 0 -20 -20 cm
+/run/beamOn 10000
+/gun/position 0 -20 -10 cm
+/run/beamOn 10000
+/gun/position 0 -20 0 cm
+/run/beamOn 10000
+/gun/position 0 -20 10 cm
+/run/beamOn 10000
+/gun/position 0 -20 20 cm
+/run/beamOn 10000
+/gun/position 0 -20 30 cm
+/run/beamOn 10000
+/gun/position 0 -20 40 cm
+/run/beamOn 10000
+/gun/position 0 -20 50 cm
+/run/beamOn 10000
+/gun/position 0 -20 60 cm
+/run/beamOn 10000
+/gun/position 0 -20 70 cm
+/run/beamOn 10000
+/gun/position 0 -20 80 cm
+/run/beamOn 10000
+/gun/position 0 -20 90 cm
+/run/beamOn 10000
+/gun/energy 0.5 MeV
+/gun/position 0 -20 -90 cm
+/run/beamOn 10000
+/gun/position 0 -20 -80 cm
+/run/beamOn 10000
+/gun/position 0 -20 -70 cm
+/run/beamOn 10000
+/gun/position 0 -20 -60 cm
+/run/beamOn 10000
+/gun/position 0 -20 -50 cm
+/run/beamOn 10000
+/gun/position 0 -20 -40 cm
+/run/beamOn 10000
+/gun/position 0 -20 -30 cm
+/run/beamOn 10000
+/gun/position 0 -20 -20 cm
+/run/beamOn 10000
+/gun/position 0 -20 -10 cm
+/run/beamOn 10000
+/gun/position 0 -20 0 cm
+/run/beamOn 10000
+/gun/position 0 -20 10 cm
+/run/beamOn 10000
+/gun/position 0 -20 20 cm
+/run/beamOn 10000
+/gun/position 0 -20 30 cm
+/run/beamOn 10000
+/gun/position 0 -20 40 cm
+/run/beamOn 10000
+/gun/position 0 -20 50 cm
+/run/beamOn 10000
+/gun/position 0 -20 60 cm
+/run/beamOn 10000
+/gun/position 0 -20 70 cm
+/run/beamOn 10000
+/gun/position 0 -20 80 cm
+/run/beamOn 10000
+/gun/position 0 -20 90 cm
+/run/beamOn 10000
+/gun/energy 1 MeV
+/gun/position 0 -20 -90 cm
+/run/beamOn 10000
+/gun/position 0 -20 -80 cm
+/run/beamOn 10000
+/gun/position 0 -20 -70 cm
+/run/beamOn 10000
+/gun/position 0 -20 -60 cm
+/run/beamOn 10000
+/gun/position 0 -20 -50 cm
+/run/beamOn 10000
+/gun/position 0 -20 -40 cm
+/run/beamOn 10000
+/gun/position 0 -20 -30 cm
+/run/beamOn 10000
+/gun/position 0 -20 -20 cm
+/run/beamOn 10000
+/gun/position 0 -20 -10 cm
+/run/beamOn 10000
+/gun/position 0 -20 0 cm
+/run/beamOn 10000
+/gun/position 0 -20 10 cm
+/run/beamOn 10000
+/gun/position 0 -20 20 cm
+/run/beamOn 10000
+/gun/position 0 -20 30 cm
+/run/beamOn 10000
+/gun/position 0 -20 40 cm
+/run/beamOn 10000
+/gun/position 0 -20 50 cm
+/run/beamOn 10000
+/gun/position 0 -20 60 cm
+/run/beamOn 10000
+/gun/position 0 -20 70 cm
+/run/beamOn 10000
+/gun/position 0 -20 80 cm
+/run/beamOn 10000
+/gun/position 0 -20 90 cm
+/run/beamOn 10000
+/gun/energy 2 MeV
+/gun/position 0 -20 -90 cm
+/run/beamOn 10000
+/gun/position 0 -20 -80 cm
+/run/beamOn 10000
+/gun/position 0 -20 -70 cm
+/run/beamOn 10000
+/gun/position 0 -20 -60 cm
+/run/beamOn 10000
+/gun/position 0 -20 -50 cm
+/run/beamOn 10000
+/gun/position 0 -20 -40 cm
+/run/beamOn 10000
+/gun/position 0 -20 -30 cm
+/run/beamOn 10000
+/gun/position 0 -20 -20 cm
+/run/beamOn 10000
+/gun/position 0 -20 -10 cm
+/run/beamOn 10000
+/gun/position 0 -20 0 cm
+/run/beamOn 10000
+/gun/position 0 -20 10 cm
+/run/beamOn 10000
+/gun/position 0 -20 20 cm
+/run/beamOn 10000
+/gun/position 0 -20 30 cm
+/run/beamOn 10000
+/gun/position 0 -20 40 cm
+/run/beamOn 10000
+/gun/position 0 -20 50 cm
+/run/beamOn 10000
+/gun/position 0 -20 60 cm
+/run/beamOn 10000
+/gun/position 0 -20 70 cm
+/run/beamOn 10000
+/gun/position 0 -20 80 cm
+/run/beamOn 10000
+/gun/position 0 -20 90 cm
+/run/beamOn 10000

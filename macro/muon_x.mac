@@ -1,0 +1,45 @@
+/run/initialize
+/control/verbose 0
+/run/verbose 0
+/event/verbose 0
+/tracking/verbose 0
+/gun/particle mu-
+/gun/energy 3 GeV
+/gun/position -9 -20 0 cm
+/run/beamOn 10000
+/gun/position -8 -20 0 cm
+/run/beamOn 10000
+/gun/position -7 -20 0 cm
+/run/beamOn 10000
+/gun/position -6 -20 0 cm
+/run/beamOn 10000
+/gun/position -5 -20 0 cm
+/run/beamOn 10000
+/gun/position -4 -20 0 cm
+/run/beamOn 10000
+/gun/position -3 -20 0 cm
+/run/beamOn 10000
+/gun/position -2 -20 0 cm
+/run/beamOn 10000
+/gun/position -1 -20 0 cm
+/run/beamOn 10000
+/gun/position 0 -20 0 cm
+/run/beamOn 10000
+/gun/position 1 -20 0 cm
+/run/beamOn 10000
+/gun/position 2 -20 0 cm
+/run/beamOn 10000
+/gun/position 3 -20 0 cm
+/run/beamOn 10000
+/gun/position 4 -20 0 cm
+/run/beamOn 10000
+/gun/position 5 -20 0 cm
+/run/beamOn 10000
+/gun/position 6 -20 0 cm
+/run/beamOn 10000
+/gun/position 7 -20 0 cm
+/run/beamOn 10000
+/gun/position 8 -20 0 cm
+/run/beamOn 10000
+/gun/position 9 -20 0 cm
+/run/beamOn 10000

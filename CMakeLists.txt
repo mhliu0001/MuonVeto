@@ -17,6 +17,7 @@ target_link_libraries(MuonVeto ${Geant4_LIBRARIES} )
 
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/output/)
 
+#[[
 set(MUONVETO_SCRIPTS
     ./macro/vis.mac
     ./macro/init_vis.mac
@@ -32,5 +33,6 @@ foreach(_script ${MUONVETO_SCRIPTS})
         COPYONLY
     )
 endforeach()
+#]]
 
 add_custom_target(MuonVetoProject DEPENDS MuonVeto)

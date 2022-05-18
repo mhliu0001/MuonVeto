@@ -64,7 +64,12 @@ void MVRunAction::EndOfRunAction(const G4Run* aRun)
         }
         
         // Output for .csv
-        G4cout << ">>>> " << particlePosition.z() << "," << particleEnergy/GeV << ",";
+
+        G4int particleNb = -1;
+        if(particleName == "mu-")   particleNb=0;
+        if(particleName == "gamma")   particleNb=1;
+
+        G4cout << ">>>> " << particlePosition.z() << "," << particlePosition.x() << "," << particleNb << "," << particleEnergy/GeV << ",";
         for(int SiPMNb = 0; SiPMNb < fSiPMCount; SiPMNb++)
         {
             G4cout << mean[SiPMNb] << "," << rms[SiPMNb] << (SiPMNb==fSiPMCount-1? "" : ",");
