@@ -24,6 +24,7 @@ class MVRunAction : public G4UserRunAction
     
     private:
         G4int fSiPMCount;
+        G4int photonCountCut = 100000;
 };
 
 }

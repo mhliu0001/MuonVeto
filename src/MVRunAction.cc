@@ -52,8 +52,14 @@ void MVRunAction::EndOfRunAction(const G4Run* aRun)
 
             long long sum = 0;
             long long squaredSum = 0;
-            for (auto itr = singleSiPMPhotonCount.begin(); itr != singleSiPMPhotonCount.end(); itr++)
+            for (auto itr = singleSiPMPhotonCount.begin(); itr != singleSiPMPhotonCount.end(); ++itr)
             {
+                if (*itr > photonCountCut)
+                {
+                    G4cerr << "Event is cut because this event has " << *itr << " photons in SiPM_" << SiPMNb;
+                    eventCount -= 1;
+                    continue;
+                }
                 sum += ((long long) *itr);
                 squaredSum += ((long long) *itr) * ((long long) *itr);
             }
