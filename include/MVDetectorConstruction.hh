@@ -33,10 +33,10 @@ class MVDetectorConstruction : public G4VUserDetectorConstruction
         G4double teflon_depth;
 
         // Fiber
-        G4double rTrunk;
-        G4double aPMT;
-        G4double bPMT;
-        G4double hPMT;
+        G4double fiber_d; // diameter of fiber
+        G4int fiber_count; // number of fiber
+        G4double fiber_bend_r; // radius of bending fiber
+        G4double fiber_depth; // depth from the surface of Pscint to center of fiber
 
         // Groove
         G4double groove_depth;
@@ -53,6 +53,7 @@ class MVDetectorConstruction : public G4VUserDetectorConstruction
         G4Material* teflon;
         G4Material* LAB;
         G4Material* glass;
+        G4Material* PMMA;
 
         // Optical surface
         G4OpticalSurface* op_LAB_teflon_surface;
@@ -60,6 +61,7 @@ class MVDetectorConstruction : public G4VUserDetectorConstruction
 
         // Definition of materials and optical surfaces
         void DefineMaterials();
+        void DefineMaterialTables();
         void DefineOpticalSurfaces();
 
         // Initialization
