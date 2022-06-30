@@ -5,7 +5,7 @@ MUENERGY:=0.5 2 5 10
 GAMMAENERGY:=0.2 0.5 1 2
 ZPOSITION:=$(shell seq -90 10 90)
 XPOSITION:=$(shell seq -9 1 9)
-RUNCOUNT=10000
+RUNCOUNT=1000
 
 .PHONY: all
 all: data
@@ -16,7 +16,10 @@ build: ./build/MuonVeto
 .PHONY: data
 data: ./data/muon_z.csv ./data/muon_x.csv ./data/gamma_z.csv
 
-./build/MuonVeto:
+.PHONY: macro
+macro: ./macro/muon_z.mac ./macro/muon_x.mac ./macro/gamma_z.mac
+
+./build/MuonVeto: ./macro/muon_z.mac ./macro/muon_x.mac ./macro/gamma_z.mac
 	mkdir -p build/
 	cd build;cmake ../;make -j8
 
