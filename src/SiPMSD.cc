@@ -6,6 +6,7 @@
 #include "G4ios.hh"
 #include "G4Box.hh"
 #include "G4GeometryTolerance.hh"
+#include "G4UniformRandPool.hh"
 
 namespace MuonVeto
 {
@@ -45,7 +46,7 @@ G4bool SiPMSD::ProcessHits(G4Step* aStep,
     G4VSolid* solid = physVol->GetLogicalVolume()->GetSolid();
     G4Box* SiPM_solid = dynamic_cast<G4Box*>(solid);
 
-    if (!IsSelectedSurface(aStep, SiPM_solid)) return false;
+    if (!IsSelectedSurface(aStep, SiPM_solid) || G4UniformRand() > fDetectionEfficiency) return false;
 
     SiPMHit* newHit = new SiPMHit();
 

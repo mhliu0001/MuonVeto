@@ -2,10 +2,11 @@ DEFAULT_PARTICLE=mu-
 DEFAULT_ENERGY=3 GeV
 DEFAULT_ZPOSITION=0
 MUENERGY:=0.5 2 5 10
+MUENERGY:=3
 GAMMAENERGY:=0.2 0.5 1 2
 ZPOSITION:=$(shell seq -90 10 90)
 XPOSITION:=$(shell seq -9 1 9)
-RUNCOUNT=1000
+RUNCOUNT=10
 
 .PHONY: all
 all: data
@@ -32,12 +33,10 @@ macro: ./macro/muon_z.mac ./macro/muon_x.mac ./macro/gamma_z.mac
 	echo "/tracking/verbose 0" >> $@
 
 	echo "/gun/particle ${DEFAULT_PARTICLE}" >> $@
-	for E in $(MUENERGY); do \
-		echo "/gun/energy $$E GeV" >> $@; \
-		for Z in $(ZPOSITION); do \
-			echo "/gun/position 0 -20 $$Z cm" >> $@; \
-			echo "/run/beamOn $(RUNCOUNT)" >> $@; \
-		done; \
+	echo "/gun/energy $$DEFAULT_ENERGY" >> $@; \
+	for Z in $(ZPOSITION); do \
+		echo "/gun/position 0 -20 $$Z cm" >> $@; \
+		echo "/run/beamOn $(RUNCOUNT)" >> $@; \
 	done
 
 ./macro/muon_x.mac:
@@ -75,13 +74,29 @@ macro: ./macro/muon_z.mac ./macro/muon_x.mac ./macro/gamma_z.mac
 
 ./data/muon_z.csv: ./build/MuonVeto ./macro/muon_z.mac
 	$^ | grep ">>>>" | sed 's/>>>> //g' > $@
+	mv SiPM_0 ./data/muon_z_SiPM_0.csv
+	mv SiPM_1 ./data/muon_z_SiPM_1.csv
+
 
 ./data/muon_x.csv: ./build/MuonVeto ./macro/muon_x.mac
 	$^ | grep ">>>>" | sed 's/>>>> //g' > $@
+	mv SiPM_0 ./data/muon_x_SiPM_0.csv
+	mv SiPM_1 ./data/muon_x_SiPM_1.csv
 
 ./data/gamma_z.csv: ./build/MuonVeto ./macro/gamma_z.mac
 	$^ | grep ">>>>" | sed 's/>>>> //g' > $@
+	mv SiPM_0 ./data/gamma_z_SiPM_0.csv
+	mv SiPM_1 ./data/gamma_z_SiPM_1.csv
 
+.PHONY: clean_macro
+
+clean_macro:
+	rm -r ./macro/muon_x.mac ./macro/muon_z.mac ./macro/gamma_z.mac
+
+.PHONY: clean_build
+
+clean_build:
+	rm -r ./build
 
 .PHONY: clean
 

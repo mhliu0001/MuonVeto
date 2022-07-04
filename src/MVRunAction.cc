@@ -3,6 +3,7 @@
 #include "MVRunMT.hh"
 #include <numeric>
 #include "G4SystemOfUnits.hh"
+#include <string>
 namespace MuonVeto
 {
 
@@ -43,6 +44,9 @@ void MVRunAction::EndOfRunAction(const G4Run* aRun)
 
         std::vector<G4double> mean;
         std::vector<G4double> rms;
+
+        G4cout << "1" << G4endl;
+
         for(int SiPMNb = 0; SiPMNb < fSiPMCount; SiPMNb++)
         {
             int eventCount = SiPMPhotonCount[SiPMNb].size();
@@ -52,6 +56,13 @@ void MVRunAction::EndOfRunAction(const G4Run* aRun)
 
             long long sum = 0;
             long long squaredSum = 0;
+
+            char FileName[100];
+
+            sprintf(FileName,"SiPM_%d",SiPMNb);
+            FILE* pf=fopen(FileName,"a");
+            if(!pf) G4cerr << "Open file failed! " << G4endl;
+
             for (auto itr = singleSiPMPhotonCount.begin(); itr != singleSiPMPhotonCount.end(); ++itr)
             {
                 if (*itr > photonCountCut)
@@ -60,9 +71,14 @@ void MVRunAction::EndOfRunAction(const G4Run* aRun)
                     eventCount -= 1;
                     continue;
                 }
+                if(pf) fprintf(pf, "%f,%f,%f,%d\n", double(particlePosition.z()/cm), double(particlePosition.x()/cm), double(particleEnergy/GeV), *itr);
+
                 sum += ((long long) *itr);
                 squaredSum += ((long long) *itr) * ((long long) *itr);
+                
             }
+            if(pf) fclose(pf);
+
             mean.push_back((double)sum / eventCount);
             rms.push_back(std::sqrt(-mean[SiPMNb]*mean[SiPMNb] + (double)squaredSum/eventCount));
             G4cout << ">>> Mean photon number for SiPM " << SiPMNb << " is " << mean[SiPMNb] << G4endl;

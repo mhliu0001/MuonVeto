@@ -42,7 +42,7 @@ void MuonVeto::MVDetectorConstruction::SetDefaults()
 
     // Pscint
     pscint_x = 200*mm;
-    pscint_y = 40*mm;
+    pscint_y = 20*mm;
     pscint_z = 2000*mm;
 
     // Teflon reflection layer
@@ -52,7 +52,7 @@ void MuonVeto::MVDetectorConstruction::SetDefaults()
     fiber_d = 1.5*mm;
     fiber_count = 4;
     fiber_bend_r = 740*mm;
-    fiber_depth = 20*mm;
+    fiber_depth = 2*mm;
 
     // Groove
     groove_depth = 10*mm;
@@ -284,8 +284,8 @@ G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::ConstructDetector() const
     G4Box* SiPM_solid = new G4Box("SiPM_solid", 0.5*SiPM_length, 0.5*SiPM_width, 0.5*SiPM_depth);
     G4LogicalVolume* SiPM_0_log = new G4LogicalVolume(SiPM_solid, glass, "SiPM_0_log");
     G4LogicalVolume* SiPM_1_log = new G4LogicalVolume(SiPM_solid, glass, "SiPM_1_log");
-    new G4PVPlacement(0, G4ThreeVector(0*mm, 0*mm, 0.5*pscint_z+air_interval), SiPM_0_log, "SiPM_0_phys", experimentalHall_log, false, 0, checkOverlaps);
-    new G4PVPlacement(0, G4ThreeVector(0*mm, 0*mm, -0.5*pscint_z-air_interval), SiPM_1_log, "SiPM_1_phys", experimentalHall_log, false, 1, checkOverlaps);
+    new G4PVPlacement(0, G4ThreeVector(0*mm, pscint_y/2-fiber_depth, 0.5*pscint_z+air_interval), SiPM_0_log, "SiPM_0_phys", experimentalHall_log, false, 0, checkOverlaps);
+    new G4PVPlacement(0, G4ThreeVector(0*mm, pscint_y/2-fiber_depth, -0.5*pscint_z-air_interval), SiPM_1_log, "SiPM_1_phys", experimentalHall_log, false, 1, checkOverlaps);
 
     // Optical surfaces
     new G4LogicalBorderSurface(
