@@ -55,7 +55,7 @@ void MuonVeto::MVDetectorConstruction::SetDefaults()
     fiber_depth = 2*mm;
 
     // Groove
-    groove_depth = fiber_depth + fiber_d/2;
+    groove_depth = fiber_depth + fiber_d/2 + 0.1*mm;
     groove_width = fiber_d + 0.5*mm;
 
     // SiPM
@@ -82,6 +82,7 @@ void MuonVeto::MVDetectorConstruction::DefineMaterials()
     air = man->FindOrBuildMaterial("G4_AIR");
     G4MaterialPropertiesTable* air_table = new G4MaterialPropertiesTable();
     air_table->AddProperty("RINDEX", "Air");
+
     air->SetMaterialPropertiesTable(air_table);
 
     // Definition of LAB, used in pscint
@@ -240,7 +241,12 @@ G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::ConstructDetector() const
         G4double bend_groove_end_x_position = SiPM_length/2 - SiPM_length/(fiber_count+1)*(groove_index+1);
         G4bool is_upper_groove = groove_index < fiber_count / 2;
         G4int sign = 2*is_upper_groove-1;
-        G4double bend_center_angle = std::acos((fiber_bend_r - std::abs(straight_groove_x_position-sign*groove_width/2-bend_groove_end_x_position))/fiber_bend_r);
+
+        G4double delta_x = std::abs(straight_groove_x_position - bend_groove_end_x_position);
+        G4double bend_center_angle = std::acos(
+            ((fiber_bend_r - delta_x) + std::sqrt((fiber_bend_r - delta_x)*(fiber_bend_r - delta_x)-4*fiber_bend_r*groove_width/2))
+            /2/(fiber_bend_r-groove_width/2)
+        );
         G4double straight_groove_length = pscint_z - 2*std::sin(bend_center_angle)*fiber_bend_r;
 
         G4Box* straight_groove = new G4Box("straight_groove_"+std::to_string(groove_index), groove_width/2, groove_depth/2+0.01*mm, straight_groove_length+0.01*mm);
@@ -265,7 +271,7 @@ G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::ConstructDetector() const
         
         G4RotationMatrix* groove_rot = new G4RotationMatrix();
         groove_rot->rotateZ(180*(1-is_upper_groove)*degree);
-        G4Transform3D groove_transform(*groove_rot, G4ThreeVector(0,pscint_y/2-groove_depth/2,0));
+        G4Transform3D groove_transform(*groove_rot, G4ThreeVector(straight_groove_x_position,pscint_y/2-groove_depth/2,0));
 
         if(groove_index == 0)
             pscint_subtraction_solid = new G4SubtractionSolid("groove_solid_"+std::to_string(groove_index), pscint_solid, groove_union_solid, groove_transform);
@@ -283,7 +289,12 @@ G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::ConstructDetector() const
         G4double bend_fiber_end_x_position = SiPM_length/2 - SiPM_length/(fiber_count+1)*(fiber_index+1);
         G4bool is_upper_fiber = fiber_index < fiber_count / 2;
         G4int sign = 2*is_upper_fiber-1;
-        G4double bend_center_angle = std::acos((fiber_bend_r - std::abs(straight_fiber_x_position-sign*fiber_d/2-bend_fiber_end_x_position))/fiber_bend_r);
+
+        G4double delta_x = std::abs(straight_fiber_x_position - bend_fiber_end_x_position);
+        G4double bend_center_angle = std::acos(
+            ((fiber_bend_r - delta_x) + std::sqrt((fiber_bend_r - delta_x)*(fiber_bend_r - delta_x)-4*fiber_bend_r*fiber_d/2))
+            /2/(fiber_bend_r-fiber_d/2)
+        );
         G4double straight_fiber_length = pscint_z - 2*std::sin(bend_center_angle)*fiber_bend_r;
 
         G4Tubs* straight_fiber = new G4Tubs("straight_fiber_"+std::to_string(fiber_index), 0, fiber_d/2, straight_fiber_length/2+0.01*mm, 0, 2*M_PI);
