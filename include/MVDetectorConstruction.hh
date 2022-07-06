@@ -39,8 +39,9 @@ class MVDetectorConstruction : public G4VUserDetectorConstruction
         G4double fiber_depth; // depth from the surface of Pscint to center of fiber
 
         // Groove
-        G4double groove_depth;
-        G4double groove_width;
+        G4double groove_width; // along y direction
+        G4double groove_length; // along x direction
+        G4double groove_depth; // along z direction
 
         // SiPM
         G4double SiPM_width; // along y direction
