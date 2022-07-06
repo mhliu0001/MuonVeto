@@ -6,7 +6,7 @@ MUENERGY:=3
 GAMMAENERGY:=0.2 0.5 1 2
 ZPOSITION:=$(shell seq -90 10 90)
 XPOSITION:=$(shell seq -9 1 9)
-RUNCOUNT=10
+RUNCOUNT=10000
 
 .PHONY: all
 all: data

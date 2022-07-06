@@ -45,8 +45,6 @@ void MVRunAction::EndOfRunAction(const G4Run* aRun)
         std::vector<G4double> mean;
         std::vector<G4double> rms;
 
-        G4cout << "1" << G4endl;
-
         for(int SiPMNb = 0; SiPMNb < fSiPMCount; SiPMNb++)
         {
             int eventCount = SiPMPhotonCount[SiPMNb].size();
