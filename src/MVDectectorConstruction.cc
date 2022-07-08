@@ -378,20 +378,91 @@ G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::ConstructDetector() const
         
         G4LogicalVolume* fiber_log = new G4LogicalVolume(fiber_solid, PMMA, "fiber_log_"+std::to_string(fiber_index));
         new G4PVPlacement(0,G4ThreeVector(straight_fiber_x_position,0,0),fiber_log, "fiber_phys_"+std::to_string(fiber_index), experimentalHall_log, false, fiber_index, checkOverlaps);
+    
+        //cladding_1
+        G4double straight_fiber_x_position = pscint_x/2 - pscint_x/(fiber_count+1)*(fiber_index+1);
+        G4double bend_fiber_end_x_position = SiPM_length/2 - SiPM_length/(fiber_count+1)*(fiber_index+1);
+        G4bool is_upper_fiber = fiber_index < fiber_count / 2;
+        G4int sign = 2*is_upper_fiber-1;
 
-        G4Transform3D fiber_transform(*fiber_rot, G4ThreeVector(0,pscint_y/2-(fiber_depth-cladding_depth_1),0));
+        G4double delta_x = std::abs(straight_fiber_x_position - bend_fiber_end_x_position);
+        G4double bend_center_angle = std::acos(
+            ((fiber_bend_r - delta_x) + std::sqrt((fiber_bend_r - delta_x)*(fiber_bend_r - delta_x)-4*fiber_bend_r*(fiber_d/2-cladding_depth_1)))
+            /2/(fiber_bend_r-(fiber_d/2-cladding_depth_1))
+        );
+        G4double straight_fiber_length = pscint_z - 2*std::sin(bend_center_angle)*fiber_bend_r;
+
+        G4Tubs* straight_fiber = new G4Tubs("straight_fiber_"+std::to_string(fiber_index), 0, fiber_d/2-cladding_depth_1, straight_fiber_length/2+0.01*mm, 0, 2*M_PI);
+        G4Torus* bend_fiber = new G4Torus("bend_fiber_"+std::to_string(fiber_index), 0, fiber_d/2-cladding_depth_1, fiber_bend_r, 0, bend_center_angle);
+
+        G4RotationMatrix* bend_fiber_rot_upper = new G4RotationMatrix();
+        bend_fiber_rot_upper->rotateX(90*degree);
+        G4RotationMatrix* bend_fiber_rot_lower = new G4RotationMatrix();
+        bend_fiber_rot_lower->rotateX(-90*degree);
+        G4ThreeVector bend_fiber_translate_upper(-fiber_bend_r, 0, straight_fiber_length/2);
+        G4ThreeVector bend_fiber_translate_lower(-fiber_bend_r, 0, -straight_fiber_length/2);
+        G4Transform3D straight_fiber_transform = G4Transform3D();
+        G4Transform3D bend_fiber_transform_upper(*bend_fiber_rot_upper, bend_fiber_translate_upper);
+        G4Transform3D bend_fiber_transform_lower(*bend_fiber_rot_lower, bend_fiber_translate_lower);
+        
+        G4MultiUnion* fiber_union_solid = new G4MultiUnion("fiber_union_solid_"+std::to_string(fiber_index));
+        fiber_union_solid->AddNode(straight_fiber, straight_fiber_transform);
+        fiber_union_solid->AddNode(bend_fiber, bend_fiber_transform_upper);
+        fiber_union_solid->AddNode(bend_fiber, bend_fiber_transform_lower);
+        
+        fiber_union_solid->Voxelize();
+        
+        G4RotationMatrix* fiber_rot = new G4RotationMatrix();
+        fiber_rot->rotateZ(180*(1-is_upper_fiber)*degree);
+        G4Transform3D fiber_transform(*fiber_rot, G4ThreeVector(0,pscint_y/2-fiber_depth,0));
         G4IntersectionSolid* cladding_1_solid = new G4IntersectionSolid("cladding_1_solid_"+std::to_string(fiber_index), pscint_solid, fiber_union_solid, fiber_transform);
         
         G4LogicalVolume* cladding_1_log = new G4LogicalVolume(cladding_1_solid, Pethylene_1, "cladding_1_log_"+std::to_string(fiber_index));
         new G4PVPlacement(0,G4ThreeVector(straight_fiber_x_position,0,0),cladding_1_log, "cladding_1_phys_"+std::to_string(fiber_index), fiber_log, false, fiber_index, checkOverlaps);
 
-        G4Transform3D fiber_transform(*fiber_rot, G4ThreeVector(0,pscint_y/2-(fiber_depth-cladding_depth_1-cladding_depth_2),0));
+        //cladding_2
+        G4double straight_fiber_x_position = pscint_x/2 - pscint_x/(fiber_count+1)*(fiber_index+1);
+        G4double bend_fiber_end_x_position = SiPM_length/2 - SiPM_length/(fiber_count+1)*(fiber_index+1);
+        G4bool is_upper_fiber = fiber_index < fiber_count / 2;
+        G4int sign = 2*is_upper_fiber-1;
+
+        G4double delta_x = std::abs(straight_fiber_x_position - bend_fiber_end_x_position);
+        G4double bend_center_angle = std::acos(
+            ((fiber_bend_r - delta_x) + std::sqrt((fiber_bend_r - delta_x)*(fiber_bend_r - delta_x)-4*fiber_bend_r*(fiber_d/2-cladding_depth_1-cladding_depth_2)))
+            /2/(fiber_bend_r-(fiber_d/2-cladding_depth_1-cladding_depth_2))
+        );
+        G4double straight_fiber_length = pscint_z - 2*std::sin(bend_center_angle)*fiber_bend_r;
+
+        G4Tubs* straight_fiber = new G4Tubs("straight_fiber_"+std::to_string(fiber_index), 0, fiber_d/2-cladding_depth_1-cladding_depth_2, straight_fiber_length/2+0.01*mm, 0, 2*M_PI);
+        G4Torus* bend_fiber = new G4Torus("bend_fiber_"+std::to_string(fiber_index), 0, fiber_d/2-cladding_depth_1-cladding_depth_2, fiber_bend_r, 0, bend_center_angle);
+
+        G4RotationMatrix* bend_fiber_rot_upper = new G4RotationMatrix();
+        bend_fiber_rot_upper->rotateX(90*degree);
+        G4RotationMatrix* bend_fiber_rot_lower = new G4RotationMatrix();
+        bend_fiber_rot_lower->rotateX(-90*degree);
+        G4ThreeVector bend_fiber_translate_upper(-fiber_bend_r, 0, straight_fiber_length/2);
+        G4ThreeVector bend_fiber_translate_lower(-fiber_bend_r, 0, -straight_fiber_length/2);
+        G4Transform3D straight_fiber_transform = G4Transform3D();
+        G4Transform3D bend_fiber_transform_upper(*bend_fiber_rot_upper, bend_fiber_translate_upper);
+        G4Transform3D bend_fiber_transform_lower(*bend_fiber_rot_lower, bend_fiber_translate_lower);
+        
+        G4MultiUnion* fiber_union_solid = new G4MultiUnion("fiber_union_solid_"+std::to_string(fiber_index));
+        fiber_union_solid->AddNode(straight_fiber, straight_fiber_transform);
+        fiber_union_solid->AddNode(bend_fiber, bend_fiber_transform_upper);
+        fiber_union_solid->AddNode(bend_fiber, bend_fiber_transform_lower);
+        
+        fiber_union_solid->Voxelize();
+        
+        G4RotationMatrix* fiber_rot = new G4RotationMatrix();
+        fiber_rot->rotateZ(180*(1-is_upper_fiber)*degree);
+        G4Transform3D fiber_transform(*fiber_rot, G4ThreeVector(0,pscint_y/2-fiber_depth,0));
         G4IntersectionSolid* cladding_2_solid = new G4IntersectionSolid("cladding_2_solid_"+std::to_string(fiber_index), pscint_solid, fiber_union_solid, fiber_transform);
         
         G4LogicalVolume* cladding_2_log = new G4LogicalVolume(cladding_2_solid, Pethylene_2, "cladding_2_log_"+std::to_string(fiber_index));
-        new G4PVPlacement(0,G4ThreeVector(straight_fiber_x_position,0,0),cladding_2_log, "cladding_2_phys_"+std::to_string(fiber_index), fiber_log, false, fiber_index, checkOverlaps);
-    }
+        new G4PVPlacement(0,G4ThreeVector(straight_fiber_x_position,0,0),cladding_2_log, "cladding_2_phys_"+std::to_string(fiber_index), cladding_1_log, false, fiber_index, checkOverlaps);
     
+    }
+
     // SiPM on both sides
     G4Box* SiPM_solid = new G4Box("SiPM_solid", 0.5*SiPM_length, 0.5*SiPM_width, 0.5*SiPM_depth);
     G4LogicalVolume* SiPM_0_log = new G4LogicalVolume(SiPM_solid, glass, "SiPM_0_log");
