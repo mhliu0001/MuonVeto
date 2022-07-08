@@ -37,6 +37,8 @@ class MVDetectorConstruction : public G4VUserDetectorConstruction
         G4int fiber_count; // number of fiber
         G4double fiber_bend_r; // radius of bending fiber
         G4double fiber_depth; // depth from the surface of Pscint to center of fiber
+        G4double cladding_depth_1; // thickness of the outer cladding
+        G4double cladding_depth_2; // thickness of the inner cladding
 
         // Groove
         G4double groove_width; // along y direction
@@ -55,6 +57,8 @@ class MVDetectorConstruction : public G4VUserDetectorConstruction
         G4Material* LAB;
         G4Material* glass;
         G4Material* PMMA;
+        G4Material* Pethylene_1;
+        G4Material* Pethylene_2;
 
         // Optical surface
         G4OpticalSurface* op_LAB_teflon_surface;

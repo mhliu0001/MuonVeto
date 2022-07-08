@@ -53,6 +53,8 @@ void MuonVeto::MVDetectorConstruction::SetDefaults()
     fiber_count = 4;
     fiber_bend_r = 740*mm;
     fiber_depth = 2*mm;
+    cladding_depth_1 = 0.015*mm;
+    cladding_depth_2 = 0.045*mm;
 
     // Groove
     groove_depth = fiber_depth + fiber_d/2 + 0.1*mm;
@@ -103,6 +105,16 @@ void MuonVeto::MVDetectorConstruction::DefineMaterials()
     PMMA->AddElement(H, 8);
     PMMA->AddElement(C, 5);
     PMMA->AddElement(O, 2);
+
+    // Definition of Pethylene_1 (Fluorinated Polyethylene), used in the outer fiber cladding
+    Pethylene_1 = new G4Material("Pethylene_1", 1400*kg/m3, 2);
+    Pethylene_1->AddElement(H, 4);
+    Pethylene_1->AddElement(C, 2);
+
+    // Definition of Pethylene_2 (Polyethylene), used in the inner fiber cladding
+    Pethylene_2 = new G4Material("Pethylene_2", 1200*kg/m3, 2);
+    Pethylene_2->AddElement(H, 4);
+    Pethylene_2->AddElement(C, 2);
 
 }
 
@@ -192,6 +204,48 @@ void MuonVeto::MVDetectorConstruction::DefineMaterialTables()
     mptWLSfiber->AddConstProperty("WLSTIMECONSTANT", 0.5*ns);
 
     PMMA->SetMaterialPropertiesTable(mptWLSfiber);
+
+    /*************Table of Pethylene_1*************/
+
+    G4MaterialPropertiesTable* mptClad_1 = new G4MaterialPropertiesTable();
+
+    G4double refractiveIndexClad_1[] =
+        { 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42,
+        1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42,
+        1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42,
+        1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42,
+        1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42,
+        1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42};
+    
+    G4double absClad[] =
+        {20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,
+        20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,
+        20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,
+        20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,
+        20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,
+        20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m};
+
+    mptClad_1->AddProperty("RINDEX",photonEnergy,refractiveIndexClad_1,nEntries);
+    mptClad_1->AddProperty("ABSLENGTH",photonEnergy,absClad,nEntries);
+
+    Pethylene_1->SetMaterialPropertiesTable(mptClad_1);
+
+    /*************Table of Pethylene_2*************/
+
+    G4MaterialPropertiesTable* mptClad_2 = new G4MaterialPropertiesTable();
+
+    G4double refractiveIndexClad_2[] =
+        { 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49,
+        1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49,
+        1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49,
+        1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49,
+        1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49,
+        1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49};
+
+    mptClad_2->AddProperty("RINDEX",photonEnergy,refractiveIndexClad_2,nEntries);
+    mptClad_2->AddProperty("ABSLENGTH",photonEnergy,absClad,nEntries);
+
+    Pethylene_2->SetMaterialPropertiesTable(mptClad_2);
 }
 
 void MuonVeto::MVDetectorConstruction::DefineOpticalSurfaces()
