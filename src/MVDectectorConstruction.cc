@@ -378,8 +378,20 @@ G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::ConstructDetector() const
         
         G4LogicalVolume* fiber_log = new G4LogicalVolume(fiber_solid, PMMA, "fiber_log_"+std::to_string(fiber_index));
         new G4PVPlacement(0,G4ThreeVector(straight_fiber_x_position,0,0),fiber_log, "fiber_phys_"+std::to_string(fiber_index), experimentalHall_log, false, fiber_index, checkOverlaps);
-    }
 
+        G4Transform3D fiber_transform(*fiber_rot, G4ThreeVector(0,pscint_y/2-(fiber_depth-cladding_depth_1),0));
+        G4IntersectionSolid* cladding_1_solid = new G4IntersectionSolid("cladding_1_solid_"+std::to_string(fiber_index), pscint_solid, fiber_union_solid, fiber_transform);
+        
+        G4LogicalVolume* cladding_1_log = new G4LogicalVolume(cladding_1_solid, Pethylene_1, "cladding_1_log_"+std::to_string(fiber_index));
+        new G4PVPlacement(0,G4ThreeVector(straight_fiber_x_position,0,0),cladding_1_log, "cladding_1_phys_"+std::to_string(fiber_index), fiber_log, false, fiber_index, checkOverlaps);
+
+        G4Transform3D fiber_transform(*fiber_rot, G4ThreeVector(0,pscint_y/2-(fiber_depth-cladding_depth_1-cladding_depth_2),0));
+        G4IntersectionSolid* cladding_2_solid = new G4IntersectionSolid("cladding_2_solid_"+std::to_string(fiber_index), pscint_solid, fiber_union_solid, fiber_transform);
+        
+        G4LogicalVolume* cladding_2_log = new G4LogicalVolume(cladding_2_solid, Pethylene_2, "cladding_2_log_"+std::to_string(fiber_index));
+        new G4PVPlacement(0,G4ThreeVector(straight_fiber_x_position,0,0),cladding_2_log, "cladding_2_phys_"+std::to_string(fiber_index), fiber_log, false, fiber_index, checkOverlaps);
+    }
+    
     // SiPM on both sides
     G4Box* SiPM_solid = new G4Box("SiPM_solid", 0.5*SiPM_length, 0.5*SiPM_width, 0.5*SiPM_depth);
     G4LogicalVolume* SiPM_0_log = new G4LogicalVolume(SiPM_solid, glass, "SiPM_0_log");
