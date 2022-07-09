@@ -5,6 +5,8 @@
 class G4VPhysicalVolume;
 class G4Material;
 class G4OpticalSurface;
+class G4IntersectionSolid;
+class G4Box;
 
 namespace MuonVeto
 {
@@ -74,6 +76,9 @@ class MVDetectorConstruction : public G4VUserDetectorConstruction
 
         // Real detector construction
         G4VPhysicalVolume* ConstructDetector() const;
+
+        // Solid construction of fiber part
+        G4IntersectionSolid* GetFiberPart(const G4String &name, G4double diameter, G4Box* pscint_solid, G4int fiber_index) const;
 
 };
 
