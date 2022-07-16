@@ -3,6 +3,7 @@
 #include "MVDetectorConstruction.hh"
 #include "FTFP_BERT.hh"
 #include "G4OpticalPhysics.hh"
+#include "G4OpticalParametersMessenger.hh"
 #include "MVActionInitializer.hh"
 #include "G4VisManager.hh"
 #include "G4VisExecutive.hh"
@@ -35,6 +36,9 @@ int main(int argc, char** argv)
     auto* opticalPhysics = new G4OpticalPhysics();
     physicsList->RegisterPhysics(opticalPhysics);
     runManager->SetUserInitialization(physicsList);
+
+    auto* opticalPara = G4OpticalParameters::Instance();
+    // opticalPara->SetProcessActivation("Cerenkov", false);
 
     // Action initializer
     runManager->SetUserInitialization(new MVActionInitializer);

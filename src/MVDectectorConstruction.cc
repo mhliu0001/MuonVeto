@@ -12,6 +12,7 @@
 #include "G4UnionSolid.hh"
 #include "G4OpticalSurface.hh"
 #include "G4LogicalBorderSurface.hh"
+#include "G4LogicalSkinSurface.hh"
 #include "G4SDParticleFilter.hh"
 #include "G4SDManager.hh"
 #include "G4MultiFunctionalDetector.hh"
@@ -41,7 +42,7 @@ void MuonVeto::MVDetectorConstruction::SetDefaults()
     expHall_z = 500*cm;
 
     // Pscint
-    pscint_x = 200*mm;
+    pscint_x = 100*mm;
     pscint_y = 20*mm;
     pscint_z = 2000*mm;
 
@@ -262,7 +263,7 @@ void MuonVeto::MVDetectorConstruction::DefineOpticalSurfaces()
 
     // Surface between air and teflon
     op_teflon_air_surface = new G4OpticalSurface(
-        "op_teflon_air_surface", unified, ground, dielectric_dielectric
+        "op_teflon_air_surface", unified, groundfrontpainted, dielectric_dielectric
     );
     G4MaterialPropertiesTable* teflon_air_table = new G4MaterialPropertiesTable();
     std::vector<G4double> teflon_air_energy = {2.8*eV, 2.9*eV, 3.0*eV};
@@ -285,7 +286,7 @@ G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::ConstructDetector() const
     G4Box* pscint_solid = new G4Box("pscint_solid",0.5*pscint_x,0.5*pscint_y,0.5*pscint_z);
     G4SubtractionSolid* shell_solid = new G4SubtractionSolid("shell_solid", whole_solid, pscint_solid);
     G4LogicalVolume* shell_log = new G4LogicalVolume(shell_solid,teflon,"shell_log",0,0,0);
-    G4VPhysicalVolume* shell_phys =new G4PVPlacement(0,G4ThreeVector(0*mm,0*mm,0*mm),shell_log,"shell_log1",experimentalHall_log,false,0,checkOverlaps);
+    G4VPhysicalVolume* shell_phys = new G4PVPlacement(0,G4ThreeVector(0*mm,0*mm,0*mm),shell_log,"shell_log1",experimentalHall_log,false,0,checkOverlaps);
 
     // Groove for fiber
     G4SubtractionSolid* pscint_subtraction_solid;
@@ -334,25 +335,29 @@ G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::ConstructDetector() const
     G4LogicalVolume* pscint_log = new G4LogicalVolume(pscint_subtraction_solid, LAB, "pscint_log");
 	G4VPhysicalVolume* pscint_phys = new G4PVPlacement(0,G4ThreeVector(0*mm,0*mm,0*mm), pscint_log,"pscint_phys",experimentalHall_log,false,0,checkOverlaps);
 
+    G4SubtractionSolid* groove_solid = new G4SubtractionSolid("groove_solid", pscint_solid, pscint_subtraction_solid);
+    G4LogicalVolume* groove_log = new G4LogicalVolume(groove_solid, air, "groove_log");
+    G4VPhysicalVolume* groove_phys = new G4PVPlacement(0, G4ThreeVector(), groove_log, "groove_phys", experimentalHall_log, false, 0, checkOverlaps);
+
     // Fibers, notice that fiber_count must be an even number here
     for(int fiber_index = 0; fiber_index < fiber_count; fiber_index++)
     {
         G4double straight_fiber_x_position = pscint_x/2 - pscint_x/(fiber_count+1)*(fiber_index+1);
 
-        // Most outer layer
-        G4IntersectionSolid* fiber_solid = GetFiberPart("fiber_solid_"+std::to_string(fiber_index), fiber_d, pscint_solid, fiber_index);
-        G4LogicalVolume* fiber_log = new G4LogicalVolume(fiber_solid, Pethylene_1, "fiber_log_"+std::to_string(fiber_index));
-        new G4PVPlacement(0,G4ThreeVector(straight_fiber_x_position,0,0),fiber_log, "fiber_phys_"+std::to_string(fiber_index), experimentalHall_log, false, fiber_index, checkOverlaps);
-    
         // Outer cladding
-        G4IntersectionSolid* cladding_1_solid = GetFiberPart("fiber_outer_cladding_solid"+std::to_string(fiber_index), fiber_d - 2*cladding_depth_1, pscint_solid, fiber_index);        
-        G4LogicalVolume* cladding_1_log = new G4LogicalVolume(cladding_1_solid, Pethylene_2, "fiber_outer_cladding_log_"+std::to_string(fiber_index));
-        new G4PVPlacement(0,G4ThreeVector(0,0,0),cladding_1_log, "fiber_outer_cladding_phys_"+std::to_string(fiber_index), fiber_log, false, fiber_index, checkOverlaps);
-
+        G4IntersectionSolid* cladding_1_solid = GetFiberPart("fiber_outer_cladding_solid_"+std::to_string(fiber_index), fiber_d, pscint_solid, fiber_index);
+        G4LogicalVolume* cladding_1_log = new G4LogicalVolume(cladding_1_solid, Pethylene_1, "fiber_outer_cladding_log_"+std::to_string(fiber_index));
+        new G4PVPlacement(0,G4ThreeVector(straight_fiber_x_position,0,0),cladding_1_log, "fiber_outer_cladding_phys", groove_log, false, fiber_index, checkOverlaps);
+    
         // Inner cladding
-        G4IntersectionSolid* cladding_2_solid = GetFiberPart("fiber_inner_cladding_solid"+std::to_string(fiber_index), fiber_d - 2*cladding_depth_1 - 2*cladding_depth_2, pscint_solid, fiber_index);        
-        G4LogicalVolume* cladding_2_log = new G4LogicalVolume(cladding_2_solid, PMMA, "fiber_outer_cladding_log_"+std::to_string(fiber_index));
-        new G4PVPlacement(0,G4ThreeVector(0,0,0),cladding_2_log, "fiber_inner_cladding_phys_"+std::to_string(fiber_index), cladding_1_log, false, fiber_index, checkOverlaps);    
+        G4IntersectionSolid* cladding_2_solid = GetFiberPart("fiber_inner_cladding_solid_"+std::to_string(fiber_index), fiber_d - 2*cladding_depth_1, pscint_solid, fiber_index);        
+        G4LogicalVolume* cladding_2_log = new G4LogicalVolume(cladding_2_solid, Pethylene_2, "fiber_inner_cladding_log_"+std::to_string(fiber_index));
+        new G4PVPlacement(0,G4ThreeVector(0,0,0),cladding_2_log, "fiber_inner_cladding_phys", cladding_1_log, false, fiber_index, checkOverlaps);
+
+        // Core
+        G4IntersectionSolid* fiber_core_solid = GetFiberPart("fiber_core_solid_"+std::to_string(fiber_index), fiber_d - 2*cladding_depth_1 - 2*cladding_depth_2, pscint_solid, fiber_index);        
+        G4LogicalVolume* fiber_core_log = new G4LogicalVolume(fiber_core_solid, PMMA, "fiber_core_log_"+std::to_string(fiber_index));
+        new G4PVPlacement(0,G4ThreeVector(0,0,0),fiber_core_log, "fiber_core_phys", cladding_2_log, false, fiber_index, checkOverlaps);    
     }
 
     // SiPM on both sides
@@ -363,12 +368,14 @@ G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::ConstructDetector() const
     new G4PVPlacement(0, G4ThreeVector(0*mm, pscint_y/2-fiber_depth, -0.5*pscint_z-air_interval), SiPM_1_log, "SiPM_1_phys", experimentalHall_log, false, 1, checkOverlaps);
 
     // Optical surfaces
+    // G4LogicalSkinSurface* teflon_surface = new G4LogicalSkinSurface("teflon_surface", shell_log, op_LAB_teflon_surface);
+
     new G4LogicalBorderSurface(
         "LAB_teflon_surface", pscint_phys, shell_phys, op_LAB_teflon_surface
     );
 
     new G4LogicalBorderSurface(
-        "teflon_air_surface", experimentalHall_phys, shell_phys, op_teflon_air_surface
+        "teflon_air_surface", groove_phys, shell_phys, op_teflon_air_surface
     );
 
     return experimentalHall_phys;

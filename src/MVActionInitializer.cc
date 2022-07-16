@@ -2,6 +2,7 @@
 #include "MVPrimaryGeneratorAction.hh"
 #include "MVRunAction.hh"
 #include "MVEventAction.hh"
+#include "MVTrackingAction.hh"
 
 MuonVeto::MVActionInitializer::MVActionInitializer()
 {}
@@ -19,4 +20,5 @@ void MuonVeto::MVActionInitializer::Build() const
     SetUserAction(new MVPrimaryGeneratorAction);
     SetUserAction(new MVRunAction(2));
     SetUserAction(new MVEventAction);
+    SetUserAction(new MVTrackingAction);
 }
