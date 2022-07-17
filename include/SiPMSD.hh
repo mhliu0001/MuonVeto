@@ -45,7 +45,7 @@ class SiPMSD : public G4VSensitiveDetector
         SiPMHitsCollection* fHitsCollection = nullptr;
         G4bool IsSelectedSurface(G4Step*, G4Box*); // Used to judge whether a hit should be recorded
         const SiPM_surface fSurface;
-        const G4double fDetectionEfficiency = 1;
+        const G4double fDetectionEfficiency = 0.3;
 
 };
 

@@ -37,8 +37,10 @@ int main(int argc, char** argv)
     physicsList->RegisterPhysics(opticalPhysics);
     runManager->SetUserInitialization(physicsList);
 
+    /*
     auto* opticalPara = G4OpticalParameters::Instance();
-    // opticalPara->SetProcessActivation("Cerenkov", false);
+    opticalPara->SetProcessActivation("Scintillation", false);
+    */
 
     // Action initializer
     runManager->SetUserInitialization(new MVActionInitializer);

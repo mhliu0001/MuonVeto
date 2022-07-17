@@ -62,8 +62,8 @@ void MuonVeto::MVDetectorConstruction::SetDefaults()
     groove_width = fiber_d + 0.5*mm;
 
     // SiPM
-    SiPM_width = 10*mm;
-    SiPM_length = 10*mm;
+    SiPM_width = 20*mm;
+    SiPM_length = 20*mm;
     SiPM_depth = 1*mm;
     air_interval = 1*mm;
 
@@ -81,10 +81,10 @@ void MuonVeto::MVDetectorConstruction::DefineMaterials()
     // Definition of teflon, used in outer shell(reflection layer)
     teflon = man->FindOrBuildMaterial("G4_TEFLON");
 
-    // Definition of air, used in groove and world
+    // Definition of air, used in world
     air = man->FindOrBuildMaterial("G4_AIR");
     G4MaterialPropertiesTable* air_table = new G4MaterialPropertiesTable();
-    air_table->AddProperty("RINDEX", "Air");
+    air_table->AddProperty("RINDEX", {2.8*eV, 2.9*eV, 3.0*eV}, {1,1,1}, 3);
 
     air->SetMaterialPropertiesTable(air_table);
 
@@ -116,6 +116,11 @@ void MuonVeto::MVDetectorConstruction::DefineMaterials()
     Pethylene_2 = new G4Material("Pethylene_2", 1200*kg/m3, 2);
     Pethylene_2->AddElement(H, 4);
     Pethylene_2->AddElement(C, 2);
+
+    // Definition of groove_mat, used in grooves
+    groove_mat = new G4Material("groove_mat", 1200*kg/m3, 2);
+    groove_mat->AddElement(H, 4);
+    groove_mat->AddElement(C, 2);
 
 }
 
@@ -247,6 +252,18 @@ void MuonVeto::MVDetectorConstruction::DefineMaterialTables()
     mptClad_2->AddProperty("ABSLENGTH",photonEnergy,absClad,nEntries);
 
     Pethylene_2->SetMaterialPropertiesTable(mptClad_2);
+
+    /*************Table of groove_mat*************/
+    G4MaterialPropertiesTable* mptGroove_mat = new G4MaterialPropertiesTable();
+
+    G4double refractiveIndexGroove_mat[60];
+    for(int i = 0; i < 60; i++) {refractiveIndexGroove_mat[i] = 1;}
+
+    mptGroove_mat->AddProperty("RINDEX",photonEnergy,refractiveIndexGroove_mat,nEntries);
+    mptGroove_mat->AddProperty("ABSLENGTH",photonEnergy,absClad,nEntries);
+
+    groove_mat->SetMaterialPropertiesTable(mptGroove_mat);
+
 }
 
 void MuonVeto::MVDetectorConstruction::DefineOpticalSurfaces()
@@ -257,7 +274,7 @@ void MuonVeto::MVDetectorConstruction::DefineOpticalSurfaces()
     );
     G4MaterialPropertiesTable* LAB_teflon_table = new G4MaterialPropertiesTable();
     std::vector<G4double> LAB_teflon_energy = {2.8*eV, 2.9*eV, 3.0*eV};
-    std::vector<G4double> LAB_teflon_reflectivity = {1,1,1};
+    std::vector<G4double> LAB_teflon_reflectivity = {0.85,0.85,0.85};
     LAB_teflon_table->AddProperty("REFLECTIVITY", LAB_teflon_energy, LAB_teflon_reflectivity);
     op_LAB_teflon_surface->SetMaterialPropertiesTable(LAB_teflon_table);
 
@@ -287,9 +304,12 @@ G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::ConstructDetector() const
     G4SubtractionSolid* shell_solid = new G4SubtractionSolid("shell_solid", whole_solid, pscint_solid);
     G4LogicalVolume* shell_log = new G4LogicalVolume(shell_solid,teflon,"shell_log",0,0,0);
     G4VPhysicalVolume* shell_phys = new G4PVPlacement(0,G4ThreeVector(0*mm,0*mm,0*mm),shell_log,"shell_log1",experimentalHall_log,false,0,checkOverlaps);
+    
+    G4LogicalVolume* pscint_log = new G4LogicalVolume(pscint_solid, LAB, "pscint_log");
+    new G4PVPlacement(0,G4ThreeVector(),pscint_log,"pscint_phys",experimentalHall_log,false,0,checkOverlaps);
 
     // Groove for fiber
-    G4SubtractionSolid* pscint_subtraction_solid;
+    // G4SubtractionSolid* pscint_subtraction_solid;
     for(int groove_index = 0; groove_index < fiber_count; groove_index++)
     {
         G4double straight_groove_x_position = pscint_x/2 - pscint_x/(fiber_count+1)*(groove_index+1);
@@ -302,8 +322,8 @@ G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::ConstructDetector() const
         );
         G4double straight_groove_length = pscint_z - 2*std::sin(bend_center_angle)*fiber_bend_r;
 
-        G4Box* straight_groove = new G4Box("straight_groove_"+std::to_string(groove_index), groove_width/2, groove_depth/2+0.01*mm, straight_groove_length+0.01*mm);
-        G4Tubs* bend_groove = new G4Tubs("bend_groove_"+std::to_string(groove_index), fiber_bend_r-groove_width/2, fiber_bend_r+groove_width/2, groove_depth/2+0.01*mm, 0, bend_center_angle);
+        G4Box* straight_groove = new G4Box("straight_groove_"+std::to_string(groove_index), groove_width/2, groove_depth/2, straight_groove_length/2+0.01*mm);
+        G4Tubs* bend_groove = new G4Tubs("bend_groove_"+std::to_string(groove_index), fiber_bend_r-groove_width/2, fiber_bend_r+groove_width/2, groove_depth/2, 0, bend_center_angle);
 
         G4RotationMatrix* bend_groove_rot_upper = new G4RotationMatrix();
         bend_groove_rot_upper->rotateX(90*degree);
@@ -314,7 +334,7 @@ G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::ConstructDetector() const
         G4Transform3D straight_groove_transform = G4Transform3D();
         G4Transform3D bend_groove_transform_upper(*bend_groove_rot_upper, bend_groove_translate_upper);
         G4Transform3D bend_groove_transform_lower(*bend_groove_rot_lower, bend_groove_translate_lower);
-        
+            
         G4MultiUnion* groove_union_solid = new G4MultiUnion("groove_union_solid_"+std::to_string(groove_index));
         groove_union_solid->AddNode(straight_groove, straight_groove_transform);
         groove_union_solid->AddNode(bend_groove, bend_groove_transform_upper);
@@ -326,38 +346,25 @@ G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::ConstructDetector() const
         groove_rot->rotateZ(180*(1-is_upper_groove)*degree);
         G4Transform3D groove_transform(*groove_rot, G4ThreeVector(straight_groove_x_position,pscint_y/2-groove_depth/2,0));
 
-        if(groove_index == 0)
-            pscint_subtraction_solid = new G4SubtractionSolid("groove_solid_"+std::to_string(groove_index), pscint_solid, groove_union_solid, groove_transform);
-        else
-            pscint_subtraction_solid = new G4SubtractionSolid("groove_solid_"+std::to_string(groove_index), pscint_subtraction_solid, groove_union_solid, groove_transform);
-    }
-
-    G4LogicalVolume* pscint_log = new G4LogicalVolume(pscint_subtraction_solid, LAB, "pscint_log");
-	G4VPhysicalVolume* pscint_phys = new G4PVPlacement(0,G4ThreeVector(0*mm,0*mm,0*mm), pscint_log,"pscint_phys",experimentalHall_log,false,0,checkOverlaps);
-
-    G4SubtractionSolid* groove_solid = new G4SubtractionSolid("groove_solid", pscint_solid, pscint_subtraction_solid);
-    G4LogicalVolume* groove_log = new G4LogicalVolume(groove_solid, air, "groove_log");
-    G4VPhysicalVolume* groove_phys = new G4PVPlacement(0, G4ThreeVector(), groove_log, "groove_phys", experimentalHall_log, false, 0, checkOverlaps);
-
-    // Fibers, notice that fiber_count must be an even number here
-    for(int fiber_index = 0; fiber_index < fiber_count; fiber_index++)
-    {
-        G4double straight_fiber_x_position = pscint_x/2 - pscint_x/(fiber_count+1)*(fiber_index+1);
+        G4IntersectionSolid* groove_solid = new G4IntersectionSolid("groove_solid_"+std::to_string(groove_index), pscint_solid, groove_union_solid, groove_transform);
+       
+        G4LogicalVolume* groove_log = new G4LogicalVolume(groove_solid, groove_mat, "groove_log_"+std::to_string(groove_index));
+        new G4PVPlacement(0, G4ThreeVector(), groove_log, "groove_phys", pscint_log, false, groove_index, checkOverlaps);
 
         // Outer cladding
-        G4IntersectionSolid* cladding_1_solid = GetFiberPart("fiber_outer_cladding_solid_"+std::to_string(fiber_index), fiber_d, pscint_solid, fiber_index);
-        G4LogicalVolume* cladding_1_log = new G4LogicalVolume(cladding_1_solid, Pethylene_1, "fiber_outer_cladding_log_"+std::to_string(fiber_index));
-        new G4PVPlacement(0,G4ThreeVector(straight_fiber_x_position,0,0),cladding_1_log, "fiber_outer_cladding_phys", groove_log, false, fiber_index, checkOverlaps);
+        G4IntersectionSolid* cladding_1_solid = GetFiberPart("fiber_outer_cladding_solid_"+std::to_string(groove_index), fiber_d, pscint_solid, groove_index);
+        G4LogicalVolume* cladding_1_log = new G4LogicalVolume(cladding_1_solid, Pethylene_1, "fiber_outer_cladding_log_"+std::to_string(groove_index));
+        new G4PVPlacement(0,G4ThreeVector(straight_groove_x_position,0,0),cladding_1_log, "fiber_outer_cladding_phys", groove_log, false, groove_index, checkOverlaps);
     
         // Inner cladding
-        G4IntersectionSolid* cladding_2_solid = GetFiberPart("fiber_inner_cladding_solid_"+std::to_string(fiber_index), fiber_d - 2*cladding_depth_1, pscint_solid, fiber_index);        
-        G4LogicalVolume* cladding_2_log = new G4LogicalVolume(cladding_2_solid, Pethylene_2, "fiber_inner_cladding_log_"+std::to_string(fiber_index));
-        new G4PVPlacement(0,G4ThreeVector(0,0,0),cladding_2_log, "fiber_inner_cladding_phys", cladding_1_log, false, fiber_index, checkOverlaps);
+        G4IntersectionSolid* cladding_2_solid = GetFiberPart("fiber_inner_cladding_solid_"+std::to_string(groove_index), fiber_d - 2*cladding_depth_1, pscint_solid, groove_index);        
+        G4LogicalVolume* cladding_2_log = new G4LogicalVolume(cladding_2_solid, Pethylene_2, "fiber_inner_cladding_log_"+std::to_string(groove_index));
+        new G4PVPlacement(0,G4ThreeVector(0,0,0),cladding_2_log, "fiber_inner_cladding_phys", cladding_1_log, false, groove_index, checkOverlaps);
 
         // Core
-        G4IntersectionSolid* fiber_core_solid = GetFiberPart("fiber_core_solid_"+std::to_string(fiber_index), fiber_d - 2*cladding_depth_1 - 2*cladding_depth_2, pscint_solid, fiber_index);        
-        G4LogicalVolume* fiber_core_log = new G4LogicalVolume(fiber_core_solid, PMMA, "fiber_core_log_"+std::to_string(fiber_index));
-        new G4PVPlacement(0,G4ThreeVector(0,0,0),fiber_core_log, "fiber_core_phys", cladding_2_log, false, fiber_index, checkOverlaps);    
+        G4IntersectionSolid* fiber_core_solid = GetFiberPart("fiber_core_solid_"+std::to_string(groove_index), fiber_d - 2*cladding_depth_1 - 2*cladding_depth_2, pscint_solid, groove_index);        
+        G4LogicalVolume* fiber_core_log = new G4LogicalVolume(fiber_core_solid, PMMA, "fiber_core_log_"+std::to_string(groove_index));
+        new G4PVPlacement(0,G4ThreeVector(0,0,0),fiber_core_log, "fiber_core_phys", cladding_2_log, false, groove_index, checkOverlaps);    
     }
 
     // SiPM on both sides
@@ -368,8 +375,9 @@ G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::ConstructDetector() const
     new G4PVPlacement(0, G4ThreeVector(0*mm, pscint_y/2-fiber_depth, -0.5*pscint_z-air_interval), SiPM_1_log, "SiPM_1_phys", experimentalHall_log, false, 1, checkOverlaps);
 
     // Optical surfaces
-    // G4LogicalSkinSurface* teflon_surface = new G4LogicalSkinSurface("teflon_surface", shell_log, op_LAB_teflon_surface);
+    G4LogicalSkinSurface* teflon_surface = new G4LogicalSkinSurface("teflon_surface", shell_log, op_LAB_teflon_surface);
 
+    /*
     new G4LogicalBorderSurface(
         "LAB_teflon_surface", pscint_phys, shell_phys, op_LAB_teflon_surface
     );
@@ -377,7 +385,7 @@ G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::ConstructDetector() const
     new G4LogicalBorderSurface(
         "teflon_air_surface", groove_phys, shell_phys, op_teflon_air_surface
     );
-
+    */
     return experimentalHall_phys;
 }
 
@@ -427,7 +435,6 @@ G4IntersectionSolid* MuonVeto::MVDetectorConstruction::GetFiberPart(const G4Stri
     id++;
     return new G4IntersectionSolid(name, pscint_solid, fiber_union_solid, fiber_transform);
 }
-
 
 G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::Construct()
 {

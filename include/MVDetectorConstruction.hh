@@ -61,6 +61,7 @@ class MVDetectorConstruction : public G4VUserDetectorConstruction
         G4Material* PMMA;
         G4Material* Pethylene_1;
         G4Material* Pethylene_2;
+        G4Material* groove_mat;
 
         // Optical surface
         G4OpticalSurface* op_LAB_teflon_surface;

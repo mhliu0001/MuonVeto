@@ -91,16 +91,16 @@ void MVRunAction::EndOfRunAction(const G4Run* aRun)
             for (auto itr : MTRun->GetCPNCounter())
             {
                 int eventCount = 0;
-                long long sum = 0;
-                long long squaredSum = 0;
+                double sum = 0;
+                double squaredSum = 0;
                 for (auto single : itr.second)
                 {
                     ++eventCount;
                     sum += single;
                     squaredSum += single*single;
                 }
-                double mean = (double) sum / eventCount;
-                double rms = std::sqrt(-mean*mean + (double)squaredSum/eventCount);
+                double mean = sum / eventCount;
+                double rms = std::sqrt(-mean*mean + squaredSum/eventCount);
                 G4cout << ">>> Creator Process Name " << itr.first << ": " << mean << "+-" << rms << G4endl;
             }
         }
@@ -110,16 +110,16 @@ void MVRunAction::EndOfRunAction(const G4Run* aRun)
             for (auto itr : MTRun->GetFVPathCounter())
             {
                 int eventCount = 0;
-                long long sum = 0;
-                long long squaredSum = 0;
+                double sum = 0;
+                double squaredSum = 0;
                 for (auto single : itr.second)
                 {
                     ++eventCount;
                     sum += single;
                     squaredSum += single*single;
                 }
-                double mean = (double) sum / eventCount;
-                double rms = std::sqrt(-mean*mean + (double)squaredSum/eventCount);
+                double mean = sum / eventCount;
+                double rms = std::sqrt(-mean*mean + squaredSum/eventCount);
                 G4cout << ">>> Final Volume Path " << itr.first << ": " << mean << "+-" << rms << G4endl;
             }
         }
@@ -129,16 +129,16 @@ void MVRunAction::EndOfRunAction(const G4Run* aRun)
             for (auto itr : MTRun->GetEPNCounter())
             {
                 int eventCount = 0;
-                long long sum = 0;
-                long long squaredSum = 0;
+                double sum = 0;
+                double squaredSum = 0;
                 for (auto single : itr.second)
                 {
                     ++eventCount;
                     sum += single;
                     squaredSum += single*single;
                 }
-                double mean = (double) sum / eventCount;
-                double rms = std::sqrt(-mean*mean + (double)squaredSum/eventCount);
+                double mean =  sum / eventCount;
+                double rms = std::sqrt(-mean*mean + squaredSum/eventCount);
                 G4cout << ">>> Ending Process Name " << itr.first << ": " << mean << "+-" << rms << G4endl;
             }
         }
