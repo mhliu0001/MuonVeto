@@ -257,7 +257,7 @@ void MuonVeto::MVDetectorConstruction::DefineOpticalSurfaces()
     );
     G4MaterialPropertiesTable* LAB_teflon_table = new G4MaterialPropertiesTable();
     std::vector<G4double> LAB_teflon_energy = {2.8*eV, 2.9*eV, 3.0*eV};
-    std::vector<G4double> LAB_teflon_reflectivity = {0.85, 0.85, 0.85};
+    std::vector<G4double> LAB_teflon_reflectivity = {1,1,1};
     LAB_teflon_table->AddProperty("REFLECTIVITY", LAB_teflon_energy, LAB_teflon_reflectivity);
     op_LAB_teflon_surface->SetMaterialPropertiesTable(LAB_teflon_table);
 
