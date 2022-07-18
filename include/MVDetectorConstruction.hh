@@ -38,14 +38,14 @@ class MVDetectorConstruction : public G4VUserDetectorConstruction
         G4double fiber_d; // diameter of fiber
         G4int fiber_count; // number of fiber
         G4double fiber_bend_r; // radius of bending fiber
-        G4double fiber_depth; // depth from the surface of Pscint to center of fiber
+        G4double fiber_depth_upper; // depth from the surface of Pscint to center of upper fiber
+        G4double fiber_depth_lower; // depth from the surface of Pscint to center of lower fiber(This is intended to avoid overlapping)
         G4double cladding_depth_1; // thickness of the outer cladding
         G4double cladding_depth_2; // thickness of the inner cladding
 
         // Groove
-        G4double groove_width; // along y direction
-        G4double groove_length; // along x direction
-        G4double groove_depth; // along z direction
+        G4double groove_width; // along x direction
+        G4double groove_depth; // along y direction
 
         // SiPM
         G4double SiPM_width; // along y direction
