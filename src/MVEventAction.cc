@@ -11,7 +11,6 @@
 #include "G4UnitsTable.hh"
 #include "SiPMPhotonAccumulator.hh"
 #include "G4UImanager.hh"
-#include "G4RichTrajectory.hh"
 #include "G4AttValue.hh"
 
 MuonVeto::MVEventAction::MVEventAction()
@@ -29,40 +28,9 @@ void MuonVeto::MVEventAction::EndOfEventAction(const G4Event *event)
 
     G4TrajectoryContainer *trajectoryContainer = event->GetTrajectoryContainer();
     G4int n_trajectories = 0;
-    std::map<G4String, G4int> CPNCounter; // Creator Process Name
-    std::map<G4String, G4int> FVPathCounter; // Final Volume Path
-    std::map<G4String, G4int> EPNCounter; // Ending Process Name
     if (trajectoryContainer)
     {
         n_trajectories = trajectoryContainer->entries();
-        for (int i = 0; i < n_trajectories; ++i)
-        {
-            G4RichTrajectory *single_trajectory = static_cast<G4RichTrajectory *>((*trajectoryContainer)[i]);
-            if(single_trajectory->GetParticleName() != "opticalphoton") continue;
-
-            auto attValues = single_trajectory->CreateAttValues();
-            for(auto single_attValue : *attValues)
-            {
-                if(single_attValue.GetName() == G4String("CPN"))
-                {
-                    auto iter = CPNCounter.find(single_attValue.GetValue());
-                    if(iter == CPNCounter.end()) CPNCounter[single_attValue.GetValue()] = 1;
-                    else ++CPNCounter[single_attValue.GetValue()];
-                }
-                if(single_attValue.GetName() == G4String("FVPath"))
-                {
-                    auto iter = FVPathCounter.find(single_attValue.GetValue());
-                    if(iter == FVPathCounter.end()) FVPathCounter[single_attValue.GetValue()] = 1;
-                    else ++FVPathCounter[single_attValue.GetValue()];
-                }
-                if(single_attValue.GetName() == G4String("EPN"))
-                {
-                    auto iter = EPNCounter.find(single_attValue.GetValue());
-                    if(iter == EPNCounter.end()) EPNCounter[single_attValue.GetValue()] = 1;
-                    else ++EPNCounter[single_attValue.GetValue()];
-                }
-            }
-        }
     }
 
     G4int eventID = event->GetEventID();
@@ -71,22 +39,44 @@ void MuonVeto::MVEventAction::EndOfEventAction(const G4Event *event)
     {
         G4cout << ">>> " << n_trajectories
                << " trajectories stored in this event." << G4endl;
-        G4cout << ">>> Creator Process Name list: " << G4endl;
-        for(auto it : CPNCounter)
-        {
-            G4cout << "    " << it.first << ": " << it.second << G4endl;
-        }
-        G4cout << ">>> Final Volume Path list: " << G4endl;
-        for(auto it : FVPathCounter)
-        {
-            G4cout << "    " << it.first << ": " << it.second << G4endl;
-        }
-        G4cout << ">>> Ending Process Name list: " << G4endl;
-        for(auto it : EPNCounter)
-        {
-            G4cout << "    " << it.first << ": " << it.second << G4endl;
-        }
     }
+
+    std::map<G4String, G4int> CPNCounter;
+    std::map<G4String, G4int> FVPathCounter;
+    std::map<G4String, G4int> EPNCounter;
+
+    for(auto track : fCPNRecorder)
+    {
+        if(CPNCounter.find(track.second) != CPNCounter.end())   ++CPNCounter[track.second];
+        else CPNCounter[track.second] = 1; 
+    }
+    for(auto track : fFVPathRecorder)
+    {
+        if(FVPathCounter.find(track.second) != FVPathCounter.end())   ++FVPathCounter[track.second];
+        else FVPathCounter[track.second] = 1; 
+    }
+    for(auto track : fEPNRecorder)
+    {
+        if(EPNCounter.find(track.second) != CPNCounter.end())   ++CPNCounter[track.second];
+        else CPNCounter[track.second] = 1; 
+    }
+
+    G4cout << ">>> Creator Process Name list: " << G4endl;
+    for(auto it : CPNCounter)
+    {
+        G4cout << "    " << it.first << ": " << it.second << G4endl;
+    }
+    G4cout << ">>> Final Volume Path list: " << G4endl;
+    for(auto it : FVPathCounter)
+    {
+        G4cout << "    " << it.first << ": " << it.second << G4endl;
+    }
+    G4cout << ">>> Ending Process Name list: " << G4endl;
+    for(auto it : EPNCounter)
+    {
+        G4cout << "    " << it.first << ": " << it.second << G4endl;
+    }
+    
     G4HCofThisEvent *hce = event->GetHCofThisEvent();
     G4SDManager *SDMan = G4SDManager::GetSDMpointer();
 
