@@ -27,9 +27,8 @@ static G4String Path(const G4TouchableHandle& th)
 
 void MVSteppingAction::UserSteppingAction(const G4Step* aStep)
 {
-    if(!aStep) return;
     const G4Track* track = aStep->GetTrack();
-    if(!track) return;
+    if(track->GetParticleDefinition()->GetParticleName() != "opticalphoton")    return;
     const G4int trackID = track->GetTrackID();
     const G4VProcess* CP = track->GetCreatorProcess();
     const G4String CPN = (!CP ? "None": CP->GetProcessName());

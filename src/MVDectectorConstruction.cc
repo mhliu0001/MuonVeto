@@ -51,8 +51,8 @@ void MuonVeto::MVDetectorConstruction::SetDefaults()
 
     // Fiber
     fiber_d = 1.5*mm;
-    fiber_count = 4;
-    fiber_bend_r = 740*mm;
+    fiber_count = 6;
+    fiber_bend_r = 1000*mm;
     fiber_depth_upper = 1.5*mm;
     fiber_depth_lower = 3.0*mm;
     cladding_depth_1 = 0.015*mm;
@@ -140,12 +140,14 @@ void MuonVeto::MVDetectorConstruction::DefineMaterialTables()
     G4double scintRefIndexEnergy[18] = {1.55*eV, 1.79505*eV, 2.10499*eV, 2.27077*eV, 2.55111*eV, 2.84498*eV, 3.06361*eV, 4.13281*eV, 6.20*eV, 6.526*eV, 6.889*eV, 7.294*eV, 7.75*eV, 8.267*eV, 8.857*eV, 9.538*eV, 10.33*eV, 15.5*eV};
     G4double Pscintrindex = 1.52;
     G4double scintRefIndex[18] = {Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex};
-	MPTscint->AddProperty("RINDEX",   scintRefIndexEnergy, scintRefIndex, 18);
+	MPTscint->AddProperty("RINDEX", scintRefIndexEnergy, scintRefIndex, 18);
 
     // Reemission? I don't know what process this is
+    /*
     G4double scintReemEnergy[28] = {1.55000*eV, 1.73987*eV, 2.15315*eV, 2.42867*eV, 2.45963*eV, 2.49129*eV, 2.52368*eV, 2.55682*eV, 2.59075*eV, 2.62547*eV, 2.66104*eV, 2.69747*eV, 2.73481*eV, 2.77308*eV, 2.81231*eV, 2.85255*eV, 2.89384*eV, 2.93621*eV, 2.97972*eV, 3.02439*eV, 3.07030*eV, 3.21588*eV, 3.80628*eV, 5.87347*eV, 6.20000*eV, 7.75000*eV, 10.33*eV, 15.5*eV};
     G4double scintReem[28] = {0, 0, 0.0587, 0.1141, 0.1259, 0.1215, 0.116, 0.1372, 0.1344, 0.1409, 0.1417, 0.1712, 0.1936, 0.1969, 0.2203, 0.2354, 0.3004, 0.4165, 0.6353, 0.8022, 0.8004, 0.8006, 0.8, 0.45, 0.42, 0.40, 0.40, 0.40};
-	
+    */
+
     // Rayleigh scattering
     G4double scintRayEnergy[11] = {1.55*eV, 1.7714*eV, 2.102*eV, 2.255*eV, 2.531*eV, 2.884*eV, 3.024*eV, 4.133*eV, 6.20*eV, 10.33*eV, 15.5*eV};
     G4double scintRayLength[11] = {500.0*m, 300.0*m, 170.0*m, 100.0*m, 62.0*m, 42.0*m, 30.0*m, 7.6*m, 0.85*m, 0.85*m, 0.85*m};
@@ -258,7 +260,7 @@ void MuonVeto::MVDetectorConstruction::DefineMaterialTables()
     G4MaterialPropertiesTable* mptGroove_mat = new G4MaterialPropertiesTable();
 
     G4double refractiveIndexGroove_mat[60];
-    for(int i = 0; i < 60; i++) {refractiveIndexGroove_mat[i] = 1.42;}
+    for(int i = 0; i < 60; i++) {refractiveIndexGroove_mat[i] = 1.56;}
 
     mptGroove_mat->AddProperty("RINDEX",photonEnergy,refractiveIndexGroove_mat,nEntries);
     mptGroove_mat->AddProperty("ABSLENGTH",photonEnergy,absClad,nEntries);
@@ -269,7 +271,8 @@ void MuonVeto::MVDetectorConstruction::DefineMaterialTables()
 
 void MuonVeto::MVDetectorConstruction::DefineOpticalSurfaces()
 {
-    // Surface between LAB and teflon
+    // Surface between LAB and teflon, if border definition is used; if skin definition is used,
+    // this surface is still used, but not "op_teflon_air_surface".
     op_LAB_teflon_surface = new G4OpticalSurface(
         "op_LAB_teflon_surface", unified, groundfrontpainted, dielectric_dielectric
     );
@@ -317,14 +320,14 @@ G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::ConstructDetector() const
         G4Translate3D(G4ThreeVector(0, pscint_y/2-SiPM_width/2, -pscint_z/2-teflon_depth/2))
     );
     G4LogicalVolume* shell_log = new G4LogicalVolume(shell_solid_with_window_2,teflon,"shell_log",0,0,0);
-    G4VPhysicalVolume* shell_phys = new G4PVPlacement(0,G4ThreeVector(0*mm,0*mm,0*mm),shell_log,"shell_phys",experimentalHall_log,false,0,checkOverlaps);
+    new G4PVPlacement(0,G4ThreeVector(),shell_log,"shell_phys",experimentalHall_log,false,0,checkOverlaps);
 
     // SiPM on both sides
     G4Box* SiPM_solid = new G4Box("SiPM_solid", 0.5*SiPM_length, 0.5*SiPM_width, 0.5*SiPM_depth);
     G4LogicalVolume* SiPM_0_log = new G4LogicalVolume(SiPM_solid, glass, "SiPM_0_log");
     G4LogicalVolume* SiPM_1_log = new G4LogicalVolume(SiPM_solid, glass, "SiPM_1_log");
-    new G4PVPlacement(0, G4ThreeVector(0*mm, pscint_y/2-SiPM_width/2, pscint_z/2+0.5*SiPM_depth), SiPM_0_log, "SiPM_0_phys", experimentalHall_log, false, 0, checkOverlaps);
-    new G4PVPlacement(0, G4ThreeVector(0*mm, pscint_y/2-SiPM_width/2, -pscint_z/2-0.5*SiPM_depth), SiPM_1_log, "SiPM_1_phys", experimentalHall_log, false, 1, checkOverlaps);
+    new G4PVPlacement(0, G4ThreeVector(0, pscint_y/2-SiPM_width/2, pscint_z/2+0.5*SiPM_depth), SiPM_0_log, "SiPM_0_phys", experimentalHall_log, false, 0, checkOverlaps);
+    new G4PVPlacement(0, G4ThreeVector(0, pscint_y/2-SiPM_width/2, -pscint_z/2-0.5*SiPM_depth), SiPM_1_log, "SiPM_1_phys", experimentalHall_log, false, 1, checkOverlaps);
     
     G4LogicalVolume* pscint_log = new G4LogicalVolume(pscint_solid, LAB, "pscint_log");
     new G4PVPlacement(0,G4ThreeVector(),pscint_log,"pscint_phys",experimentalHall_log,false,0,checkOverlaps);
@@ -373,7 +376,7 @@ G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::ConstructDetector() const
     }
 
     G4LogicalVolume* groove_log = new G4LogicalVolume(groove_solid, LAB, "groove_log");
-    new G4PVPlacement(0, G4ThreeVector(0,0,0), groove_log, "groove_phys", pscint_log, false, 0, checkOverlaps);
+    new G4PVPlacement(0, G4ThreeVector(), groove_log, "groove_phys", pscint_log, false, 0, checkOverlaps);
     
     for(int fiber_index = 0; fiber_index < fiber_count; fiber_index++)
     {
@@ -385,17 +388,20 @@ G4VPhysicalVolume* MuonVeto::MVDetectorConstruction::ConstructDetector() const
         // Inner cladding
         G4IntersectionSolid* cladding_2_solid = GetFiberPart("fiber_inner_cladding_solid_"+std::to_string(fiber_index), fiber_d - 2*cladding_depth_1, pscint_solid, fiber_index);        
         G4LogicalVolume* cladding_2_log = new G4LogicalVolume(cladding_2_solid, Pethylene_2, "fiber_inner_cladding_log_"+std::to_string(fiber_index));
-        new G4PVPlacement(0,G4ThreeVector(0,0,0),cladding_2_log, "fiber_inner_cladding_phys", cladding_1_log, false, fiber_index, checkOverlaps);
+        new G4PVPlacement(0,G4ThreeVector(),cladding_2_log, "fiber_inner_cladding_phys", cladding_1_log, false, fiber_index, checkOverlaps);
 
         // Core
         G4IntersectionSolid* fiber_core_solid = GetFiberPart("fiber_core_solid_"+std::to_string(fiber_index), fiber_d - 2*cladding_depth_1 - 2*cladding_depth_2, pscint_solid, fiber_index);        
         G4LogicalVolume* fiber_core_log = new G4LogicalVolume(fiber_core_solid, PMMA, "fiber_core_log_"+std::to_string(fiber_index));
-        new G4PVPlacement(0,G4ThreeVector(0,0,0),fiber_core_log, "fiber_core_phys", cladding_2_log, false, fiber_index, checkOverlaps);    
+        new G4PVPlacement(0,G4ThreeVector(),fiber_core_log, "fiber_core_phys", cladding_2_log, false, fiber_index, checkOverlaps);    
     }
 
     // Optical surfaces
-    G4LogicalSkinSurface* teflon_surface = new G4LogicalSkinSurface("teflon_surface", shell_log, op_LAB_teflon_surface);
 
+    // The skin definition
+    new G4LogicalSkinSurface("teflon_surface", shell_log, op_LAB_teflon_surface);
+
+    // Or the border definition
     /*
     new G4LogicalBorderSurface(
         "LAB_teflon_surface", pscint_phys, shell_phys, op_LAB_teflon_surface
@@ -425,8 +431,14 @@ G4IntersectionSolid* MuonVeto::MVDetectorConstruction::GetFiberPart(const G4Stri
     G4double straight_fiber_length = pscint_z - 2*std::sin(bend_center_angle)*fiber_bend_r;
 
     // basis geometry
-    G4Tubs* straight_fiber = new G4Tubs("straight_fiber_"+std::to_string(id)+std::to_string(fiber_index), 0, diameter/2, straight_fiber_length/2+0.01*mm, 0, 2*M_PI);
-    G4Torus* bend_fiber = new G4Torus("bend_fiber_"+std::to_string(id)+std::to_string(fiber_index), 0, diameter/2, fiber_bend_r, 0, bend_center_angle);
+    G4Tubs* straight_fiber = new G4Tubs(
+        "straight_fiber_"+std::to_string(id)+std::to_string(fiber_index),
+        0, diameter/2, straight_fiber_length/2+0.01*mm, 0, 2*M_PI
+    );
+    G4Torus* bend_fiber = new G4Torus(
+        "bend_fiber_"+std::to_string(id)+std::to_string(fiber_index), 
+        0, diameter/2, fiber_bend_r, 0, bend_center_angle
+    );
 
     // transformation calculation
     G4RotationMatrix* bend_fiber_rot_upper = new G4RotationMatrix();
@@ -449,7 +461,14 @@ G4IntersectionSolid* MuonVeto::MVDetectorConstruction::GetFiberPart(const G4Stri
     // intersect with pscint
     G4RotationMatrix* fiber_rot = new G4RotationMatrix();
     fiber_rot->rotateZ(180*(1-is_upper_fiber)*degree);
-    G4Transform3D fiber_transform(*fiber_rot, G4ThreeVector(straight_fiber_x_position,pscint_y/2-(is_upper_fiber?fiber_depth_upper:fiber_depth_lower),0));
+    G4Transform3D fiber_transform(
+        *fiber_rot,
+        G4ThreeVector(
+            straight_fiber_x_position,
+            pscint_y/2-(is_upper_fiber?fiber_depth_upper:fiber_depth_lower),
+            0
+        )
+    );
 
     id++;
     return new G4IntersectionSolid(name, pscint_solid, fiber_union_solid, fiber_transform);

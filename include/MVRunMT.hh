@@ -16,9 +16,9 @@ class MVRunMT : public G4Run
         void RecordEvent(const G4Event*) override;
         void Merge(const G4Run*) override;
         inline std::vector<G4int>* GetSiPMPhotonCount() const { return fSiPMPhotonCount; }
-        inline std::map<G4String, std::vector<G4int>> GetCPNCounter() const { return fCPNCounter; }
-        inline std::map<G4String, std::vector<G4int>> GetFVPathCounter() const { return fFVPathCounter; }
-        inline std::map<G4String, std::vector<G4int>> GetEPNCounter() const { return fEPNCounter; }
+        inline std::vector<std::map<G4String, G4int>> GetCPNCounter() const { return fCPNCounter; }
+        inline std::vector<std::map<G4String, G4int>> GetFVPathCounter() const { return fFVPathCounter; }
+        inline std::vector<std::map<G4String, G4int>> GetEPNCounter() const { return fEPNCounter; }
         inline G4ThreeVector GetParticlePosition() const { return fParticlePosition; }
         inline G4double GetParticleEnergy() const { return fParticleEnergy; }
         G4String GetParticleName() const { return fParticleName; }
@@ -26,9 +26,9 @@ class MVRunMT : public G4Run
     private:
         G4int fSiPMCount;
         std::vector<G4int>* fSiPMPhotonCount;
-        std::map<G4String, std::vector<G4int>> fCPNCounter;
-        std::map<G4String, std::vector<G4int>> fFVPathCounter;
-        std::map<G4String, std::vector<G4int>> fEPNCounter;
+        std::vector<std::map<G4String, G4int>> fCPNCounter;
+        std::vector<std::map<G4String, G4int>> fFVPathCounter;
+        std::vector<std::map<G4String, G4int>> fEPNCounter;
         G4ThreeVector fParticlePosition;
         G4double fParticleEnergy = 0;
         G4String fParticleName;

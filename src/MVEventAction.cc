@@ -1,5 +1,7 @@
 #include "MVEventAction.hh"
 
+#include "MVRunAction.hh"
+#include "MVEventInformation.hh"
 #include "G4Event.hh"
 #include "G4EventManager.hh"
 #include "G4TrajectoryContainer.hh"
@@ -13,17 +15,22 @@
 #include "G4UImanager.hh"
 #include "G4AttValue.hh"
 
-MuonVeto::MVEventAction::MVEventAction()
+using namespace MuonVeto;
+
+MVEventAction::MVEventAction()
 {}
 
-MuonVeto::MVEventAction::~MVEventAction()
+MVEventAction::~MVEventAction()
 {}
 
-void MuonVeto::MVEventAction::BeginOfEventAction(const G4Event *)
-{}
-
-void MuonVeto::MVEventAction::EndOfEventAction(const G4Event *event)
+void MVEventAction::BeginOfEventAction(const G4Event *)
 {
+    fpEventManager->SetUserInformation(new MVEventInformation);
+}
+
+void MVEventAction::EndOfEventAction(const G4Event *event)
+{
+    
     // get number of stored trajectories
 
     G4TrajectoryContainer *trajectoryContainer = event->GetTrajectoryContainer();
@@ -40,6 +47,17 @@ void MuonVeto::MVEventAction::EndOfEventAction(const G4Event *event)
         G4cout << ">>> " << n_trajectories
                << " trajectories stored in this event." << G4endl;
     }
+    
+    G4HCofThisEvent *hce = event->GetHCofThisEvent();
+    G4SDManager *SDMan = G4SDManager::GetSDMpointer();
+
+    G4int SiPMCID_0 = SDMan->GetCollectionID("collection_0");
+    G4int SiPMCID_1 = SDMan->GetCollectionID("collection_1");
+    G4VHitsCollection *SiPMHC_0 = hce->GetHC(SiPMCID_0);
+    G4VHitsCollection *SiPMHC_1 = hce->GetHC(SiPMCID_1);
+    std::map<G4String, G4int> SiPMPhotonCounter;
+    SiPMPhotonCounter["SiPM_0"] = SiPMHC_0->GetSize();
+    SiPMPhotonCounter["SiPM_1"] = SiPMHC_1->GetSize();
 
     std::map<G4String, G4int> CPNCounter;
     std::map<G4String, G4int> FVPathCounter;
@@ -57,41 +75,16 @@ void MuonVeto::MVEventAction::EndOfEventAction(const G4Event *event)
     }
     for(auto track : fEPNRecorder)
     {
-        if(EPNCounter.find(track.second) != CPNCounter.end())   ++CPNCounter[track.second];
-        else CPNCounter[track.second] = 1; 
+        if(EPNCounter.find(track.second) != EPNCounter.end())   ++EPNCounter[track.second];
+        else EPNCounter[track.second] = 1;
     }
 
-    G4cout << ">>> Creator Process Name list: " << G4endl;
-    for(auto it : CPNCounter)
-    {
-        G4cout << "    " << it.first << ": " << it.second << G4endl;
-    }
-    G4cout << ">>> Final Volume Path list: " << G4endl;
-    for(auto it : FVPathCounter)
-    {
-        G4cout << "    " << it.first << ": " << it.second << G4endl;
-    }
-    G4cout << ">>> Ending Process Name list: " << G4endl;
-    for(auto it : EPNCounter)
-    {
-        G4cout << "    " << it.first << ": " << it.second << G4endl;
-    }
-    
-    G4HCofThisEvent *hce = event->GetHCofThisEvent();
-    G4SDManager *SDMan = G4SDManager::GetSDMpointer();
-
-    // Get the photon count of each SiPM
-    G4int SiPMCID_0 = SDMan->GetCollectionID("collection_0");
-    G4int SiPMCID_1 = SDMan->GetCollectionID("collection_1");
-
-    G4VHitsCollection *SiPMHC_0 = hce->GetHC(SiPMCID_0);
-    G4cout << ">>> "
-           << "SiPM_0: "
-           << SiPMHC_0->GetSize() << " photons" << G4endl;
-    G4VHitsCollection *SiPMHC_1 = hce->GetHC(SiPMCID_1);
-    G4cout << ">>> "
-           << "SiPM_1: "
-           << SiPMHC_1->GetSize() << " photons" << G4endl;
+    MVEventInformation* info = dynamic_cast<MVEventInformation*> (event->GetUserInformation());
+    info->SetSiPMPhotonCounter(SiPMPhotonCounter);
+    info->SetCPNCounter(CPNCounter);
+    info->SetFVPathCounter(FVPathCounter);
+    info->SetEPNCounter(EPNCounter);
+    info->Print();
 
     /*
     G4int SiPM_0_id = SDMan->GetCollectionID("SiPM_0/photon_counter_0");

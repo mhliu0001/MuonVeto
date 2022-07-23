@@ -6,8 +6,7 @@
 #include "MVPrimaryGeneratorAction.hh"
 #include "G4RunManager.hh"
 #include "G4ParticleGun.hh"
-#include "G4RichTrajectory.hh"
-#include "G4AttValue.hh"
+#include "MVEventInformation.hh"
 #include <string>
 
 using namespace MuonVeto;
@@ -49,47 +48,10 @@ void MVRunMT::RecordEvent(const G4Event* event)
         fSiPMPhotonCount[SiPMNb].push_back(SiPMHC->GetSize() ? SiPMHC->GetSize() : 0);
     }
 
-    G4TrajectoryContainer *trajectoryContainer = event->GetTrajectoryContainer();
-    G4int n_trajectories = 0;
-    std::map<G4String, G4int> CPNCounter; // Creator Process Name
-    std::map<G4String, G4int> FVPathCounter; // Final Volume Path
-    std::map<G4String, G4int> EPNCounter; // Ending Process Name
-    if (trajectoryContainer)
-    {
-        n_trajectories = trajectoryContainer->entries();
-        for (int i = 0; i < n_trajectories; ++i)
-        {
-            G4RichTrajectory *single_trajectory = static_cast<G4RichTrajectory *>((*trajectoryContainer)[i]);
-            if(single_trajectory->GetParticleName() != "opticalphoton") continue;
-
-            auto attValues = single_trajectory->CreateAttValues();
-            for(auto single_attValue : *attValues)
-            {
-                if(single_attValue.GetName() == G4String("CPN"))
-                {
-                    auto iter = CPNCounter.find(single_attValue.GetValue());
-                    if(iter == CPNCounter.end()) CPNCounter[single_attValue.GetValue()] = 1;
-                    else ++CPNCounter[single_attValue.GetValue()];
-                }
-                if(single_attValue.GetName() == G4String("FVPath"))
-                {
-                    auto iter = FVPathCounter.find(single_attValue.GetValue());
-                    if(iter == FVPathCounter.end()) FVPathCounter[single_attValue.GetValue()] = 1;
-                    else ++FVPathCounter[single_attValue.GetValue()];
-                }
-                if(single_attValue.GetName() == G4String("EPN"))
-                {
-                    auto iter = EPNCounter.find(single_attValue.GetValue());
-                    if(iter == EPNCounter.end()) EPNCounter[single_attValue.GetValue()] = 1;
-                    else ++EPNCounter[single_attValue.GetValue()];
-                }
-            }
-        }
-        for(auto itr : CPNCounter) fCPNCounter[itr.first].push_back(itr.second);
-        for(auto itr : FVPathCounter) fFVPathCounter[itr.first].push_back(itr.second);
-        for(auto itr : EPNCounter) fEPNCounter[itr.first].push_back(itr.second);
-
-    }
+    MVEventInformation* info = dynamic_cast<MVEventInformation*>(event->GetUserInformation());
+    fCPNCounter.push_back(info->GetCPNCounter());
+    fFVPathCounter.push_back(info->GetFVPathCounter());
+    fEPNCounter.push_back(info->GetEPNCounter());
 }
 
 void MVRunMT::Merge(const G4Run* run)
@@ -104,32 +66,23 @@ void MVRunMT::Merge(const G4Run* run)
         );
     }
 
-    for(auto it : localRun->fCPNCounter)
-    {
-        fCPNCounter[it.first].insert(
-            fCPNCounter[it.first].end(),
-            it.second.begin(),
-            it.second.end()
-        );
-    }
+    fCPNCounter.insert(
+        fCPNCounter.end(),
+        localRun->fCPNCounter.begin(),
+        localRun->fCPNCounter.end()
+    );
 
-    for(auto it : localRun->fFVPathCounter)
-    {
-        fFVPathCounter[it.first].insert(
-            fFVPathCounter[it.first].end(),
-            it.second.begin(),
-            it.second.end()
-        );
-    }
+    fFVPathCounter.insert(
+        fFVPathCounter.end(),
+        localRun->fFVPathCounter.begin(),
+        localRun->fFVPathCounter.end()
+    );
 
-    for(auto it : localRun->fEPNCounter)
-    {
-        fEPNCounter[it.first].insert(
-            fEPNCounter[it.first].end(),
-            it.second.begin(),
-            it.second.end()
-        );
-    }
+    fEPNCounter.insert(
+        fEPNCounter.end(),
+        localRun->fEPNCounter.begin(),
+        localRun->fEPNCounter.end()
+    );
 
     if(fParticleEnergy != localRun->fParticleEnergy)    fParticleEnergy = localRun->fParticleEnergy;
     if(fParticlePosition != localRun->fParticlePosition)    fParticlePosition = localRun->fParticlePosition;

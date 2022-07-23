@@ -24,7 +24,8 @@ class MVRunAction : public G4UserRunAction
     
     private:
         G4int fSiPMCount;
-        G4int photonCountCut = 100000;
+        // G4int fPhotonCountCut = 100000;
+        std::map<G4String, double>* GetMeanAndRMSOfCounter(std::vector<std::map<G4String, G4int>> counter, G4int eventCount) const;
 };
 
 }

@@ -8,6 +8,8 @@
 namespace MuonVeto
 {
 
+class MVRunAction;
+
 class MVEventAction : public G4UserEventAction
 {
     public:
