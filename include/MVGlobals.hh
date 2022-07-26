@@ -10,7 +10,8 @@
 using SINGLE_COUNTER = std::map<G4int, G4int>;
 using COUNTER = std::vector<SINGLE_COUNTER>;
 using STRLIST = std::vector<G4String>;
-using RECORDER = std::map<G4int, G4int>; // Key is trackID; Value is index of string
+// using RECORDER = std::map<G4int, G4int>; // Key is trackID; Value is index of string
+using RECORDER = std::map<G4int, G4String>;
 
 inline G4int GetIndexOfString(const G4String& str, const STRLIST strList)
 {

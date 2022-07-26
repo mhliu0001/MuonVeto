@@ -66,6 +66,7 @@ void MVEventAction::EndOfEventAction(const G4Event *event)
     SiPMPhotonCounter[GetIndexOfString("SiPM_0", fStrList)] = SiPMHC_0->GetSize();
     SiPMPhotonCounter[GetIndexOfString("SiPM_1", fStrList)] = SiPMHC_1->GetSize();
 
+    /*
     for(auto track : fCPNRecorder)
     {
         if(CPNCounter.find(track.second) == CPNCounter.end())
@@ -92,6 +93,44 @@ void MVEventAction::EndOfEventAction(const G4Event *event)
         }
         else
             ++EPNCounter[track.second];
+    }
+    */
+
+    for(auto track : fCPNRecorder)
+    {
+        if(!IsStringInList(track.second, fStrList))
+        {
+            fStrList.push_back(track.second);
+            CPNCounter[GetIndexOfString(track.second, fStrList)] = 1;
+        }
+        else
+        {
+            ++CPNCounter[GetIndexOfString(track.second, fStrList)];
+        }
+    }
+    for(auto track : fFVPathRecorder)
+    {
+        if(!IsStringInList(track.second, fStrList))
+        {
+            fStrList.push_back(track.second);
+            FVPathCounter[GetIndexOfString(track.second, fStrList)] = 1;
+        }
+        else
+        {
+            ++FVPathCounter[GetIndexOfString(track.second, fStrList)];
+        }
+    }
+    for(auto track : fEPNRecorder)
+    {
+        if(!IsStringInList(track.second, fStrList))
+        {
+            fStrList.push_back(track.second);
+            EPNCounter[GetIndexOfString(track.second, fStrList)] = 1;
+        }
+        else
+        {
+            ++EPNCounter[GetIndexOfString(track.second, fStrList)];
+        }
     }
 
     MVEventInformation* info = dynamic_cast<MVEventInformation*> (event->GetUserInformation());

@@ -43,6 +43,11 @@ void MVSteppingAction::UserSteppingAction(const G4Step* aStep)
         EPN = (!PDS ? "None" : PDS->GetProcessName());
     }
 
+    fEventAction->fCPNRecorder[trackID] = CPN;
+    fEventAction->fFVPathRecorder[trackID] = FVPath;
+    fEventAction->fEPNRecorder[trackID] = EPN;
+
+    /*
     if(!IsStringInList(CPN, fEventAction->fStrList))   fEventAction->fStrList.push_back(CPN);
     if(!IsStringInList(FVPath, fEventAction->fStrList))    fEventAction->fStrList.push_back(FVPath);
     if(!IsStringInList(EPN, fEventAction->fStrList))    fEventAction->fStrList.push_back(EPN);
@@ -50,4 +55,5 @@ void MVSteppingAction::UserSteppingAction(const G4Step* aStep)
     fEventAction->fCPNRecorder[trackID] = GetIndexOfString(CPN, fEventAction->fStrList);
     fEventAction->fFVPathRecorder[trackID] = GetIndexOfString(FVPath, fEventAction->fStrList);
     fEventAction->fEPNRecorder[trackID] = GetIndexOfString(EPN, fEventAction->fStrList);
+    */
 }
