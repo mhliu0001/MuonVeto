@@ -2,8 +2,7 @@
 #define MVRunAction_h 1
 
 #include "G4UserRunAction.hh"
-#include "globals.hh"
-#include <vector>
+#include "MVGlobals.hh"
 
 class G4Run;
 
@@ -25,7 +24,8 @@ class MVRunAction : public G4UserRunAction
     private:
         G4int fSiPMCount;
         // G4int fPhotonCountCut = 100000;
-        std::map<G4String, double>* GetMeanAndRMSOfCounter(std::vector<std::map<G4String, G4int>> counter, G4int eventCount) const;
+        std::map<G4int, G4double>* GetMeanAndRMSOfCounter(COUNTER counter, G4int eventCount) const;
+
 };
 
 }

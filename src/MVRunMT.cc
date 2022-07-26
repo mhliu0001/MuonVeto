@@ -11,13 +11,10 @@
 
 using namespace MuonVeto;
 
-MVRunMT::MVRunMT(G4int SiPMCount): fSiPMCount(SiPMCount)
+MVRunMT::MVRunMT()
 {
-    std::vector<G4int>* SiPMPhotonCount = new std::vector<G4int>[SiPMCount];
-    fSiPMPhotonCount = SiPMPhotonCount;
-
     const MVPrimaryGeneratorAction* generatorAction
-        = static_cast<const MVPrimaryGeneratorAction*>
+        = dynamic_cast<const MVPrimaryGeneratorAction*>
             (G4RunManager::GetRunManager()->GetUserPrimaryGeneratorAction());
     if(generatorAction)
     {
@@ -32,57 +29,109 @@ MVRunMT::MVRunMT(G4int SiPMCount): fSiPMCount(SiPMCount)
 
 MVRunMT::~MVRunMT()
 {
-    delete[] fSiPMPhotonCount;
+
 }
 
 void MVRunMT::RecordEvent(const G4Event* event)
 {
-    G4HCofThisEvent* hce = event->GetHCofThisEvent();
-    G4SDManager* SDMan = G4SDManager::GetSDMpointer();
+    MVEventInformation* info = dynamic_cast<MVEventInformation*>(event->GetUserInformation());
 
-    // Get the photon count of each SiPM
-    for (int SiPMNb = 0; SiPMNb < fSiPMCount; SiPMNb++)
+    auto strList = info->GetStrList();
+    SINGLE_COUNTER SiPMPhotonCounter;
+    SINGLE_COUNTER CPNCounter;
+    SINGLE_COUNTER FVPathCounter;
+    SINGLE_COUNTER EPNCounter;
+
+    for(auto it : info->GetSiPMPhotonCounter())
     {
-        G4int SiPMCID = SDMan->GetCollectionID("collection_"+std::to_string(SiPMNb));
-        G4VHitsCollection* SiPMHC = hce->GetHC(SiPMCID);
-        fSiPMPhotonCount[SiPMNb].push_back(SiPMHC->GetSize() ? SiPMHC->GetSize() : 0);
+        if(!IsStringInList(strList[it.first], fStrList))
+            fStrList.push_back(strList[it.first]);
+
+        SiPMPhotonCounter[GetIndexOfString(strList[it.first], fStrList)] = it.second;
     }
 
-    MVEventInformation* info = dynamic_cast<MVEventInformation*>(event->GetUserInformation());
-    fCPNCounter.push_back(info->GetCPNCounter());
-    fFVPathCounter.push_back(info->GetFVPathCounter());
-    fEPNCounter.push_back(info->GetEPNCounter());
+    for(auto it : info->GetCPNCounter())
+    {
+        if(!IsStringInList(strList[it.first], fStrList))
+            fStrList.push_back(strList[it.first]);
+
+        CPNCounter[GetIndexOfString(strList[it.first], fStrList)] = it.second;
+    }
+
+    for(auto it : info->GetFVPathCounter())
+    {
+        if(!IsStringInList(strList[it.first], fStrList))
+            fStrList.push_back(strList[it.first]);
+
+        FVPathCounter[GetIndexOfString(strList[it.first], fStrList)] = it.second;
+    }
+
+    for(auto it : info->GetEPNCounter())
+    {
+        if(!IsStringInList(strList[it.first], fStrList))
+            fStrList.push_back(strList[it.first]);
+
+        EPNCounter[GetIndexOfString(strList[it.first], fStrList)] = it.second;
+    }
+
+    fSiPMPhotonCounter.push_back(SiPMPhotonCounter);
+    fCPNCounter.push_back(CPNCounter);
+    fFVPathCounter.push_back(FVPathCounter);
+    fEPNCounter.push_back(EPNCounter);
 }
 
 void MVRunMT::Merge(const G4Run* run)
 {
     const MVRunMT* localRun = dynamic_cast<const MVRunMT*>(run);
-    for (int SiPMNb = 0; SiPMNb < fSiPMCount; SiPMNb++)
+    auto strList = localRun->GetStrList();
+
+    for(auto singleEventMap : localRun->fSiPMPhotonCounter)
     {
-        fSiPMPhotonCount[SiPMNb].insert(
-            fSiPMPhotonCount[SiPMNb].end(),
-            localRun->fSiPMPhotonCount[SiPMNb].begin(),
-            localRun->fSiPMPhotonCount[SiPMNb].end()
-        );
+        SINGLE_COUNTER newSingleEventMap;
+        for(auto it : singleEventMap)
+        {
+            if(!IsStringInList(strList[it.first], fStrList))
+                fStrList.push_back(strList[it.first]);
+            newSingleEventMap[GetIndexOfString(strList[it.first], fStrList)] = it.second;
+        }
+        fSiPMPhotonCounter.push_back(newSingleEventMap);
+    }
+    
+    for(auto singleEventMap : localRun->fCPNCounter)
+    {
+        SINGLE_COUNTER newSingleEventMap;
+        for(auto it : singleEventMap)
+        {
+            if(!IsStringInList(strList[it.first], fStrList))
+                fStrList.push_back(strList[it.first]);
+            newSingleEventMap[GetIndexOfString(strList[it.first], fStrList)] = it.second;
+        }
+        fCPNCounter.push_back(newSingleEventMap);
     }
 
-    fCPNCounter.insert(
-        fCPNCounter.end(),
-        localRun->fCPNCounter.begin(),
-        localRun->fCPNCounter.end()
-    );
+    for(auto singleEventMap : localRun->fFVPathCounter)
+    {
+        SINGLE_COUNTER newSingleEventMap;
+        for(auto it : singleEventMap)
+        {
+            if(!IsStringInList(strList[it.first], fStrList))
+                fStrList.push_back(strList[it.first]);
+            newSingleEventMap[GetIndexOfString(strList[it.first], fStrList)] = it.second;
+        }
+        fFVPathCounter.push_back(newSingleEventMap);
+    }
 
-    fFVPathCounter.insert(
-        fFVPathCounter.end(),
-        localRun->fFVPathCounter.begin(),
-        localRun->fFVPathCounter.end()
-    );
-
-    fEPNCounter.insert(
-        fEPNCounter.end(),
-        localRun->fEPNCounter.begin(),
-        localRun->fEPNCounter.end()
-    );
+    for(auto singleEventMap : localRun->fEPNCounter)
+    {
+        SINGLE_COUNTER newSingleEventMap;
+        for(auto it : singleEventMap)
+        {
+            if(!IsStringInList(strList[it.first], fStrList))
+                fStrList.push_back(strList[it.first]);
+            newSingleEventMap[GetIndexOfString(strList[it.first], fStrList)] = it.second;
+        }
+        fEPNCounter.push_back(newSingleEventMap);
+    }
 
     if(fParticleEnergy != localRun->fParticleEnergy)    fParticleEnergy = localRun->fParticleEnergy;
     if(fParticlePosition != localRun->fParticlePosition)    fParticlePosition = localRun->fParticlePosition;

@@ -2,7 +2,7 @@
 #define MVEventInformation_h 1
 
 #include "G4VUserEventInformation.hh"
-#include "globals.hh"
+#include "MVGlobals.hh"
 
 namespace MuonVeto
 {
@@ -12,21 +12,24 @@ class MVEventInformation : public G4VUserEventInformation
     public:
         MVEventInformation();
         ~MVEventInformation() override;
-        inline std::map<G4String, G4int> GetSiPMPhotonCounter() { return fSiPMPhotonCounter; }
-        inline std::map<G4String, G4int> GetCPNCounter() { return fCPNCounter; }
-        inline std::map<G4String, G4int> GetFVPathCounter() { return fFVPathCounter; }
-        inline std::map<G4String, G4int> GetEPNCounter() { return fEPNCounter; }
-        inline void SetSiPMPhotonCounter(std::map<G4String, G4int> SiPMPhotonCounter) { fSiPMPhotonCounter = SiPMPhotonCounter; }
-        inline void SetCPNCounter(std::map<G4String, G4int> CPNCounter) { fCPNCounter = CPNCounter; }
-        inline void SetFVPathCounter(std::map<G4String, G4int> FVPathCounter) { fFVPathCounter = FVPathCounter; }
-        inline void SetEPNCounter(std::map<G4String, G4int> EPNCounter) { fEPNCounter = EPNCounter; }
-        void Print() const override;
+        virtual void Print() const override;
+        inline SINGLE_COUNTER GetSiPMPhotonCounter() { return fSiPMPhotonCounter; }
+        inline SINGLE_COUNTER GetCPNCounter() { return fCPNCounter; }
+        inline SINGLE_COUNTER GetFVPathCounter() { return fFVPathCounter; }
+        inline SINGLE_COUNTER GetEPNCounter() { return fEPNCounter; }
+        inline STRLIST GetStrList() { return fStrList; }
+        inline void SetSiPMPhotonCounter(SINGLE_COUNTER SiPMPhotonCounter) { fSiPMPhotonCounter = SiPMPhotonCounter; }
+        inline void SetCPNCounter(SINGLE_COUNTER CPNCounter) { fCPNCounter = CPNCounter; }
+        inline void SetFVPathCounter(SINGLE_COUNTER FVPathCounter) { fFVPathCounter = FVPathCounter; }
+        inline void SetEPNCounter(SINGLE_COUNTER EPNCounter) { fEPNCounter = EPNCounter; }
+        inline void SetStrList(STRLIST strList) { fStrList = strList; }
     
     private:
-        std::map<G4String, G4int> fSiPMPhotonCounter;
-        std::map<G4String, G4int> fCPNCounter;
-        std::map<G4String, G4int> fFVPathCounter;
-        std::map<G4String, G4int> fEPNCounter;
+        SINGLE_COUNTER fSiPMPhotonCounter;
+        SINGLE_COUNTER fCPNCounter;
+        SINGLE_COUNTER fFVPathCounter;
+        SINGLE_COUNTER fEPNCounter;
+        STRLIST fStrList;
 };
 
 }

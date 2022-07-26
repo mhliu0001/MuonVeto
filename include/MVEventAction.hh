@@ -2,8 +2,8 @@
 #define MVEventAction_h 1
 
 #include "G4UserEventAction.hh"
-#include "globals.hh"
 #include "MVSteppingAction.hh"
+#include "MVGlobals.hh"
 
 namespace MuonVeto
 {
@@ -21,9 +21,10 @@ class MVEventAction : public G4UserEventAction
 
     private:
         friend class MVSteppingAction;
-        std::map<G4int, G4String> fCPNRecorder;
-        std::map<G4int, G4String> fFVPathRecorder;
-        std::map<G4int, G4String> fEPNRecorder;
+        RECORDER fCPNRecorder;
+        RECORDER fFVPathRecorder;
+        RECORDER fEPNRecorder;
+        STRLIST fStrList;
 };
 
 }
