@@ -3,6 +3,7 @@
 #include "MVRunMT.hh"
 #include <numeric>
 #include "G4SystemOfUnits.hh"
+#include "G4AnalysisManager.hh"
 namespace MuonVeto
 {
 
@@ -52,7 +53,7 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
             G4cout << ">>> Creator Process List: " << G4endl;
             for (auto item : CPNMeanAndRMS[0])
                 G4cout << "    " << strList[item.first] << ": " << item.second << " +- " << (CPNMeanAndRMS[1].find(item.first) != CPNMeanAndRMS[1].end() ? (*CPNMeanAndRMS[1].find(item.first)).second : -1) << G4endl;
-
+            
             delete[] CPNMeanAndRMS;
         }
 
@@ -85,6 +86,227 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
 
             delete[] EPNMeanAndRMS;
         }
+
+        // Analysis
+        auto analysisManager = G4AnalysisManager::Instance();
+        analysisManager->SetVerboseLevel(1);
+
+        // A map whose aim is to create different histograms of all counters.
+        // It should handle the names and titles properly, and store the H1IDs.
+        // The key is a counter name;
+        // The value is a map with the key to be H1ID, and the value to be the index in strList.
+        std::map<G4String, std::map<G4int, G4int>> histMap;
+        
+        // These are maps aiming to deal with xmax and xmin properly.
+        // The key is the H1ID, and the value is the maximum/minimum
+        std::map<G4int, G4int> histXMax, histXMin;
+
+        G4int H1ID = 0;
+
+        if (SiPMPhotonCounter.size() != 0)
+        {
+            G4String counterName = "PEs of SiPM";
+            for(auto singleCounter : SiPMPhotonCounter)
+            {
+                for(auto it : singleCounter)
+                {
+                    if(MapFindValue(it.first, histMap[counterName]) == histMap[counterName].end())
+                    {
+                        histMap[counterName][H1ID] = it.first;
+                        ++H1ID;
+                    }
+                    G4int local_h1id = MapFindValue(it.first, histMap[counterName])->first;
+                    if(histXMax.find(local_h1id) == histXMax.end())
+                    {
+                        histXMax[local_h1id] = it.second;
+                        histXMin[local_h1id] = it.second;
+                    }
+                    else
+                    {
+                        if(it.second > histXMax[local_h1id])    histXMax[local_h1id] = it.second;
+                        if(it.second < histXMin[local_h1id])    histXMin[local_h1id] = it.second;
+                    }
+                }
+            }
+        }
+
+        if (CPNCounter.size() != 0)
+        {
+            G4String counterName = "Creator Process Name";
+            for(auto singleCounter : CPNCounter)
+            {
+                for(auto it : singleCounter)
+                {
+                    if(MapFindValue(it.first, histMap[counterName]) == histMap[counterName].end())
+                    {
+                        histMap[counterName][H1ID] = it.first;
+                        ++H1ID;
+                    }
+                    G4int local_h1id = MapFindValue(it.first, histMap[counterName])->first;
+                    if(histXMax.find(local_h1id) == histXMax.end())
+                    {
+                        histXMax[local_h1id] = it.second;
+                        histXMin[local_h1id] = it.second;
+                    }
+                    else
+                    {
+                        if(it.second > histXMax[local_h1id])    histXMax[local_h1id] = it.second;
+                        if(it.second < histXMin[local_h1id])    histXMin[local_h1id] = it.second;
+                    }
+                }
+            }
+        }
+
+        if (FVPathCounter.size() != 0)
+        {
+            G4String counterName = "Final Volume Path";
+            for(auto singleCounter : FVPathCounter)
+            {
+                for(auto it : singleCounter)
+                {
+                    if(MapFindValue(it.first, histMap[counterName]) == histMap[counterName].end())
+                    {
+                        histMap[counterName][H1ID] = it.first;
+                        ++H1ID;
+                    }
+                    G4int local_h1id = MapFindValue(it.first, histMap[counterName])->first;
+                    if(histXMax.find(local_h1id) == histXMax.end())
+                    {
+                        histXMax[local_h1id] = it.second;
+                        histXMin[local_h1id] = it.second;
+                    }
+                    else
+                    {
+                        if(it.second > histXMax[local_h1id])    histXMax[local_h1id] = it.second;
+                        if(it.second < histXMin[local_h1id])    histXMin[local_h1id] = it.second;
+                    }
+                }
+            }
+        }
+        if (EPNCounter.size() != 0)
+        {
+            G4String counterName = "Ending Process Name";
+            for(auto singleCounter : EPNCounter)
+            {
+                for(auto it : singleCounter)
+                {
+                    if(MapFindValue(it.first, histMap[counterName]) == histMap[counterName].end())
+                    {
+                        histMap[counterName][H1ID] = it.first;
+                        ++H1ID;
+                    }
+                    G4int local_h1id = MapFindValue(it.first, histMap[counterName])->first;
+                    if(histXMax.find(local_h1id) == histXMax.end())
+                    {
+                        histXMax[local_h1id] = it.second;
+                        histXMin[local_h1id] = it.second;
+                    }
+                    else
+                    {
+                        if(it.second > histXMax[local_h1id])    histXMax[local_h1id] = it.second;
+                        if(it.second < histXMin[local_h1id])    histXMin[local_h1id] = it.second;
+                    }
+                }
+            }
+        }
+
+        G4cout << "H1ID is " << H1ID << G4endl;
+        // Create histograms
+        for(G4int local_h1id = 0; local_h1id < H1ID; ++local_h1id)
+        {
+            G4String histTitle = "Not Found";
+            for(auto singleType : histMap)
+            {
+                for(auto histIDAndStrIndex : singleType.second)
+                {
+                    if(histIDAndStrIndex.first == local_h1id)
+                    {
+                        histTitle = singleType.first + ": " + strList[histIDAndStrIndex.second];
+                        analysisManager->CreateH1(
+                            std::to_string(local_h1id),
+                            histTitle,
+                            50,
+                            histXMin[histIDAndStrIndex.first]/50*50,
+                            (histXMax[histIDAndStrIndex.first]/50+1)*50
+                        );
+                        analysisManager->SetH1Plotting(local_h1id,true);
+                        // G4cout << "Creating histogram with title " << histTitle;
+                        break;
+                    }
+                }
+                if(histTitle != "Not Found")   break;
+            }
+        }
+        /*
+        for(auto singleType : histMap)
+        {
+            for(auto histIDAndStrIndex : singleType.second)
+            {
+                analysisManager->CreateH1(
+                    std::to_string(histIDAndStrIndex.first),
+                    singleType.first + ": " + strList[histIDAndStrIndex.second],
+                    50,
+                    histXMin[histIDAndStrIndex.first]/50*50,
+                    (histXMax[histIDAndStrIndex.first]/50+1)*50
+                );
+                G4cout << "Creating histogram with name " << singleType.first + ": " + strList[histIDAndStrIndex.second] << G4endl;
+            }
+        }
+        */
+
+        // Filling histograms
+        for(auto singleType : histMap)
+        {
+            for(auto histIDAndStrIndex : singleType.second)
+            {
+                if(singleType.first == "PEs of SiPM")
+                {
+                    for(auto it : SiPMPhotonCounter)
+                    {
+                        analysisManager->FillH1(
+                            histIDAndStrIndex.first,
+                            (double)it[histIDAndStrIndex.second]
+                        );
+                    }
+                }
+                else if(singleType.first == "Creator Process Name")
+                {
+                    for(auto it : CPNCounter)
+                    {
+                        analysisManager->FillH1(
+                            histIDAndStrIndex.first,
+                            (double)it[histIDAndStrIndex.second]
+                        );
+                    }
+                }
+                else if(singleType.first == "Final Volume Path")
+                {
+                    for(auto it : FVPathCounter)
+                    {
+                        analysisManager->FillH1(
+                            histIDAndStrIndex.first,
+                            (double)it[histIDAndStrIndex.second]
+                        );
+                    }
+                }
+                else if(singleType.first == "Ending Process Name")
+                {
+                    for(auto it : EPNCounter)
+                    {
+                        analysisManager->FillH1(
+                            histIDAndStrIndex.first,
+                            (double)it[histIDAndStrIndex.second]
+                        );
+                        //G4cout << "Filling histogram " << histIDAndStrIndex.first << " with " << it[histIDAndStrIndex.second] << G4endl;
+                    }
+                }
+            }
+        }
+
+        // Output File
+        analysisManager->OpenFile("data.csv");
+        analysisManager->Write();
+        analysisManager->CloseFile();
 
         // Output for .csv
         /*
@@ -119,13 +341,13 @@ std::map<G4int, G4double>* MVRunAction::GetMeanAndRMSOfCounter(COUNTER counter, 
         {
             if (sum.find(item.first) != sum.end())
             {
-                sum[item.first] += item.second;
-                squaredSum[item.first] += (long long)item.second * item.second;
+                sum[item.first] += (long long)item.second;
+                squaredSum[item.first] += (long long)item.second * (long long)item.second;
             }
             else
             {
-                sum[item.first] = item.second;
-                squaredSum[item.first] = (long long)item.second * item.second;
+                sum[item.first] = (long long)item.second;
+                squaredSum[item.first] = (long long)item.second * (long long)item.second;
             }
         }
     }
