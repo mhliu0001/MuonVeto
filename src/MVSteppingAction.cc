@@ -16,6 +16,7 @@ MVSteppingAction::~MVSteppingAction(){}
 static G4String Path(const G4TouchableHandle& th)
 {
     std::ostringstream oss;
+    /*
     G4int depth = th->GetHistoryDepth();
     for (G4int i = depth; i >= 0; --i)
     {
@@ -23,6 +24,8 @@ static G4String Path(const G4TouchableHandle& th)
             << ':' << th->GetCopyNumber(i);
         if (i != 0) oss << '/';
     }
+    */
+    oss << th->GetVolume(0)->GetName() << ':' << th->GetCopyNumber(0);
     return oss.str();
 }
 

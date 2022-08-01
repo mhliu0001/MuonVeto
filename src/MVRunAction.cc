@@ -2,8 +2,12 @@
 #include "G4Run.hh"
 #include "MVRunMT.hh"
 #include <numeric>
+#include <filesystem>
 #include "G4SystemOfUnits.hh"
 #include "G4AnalysisManager.hh"
+#include "json.hpp"
+using json = nlohmann::json;
+
 namespace MuonVeto
 {
 
@@ -302,11 +306,74 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
                 }
             }
         }
+        
+        // Data output
+        const char* optDirName = "data";
+        G4int runID = aRun->GetRunID();
+        char dirName[100];
+        sprintf(dirName, "%s/run%d", optDirName, runID);
+        std::filesystem::create_directories(dirName);
 
-        // Output File
-        analysisManager->OpenFile("data.csv");
-        analysisManager->Write();
-        analysisManager->CloseFile();
+        // Run Conditions Output
+        char RCFileName[120];
+        sprintf(RCFileName, "%s/%s", dirName, "RunConditions.json");
+        auto RCFP = fopen(RCFileName, "w");
+        json runConditions;
+        runConditions["RunID"] = runID;
+        runConditions["ParticleName"] = (const char*)particleName;
+        runConditions["KineticEnergy/MeV"] = particleEnergy/MeV;
+        runConditions["GunXPosition/cm"] = particlePosition.x()/cm;
+        runConditions["GunYPosition/cm"] = particlePosition.y()/cm;
+        runConditions["GunZPosition/cm"] = particlePosition.z()/cm;
+        fprintf(RCFP, "%s", runConditions.dump(4).c_str());
+        fclose(RCFP);
+
+        // Analysis Manager Output
+        G4bool builtinAnalysis = true;
+        const char* builtinAnalysisFileName = "data.csv";
+        if(builtinAnalysis)
+        {
+            char dirNameForBA[200];
+            sprintf(dirNameForBA, "%s/%s", dirName, "built-in");
+            std::filesystem::create_directory(dirNameForBA);
+
+            char fileName[300];
+            sprintf(fileName, "%s/%s", dirNameForBA, builtinAnalysisFileName);
+            analysisManager->OpenFile(fileName);
+            analysisManager->Write();
+            analysisManager->CloseFile();
+        }
+
+        // csv output
+        for(auto singleType : histMap)
+        {
+            G4String dir = G4String(dirName) + G4String("/") + singleType.first;
+            std::filesystem::create_directory((const char*)dir);
+            
+            COUNTER counter;
+            if(singleType.first == "Creator Process Name") counter = CPNCounter;
+            else if(singleType.first == "Final Volume Path") counter = FVPathCounter;
+            else if(singleType.first == "Ending Process Name") counter = EPNCounter;
+            else if(singleType.first == "PEs of SiPM") counter = SiPMPhotonCounter;
+            else throw "Name Error";
+
+            for(auto histIDAndStrIndex : singleType.second)
+            {
+                char fileName[400];
+                sprintf(fileName, "%s/%s%s", (const char*)dir, (const char*)(strList[histIDAndStrIndex.second]), ".csv");
+                auto fp = fopen(fileName, "w");
+                if(!fp)
+                {   
+                    G4cerr << "Open File Failed: " << fileName << G4endl;
+                    continue;
+                }
+                fprintf(fp, "# %s: %s\n", (const char*) (singleType.first), (const char*) (strList[histIDAndStrIndex.second]));
+                for(auto it : counter)
+                    fprintf(fp, "%d,\n", it[histIDAndStrIndex.second]);
+                fclose(fp);
+            }
+
+        }
 
         // Output for .csv
         /*
@@ -362,5 +429,7 @@ std::map<G4int, G4double>* MVRunAction::GetMeanAndRMSOfCounter(COUNTER counter, 
 
     return meanAndRMS;
 }
+
+
 
 }
