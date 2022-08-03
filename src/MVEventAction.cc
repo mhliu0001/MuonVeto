@@ -141,6 +141,10 @@ void MVEventAction::EndOfEventAction(const G4Event *event)
     info->SetEPNCounter(EPNCounter);
     info->Print();
 
+    fCPNRecorder.clear();
+    fFVPathRecorder.clear();
+    fEPNRecorder.clear();
+
     /*
     G4int SiPM_0_id = SDMan->GetCollectionID("SiPM_0/photon_counter_0");
     G4int SiPM_1_id = SDMan->GetCollectionID("SiPM_1/photon_counter_1");
