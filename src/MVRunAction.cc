@@ -11,9 +11,9 @@ using json = nlohmann::json;
 namespace MuonVeto
 {
 
-MVRunAction::MVRunAction(G4int SiPMCount) : fSiPMCount(SiPMCount)
-{
-}
+MVRunAction::MVRunAction(const G4int SiPMCount, const G4String& outputFilePath, const G4bool useBuiltinAnalysis): 
+    fSiPMCount(SiPMCount), fOutputFilePath(outputFilePath), fUseBuiltinAnalysis(useBuiltinAnalysis)
+{}
 
 MVRunAction::~MVRunAction()
 {
@@ -308,7 +308,7 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
         }
         
         // Data output
-        const char* optDirName = "data";
+        const char* optDirName = fOutputFilePath.c_str();
         G4int runID = aRun->GetRunID();
         char dirName[100];
         sprintf(dirName, "%s/run%d", optDirName, runID);
@@ -329,7 +329,7 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
         fclose(RCFP);
 
         // Analysis Manager Output
-        G4bool builtinAnalysis = true;
+        G4bool builtinAnalysis = fUseBuiltinAnalysis;
         const char* builtinAnalysisFileName = "data.csv";
         if(builtinAnalysis)
         {

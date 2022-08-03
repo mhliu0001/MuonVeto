@@ -39,7 +39,7 @@ inline G4int GetIndexOfString(const G4String& str, const STRLIST &strList)
 // Judge whether a string is in the STRLIST
 inline bool IsStringInList(const G4String& str, const STRLIST &strList)
 {
-    // return std::binary_search(strList.begin(), strList.end(), str);
+    //return std::binary_search(strList.begin(), strList.end(), str);
     return std::find(strList.begin(), strList.end(), str) != strList.end();
 }
 

@@ -11,21 +11,76 @@
 #include "G4UIExecutive.hh"
 #include "time.h"
 
+namespace {
+    void PrintUsage() {
+        G4cerr << " Usage: " << G4endl;
+        G4cerr << " MuonVeto [-m macro] [-t nThreads] [-o output_file_path] [-b]"
+               << G4endl;
+        G4cerr << " -m : Specify macro file" << G4endl;
+        G4cerr << " -t : Specify number of threads (default: 8)" << G4endl;
+        G4cerr << " -o : Specify where the data files are located (default: data)" << G4endl;
+        G4cerr << " -b : Use G4 built-in analysis" << G4endl;
+    }
+}
+
 using namespace MuonVeto;
 
 int main(int argc, char** argv)
 {
     G4UIExecutive* ui = nullptr;
-    if ( argc == 1 ) { ui = new G4UIExecutive(argc, argv); }
+
+    // Parse arguments
+    if (argc >= 8)
+    {
+        PrintUsage();
+        return 1;
+    }
+    G4bool useBuiltinAnalysis = false;
+    G4String macro;
+    G4String outputFilePath = "data";
+    G4int nThreads = 8;
+    int argN = 1;
+    while (argN < argc)
+    {
+        if(G4String(argv[argN]) == "-m")
+        {
+            macro = argv[argN+1];
+            argN += 2;
+        }
+        else if(G4String(argv[argN]) == "-t")
+        {
+            nThreads = G4UIcommand::ConvertToInt(argv[argN+1]);
+            argN += 2;
+        }
+        else if(G4String(argv[argN]) == "-o")
+        {
+            outputFilePath = argv[argN+1];
+            argN += 2;
+        }
+        else if(G4String(argv[argN]) == "-b")
+        {
+            useBuiltinAnalysis = true;
+            argN += 1;
+        }
+        else
+        {
+            PrintUsage();
+            return 1;
+        }
+    }
 
     // Random seed
-    CLHEP::HepRandom::setTheEngine(new CLHEP::RanecuEngine());
+    CLHEP::HepRandom::setTheEngine(new CLHEP::MixMaxRng());
     G4long seed = time(NULL);
     CLHEP::HepRandom::setTheSeed(seed);
 
+    // Interactive mode
+    if(!macro.size())
+        ui = new G4UIExecutive(argc, argv);
+
     // Run manager
     auto* runManager = G4RunManagerFactory::CreateRunManager(G4RunManagerType::MT);
-    runManager->SetNumberOfThreads(20);
+    runManager->SetNumberOfThreads(nThreads);
 
     // Detector construction
     auto* detector = new MVDetectorConstruction();
@@ -43,7 +98,7 @@ int main(int argc, char** argv)
     */
 
     // Action initializer
-    runManager->SetUserInitialization(new MVActionInitializer);
+    runManager->SetUserInitialization(new MVActionInitializer(outputFilePath, useBuiltinAnalysis));
 
     runManager->Initialize();
 
@@ -60,8 +115,7 @@ int main(int argc, char** argv)
     {
         // batch mode
         G4String command = "/control/execute ";
-        G4String fileName = argv[1];
-        UImanager->ApplyCommand(command+fileName);
+        UImanager->ApplyCommand(command+macro);
     }
     else
     {
