@@ -10,6 +10,8 @@
 #include "G4UImanager.hh"
 #include "G4UIExecutive.hh"
 #include "time.h"
+#include <filesystem>
+#include <sstream>
 
 namespace {
     void PrintUsage() {
@@ -20,6 +22,13 @@ namespace {
         G4cerr << " -t : Specify number of threads (default: 8)" << G4endl;
         G4cerr << " -o : Specify where the data files are located (default: data)" << G4endl;
         G4cerr << " -b : Use G4 built-in analysis" << G4endl;
+    }
+
+    bool isNumber(const char* str)
+    {
+        std::istringstream sin(str);
+        int test;
+        return sin >> test && sin.eof();
     }
 }
 
@@ -45,10 +54,20 @@ int main(int argc, char** argv)
         if(G4String(argv[argN]) == "-m")
         {
             macro = argv[argN+1];
+            if(!std::filesystem::is_regular_file(macro.c_str()))
+            {
+                G4cerr << "Macro file not found! Given path: " << macro << G4endl;
+                return 1;
+            }
             argN += 2;
         }
         else if(G4String(argv[argN]) == "-t")
         {
+            if(!isNumber(argv[argN+1]))
+            {
+                G4cerr << "nThreads must be an integer, but " << argv[argN+1] << " is given" << G4endl;
+                return 1;
+            }
             nThreads = G4UIcommand::ConvertToInt(argv[argN+1]);
             argN += 2;
         }
