@@ -4,8 +4,8 @@ DEFAULT_ZPOSITION=0
 MUENERGY:=0.5 2 5 10
 MUENERGY:=3
 GAMMAENERGY:=0.2 0.5 1 2
-ZPOSITION:=$(shell seq -90 10 90)
-XPOSITION:=$(shell seq -9 1 9)
+ZPOSITION:=$(shell seq -45 5 45)
+XPOSITION:=$(shell seq -4.5 0.5 4.5)
 RUNCOUNT=10000
 
 .PHONY: all
@@ -72,6 +72,24 @@ macro: ./macro/muon_z.mac ./macro/muon_x.mac ./macro/gamma_z.mac
 		done; \
 	done
 
+./macro/probe.mac:
+	echo "/run/initialize" >> $@
+
+	echo "/control/verbose 0" >> $@
+	echo "/run/verbose 0" >> $@ 
+	echo "/event/verbose 0" >> $@
+	echo "/tracking/verbose 0" >> $@
+
+	echo "/gun/particle alpha" >> $@
+	echo "/gun/energy 1 keV" >> $@
+
+	for X in $(XPOSITION); do \
+		for Z in $(ZPOSITION); do \
+			echo "/gun/position $$X 0 $$Z cm" >> $@; \
+			echo "/run/beamOn 1000" >> $@; \
+		done; \
+	done
+
 ./data/muon_z.csv: ./build/MuonVeto ./macro/muon_z.mac
 	$^ | grep ">>>>" | sed 's/>>>> //g' > $@
 	mv SiPM_0 ./data/muon_z_SiPM_0.csv
@@ -91,7 +109,7 @@ macro: ./macro/muon_z.mac ./macro/muon_x.mac ./macro/gamma_z.mac
 .PHONY: clean_macro
 
 clean_macro:
-	rm -r ./macro/muon_x.mac ./macro/muon_z.mac ./macro/gamma_z.mac
+	rm -r ./macro/muon_x.mac ./macro/muon_z.mac ./macro/gamma_z.mac ./macro/probe.mac
 
 .PHONY: clean_build
 

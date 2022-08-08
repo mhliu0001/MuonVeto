@@ -1,0 +1,8 @@
+{
+    "GunXPosition/cm": -3.5,
+    "GunYPosition/cm": 0.0,
+    "GunZPosition/cm": -10.0,
+    "KineticEnergy/MeV": 0.001,
+    "ParticleName": "alpha",
+    "RunID": 45
+}

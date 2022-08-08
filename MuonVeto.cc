@@ -39,7 +39,7 @@ int main(int argc, char** argv)
     G4UIExecutive* ui = nullptr;
 
     // Parse arguments
-    if (argc >= 8)
+    if (argc >= 9)
     {
         PrintUsage();
         return 1;
@@ -111,10 +111,8 @@ int main(int argc, char** argv)
     physicsList->RegisterPhysics(opticalPhysics);
     runManager->SetUserInitialization(physicsList);
 
-    /*
     auto* opticalPara = G4OpticalParameters::Instance();
-    opticalPara->SetProcessActivation("Scintillation", false);
-    */
+    opticalPara->SetProcessActivation("Cerenkov", false);
 
     // Action initializer
     runManager->SetUserInitialization(new MVActionInitializer(outputFilePath, useBuiltinAnalysis));
