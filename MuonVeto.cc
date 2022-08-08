@@ -9,19 +9,25 @@
 #include "G4VisExecutive.hh"
 #include "G4UImanager.hh"
 #include "G4UIExecutive.hh"
+#include "G4SystemOfUnits.hh"
+#include "json.hpp"
 #include "time.h"
 #include <filesystem>
 #include <sstream>
+#include <fstream>
+
+using json = nlohmann::json;
 
 namespace {
     void PrintUsage() {
         G4cerr << " Usage: " << G4endl;
-        G4cerr << " MuonVeto [-m macro] [-t nThreads] [-o output_file_path] [-b]"
+        G4cerr << " MuonVeto [-m macro] [-t nThreads] [-o output_file_path] [-b] [-p]"
                << G4endl;
         G4cerr << " -m : Specify macro file" << G4endl;
         G4cerr << " -t : Specify number of threads (default: 8)" << G4endl;
         G4cerr << " -o : Specify where the data files are located (default: data)" << G4endl;
         G4cerr << " -b : Use G4 built-in analysis" << G4endl;
+        G4cerr << " -p : Probe mode (if this is specified, \"-m\" is ignored)" << G4endl; 
     }
 
     bool isNumber(const char* str)
@@ -39,7 +45,7 @@ int main(int argc, char** argv)
     G4UIExecutive* ui = nullptr;
 
     // Parse arguments
-    if (argc >= 9)
+    if (argc >= 10)
     {
         PrintUsage();
         return 1;
@@ -48,6 +54,7 @@ int main(int argc, char** argv)
     G4String macro;
     G4String outputFilePath = "data";
     G4int nThreads = 8;
+    G4bool probe = false;
     int argN = 1;
     while (argN < argc)
     {
@@ -81,6 +88,11 @@ int main(int argc, char** argv)
             useBuiltinAnalysis = true;
             argN += 1;
         }
+        else if(G4String(argv[argN]) == "-p")
+        {
+            probe = true;
+            argN += 1;
+        }
         else
         {
             PrintUsage();
@@ -94,7 +106,7 @@ int main(int argc, char** argv)
     CLHEP::HepRandom::setTheSeed(seed);
 
     // Interactive mode
-    if(!macro.size())
+    if(!macro.size() && !probe)
         ui = new G4UIExecutive(argc, argv);
 
     // Run manager
@@ -126,13 +138,69 @@ int main(int argc, char** argv)
     // Get the pointer to the User Interface manager
     G4UImanager* UImanager = G4UImanager::GetUIpointer();
 
-    // Process macro or start UI session
-    //
+    // Start processing run
     if ( ! ui ) 
     {
-        // batch mode
-        G4String command = "/control/execute ";
-        UImanager->ApplyCommand(command+macro);
+        if(probe)
+        {
+            // Search for data
+            G4int runNumber = 0;
+            while(true)
+            {
+                std::ostringstream pathOS;
+                pathOS << outputFilePath << "/" << "run" << runNumber << "/RunConditions.json";
+                G4String path = pathOS.str();
+                if(!std::filesystem::exists(path.c_str()))  break;
+                ++runNumber;
+            }
+
+            // Determine gun position
+            G4double GunZPosition = -45*cm;
+            G4double GunXPosition = -4.5*cm;
+            G4double stepOfZ = 5*cm;
+            G4double stepOfX = 0.5*cm;
+
+            // Read from last RunConditions.json
+            if(runNumber != 0)
+            {
+                std::ostringstream pathOS;
+                pathOS << outputFilePath << "/" << "run" << runNumber-1 << "/RunConditions.json";
+                G4String path = pathOS.str();
+
+                std::ifstream runConditionsFS(path);
+                json runConditions = json::parse(runConditionsFS);
+                GunXPosition = G4double(runConditions["GunXPosition/cm"]) * cm;
+                GunZPosition = G4double(runConditions["GunZPosition/cm"]) * cm + stepOfZ;
+            }
+
+            // Initialize
+            UImanager->ApplyCommand("/run/initialize");
+            UImanager->ApplyCommand("/run/verbose 0");
+            UImanager->ApplyCommand("/event/verbose 0");
+            UImanager->ApplyCommand("/tracking/verbose 0");
+            UImanager->ApplyCommand("/gun/particle alpha");
+            UImanager->ApplyCommand("/gun/energy 1 keV");
+            runManager->SetRunIDCounter(runNumber);
+
+            if(GunZPosition > 45.1*cm) GunXPosition += stepOfX;
+            for(GunXPosition = (GunXPosition < 4.51*cm ? GunXPosition: -4.5*cm); GunXPosition < 4.51*cm; GunXPosition += stepOfX)
+            {
+                for(GunZPosition = (GunZPosition < 45.1*cm ? GunZPosition: -45*cm); GunZPosition < 45.1*cm; GunZPosition += stepOfZ)
+                {
+                    std::ostringstream commandOS;
+                    commandOS << "/gun/position " << GunXPosition/cm << " " << 0 << " " << GunZPosition/cm << " " << "cm";
+                    UImanager->ApplyCommand(commandOS.str());
+                    UImanager->ApplyCommand("/run/beamOn 1000");
+                }
+            }
+        }
+
+        else
+        {
+            // batch mode
+            G4String command = "/control/execute ";
+            UImanager->ApplyCommand(command+macro);
+        }
     }
     else
     {
