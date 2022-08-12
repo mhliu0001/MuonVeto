@@ -21,13 +21,13 @@ using json = nlohmann::json;
 namespace {
     void PrintUsage() {
         G4cerr << " Usage: " << G4endl;
-        G4cerr << " MuonVeto [-m macro] [-t nThreads] [-o output_file_path] [-b] [-p]"
+        G4cerr << " MuonVeto [-m macro] [-t nThreads] [-o output_file_path] [-p probe_config_file][-b]"
                << G4endl;
         G4cerr << " -m : Specify macro file" << G4endl;
         G4cerr << " -t : Specify number of threads (default: 8)" << G4endl;
         G4cerr << " -o : Specify where the data files are located (default: data)" << G4endl;
+        G4cerr << " -p : Use probe mode. A probe config file (.json) must be specified" << G4endl; 
         G4cerr << " -b : Use G4 built-in analysis" << G4endl;
-        G4cerr << " -p : Probe mode (if this is specified, \"-m\" is ignored)" << G4endl; 
     }
 
     bool isNumber(const char* str)
@@ -45,7 +45,7 @@ int main(int argc, char** argv)
     G4UIExecutive* ui = nullptr;
 
     // Parse arguments
-    if (argc >= 10)
+    if (argc >= 11)
     {
         PrintUsage();
         return 1;
@@ -55,11 +55,17 @@ int main(int argc, char** argv)
     G4String outputFilePath = "data";
     G4int nThreads = 8;
     G4bool probe = false;
+    G4String probeConfigFilePath;
     int argN = 1;
     while (argN < argc)
     {
         if(G4String(argv[argN]) == "-m")
         {
+            if(argN+1 >= argc)
+            {
+                G4cerr << "A macro file must be specified after \"-m\"!" << G4endl;
+                return 1;
+            }
             macro = argv[argN+1];
             if(!std::filesystem::is_regular_file(macro.c_str()))
             {
@@ -70,6 +76,11 @@ int main(int argc, char** argv)
         }
         else if(G4String(argv[argN]) == "-t")
         {
+            if(argN+1 >= argc)
+            {
+                G4cerr << "nThreads must be specified after \"-t\"!" << G4endl;
+                return 1;
+            }
             if(!isNumber(argv[argN+1]))
             {
                 G4cerr << "nThreads must be an integer, but " << argv[argN+1] << " is given" << G4endl;
@@ -80,17 +91,33 @@ int main(int argc, char** argv)
         }
         else if(G4String(argv[argN]) == "-o")
         {
+            if(argN+1 >= argc)
+            {
+                G4cerr << "An output file path must be specified after \"-o\"!" << G4endl;
+                return 1;
+            }
             outputFilePath = argv[argN+1];
+            argN += 2;
+        }
+        else if(G4String(argv[argN]) == "-p")
+        {
+            if(argN+1 >= argc)
+            {
+                G4cerr << "A probe config file must be specified after \"-p\"!" << G4endl;
+                return 1;
+            }
+            probe = true;
+            probeConfigFilePath = argv[argN+1];
+            if(!std::filesystem::is_regular_file(probeConfigFilePath.c_str()))
+            {
+                G4cerr << "Probe config file not found! Given path: " << probeConfigFilePath << G4endl;
+                return 1;
+            }
             argN += 2;
         }
         else if(G4String(argv[argN]) == "-b")
         {
             useBuiltinAnalysis = true;
-            argN += 1;
-        }
-        else if(G4String(argv[argN]) == "-p")
-        {
-            probe = true;
             argN += 1;
         }
         else
@@ -143,6 +170,23 @@ int main(int argc, char** argv)
     {
         if(probe)
         {
+            // Read probe config file
+            std::ifstream probeConfigFS(probeConfigFilePath);
+            json probeConfig = json::parse(probeConfigFS);
+            G4double GunXMin = probeConfig.contains("GunXMin/cm")? (G4double(probeConfig["GunXMin/cm"]) * cm): 0;
+            G4double GunXMax = probeConfig.contains("GunXMax/cm")? (G4double(probeConfig["GunXMax/cm"]) * cm): 0;
+            G4double GunXStep = probeConfig.contains("GunXStep/cm")? (G4double(probeConfig["GunXStep/cm"]) * cm): 100*cm;
+
+            G4double GunYMin = probeConfig.contains("GunYMin/cm")? (G4double(probeConfig["GunYMin/cm"]) * cm): 0;
+            G4double GunYMax = probeConfig.contains("GunYMax/cm")? (G4double(probeConfig["GunYMax/cm"]) * cm): 0;
+            G4double GunYStep = probeConfig.contains("GunYStep/cm")? (G4double(probeConfig["GunYStep/cm"]) * cm): 100*cm;
+
+            G4double GunZMin = probeConfig.contains("GunZMin/cm")? (G4double(probeConfig["GunZMin/cm"]) * cm): 0;
+            G4double GunZMax = probeConfig.contains("GunZMax/cm")? (G4double(probeConfig["GunZMax/cm"]) * cm): 0;
+            G4double GunZStep = probeConfig.contains("GunZStep/cm")? (G4double(probeConfig["GunZStep/cm"]) * cm): 100*cm;
+
+            G4int runCount = probeConfig["Number of Runs"];
+
             // Search for data
             G4int runNumber = 0;
             while(true)
@@ -154,11 +198,10 @@ int main(int argc, char** argv)
                 ++runNumber;
             }
 
-            // Determine gun position
-            G4double GunZPosition = -45*cm;
-            G4double GunXPosition = -4.5*cm;
-            G4double stepOfZ = 5*cm;
-            G4double stepOfX = 0.5*cm;
+            // Determine initial gun position
+            G4double GunXPosition = GunXMin;
+            G4double GunYPosition = GunYMin;
+            G4double GunZPosition = GunZMin;
 
             // Read from last RunConditions.json
             if(runNumber != 0)
@@ -170,7 +213,20 @@ int main(int argc, char** argv)
                 std::ifstream runConditionsFS(path);
                 json runConditions = json::parse(runConditionsFS);
                 GunXPosition = G4double(runConditions["GunXPosition/cm"]) * cm;
-                GunZPosition = G4double(runConditions["GunZPosition/cm"]) * cm + stepOfZ;
+                GunYPosition = G4double(runConditions["GunYPosition/cm"]) * cm;
+                GunZPosition = G4double(runConditions["GunZPosition/cm"]) * cm;
+
+                GunZPosition += GunZStep;
+                if(GunZPosition > GunZMax + GunZStep/10)
+                {
+                    GunZPosition = GunZMin;
+                    GunYPosition += GunYStep;
+                    if(GunYPosition > GunYStep + GunYStep/10)
+                    {
+                        GunYPosition = GunYMin;
+                        GunXPosition += GunXStep;
+                    }
+                }
             }
 
             // Initialize
@@ -182,16 +238,23 @@ int main(int argc, char** argv)
             UImanager->ApplyCommand("/gun/energy 1 keV");
             runManager->SetRunIDCounter(runNumber);
 
-            if(GunZPosition > 45.1*cm) GunXPosition += stepOfX;
-            for(GunXPosition = (GunXPosition < 4.51*cm ? GunXPosition: -4.5*cm); GunXPosition < 4.51*cm; GunXPosition += stepOfX)
+            // Start the probe
+            for(; GunXPosition < (GunXMax+GunXStep/10); GunXPosition += GunXStep)
             {
-                for(GunZPosition = (GunZPosition < 45.1*cm ? GunZPosition: -45*cm); GunZPosition < 45.1*cm; GunZPosition += stepOfZ)
+                for(; GunYPosition < (GunYMax+GunYStep/10); GunYPosition += GunYStep)
                 {
-                    std::ostringstream commandOS;
-                    commandOS << "/gun/position " << GunXPosition/cm << " " << 0 << " " << GunZPosition/cm << " " << "cm";
-                    UImanager->ApplyCommand(commandOS.str());
-                    UImanager->ApplyCommand("/run/beamOn 1000");
+                    for(; GunZPosition < (GunZMax+GunZStep/10); GunZPosition += GunZStep)
+                    {
+                        std::ostringstream commandPositionOS;
+                        commandPositionOS << "/gun/position " << GunXPosition/cm << " " << GunYPosition/cm << " " << GunZPosition/cm << " " << "cm";
+                        UImanager->ApplyCommand(commandPositionOS.str());
+                        std::ostringstream commandRunOS;
+                        commandRunOS << "/run/beamOn " << runCount;
+                        UImanager->ApplyCommand(commandRunOS.str());
+                    }
+                    GunZPosition = GunZMin;
                 }
+                GunYPosition = GunYMin;
             }
         }
 
