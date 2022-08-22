@@ -46,7 +46,11 @@ void MVSteppingAction::UserSteppingAction(const G4Step* aStep)
         EPN = (!PDS ? "None" : PDS->GetProcessName());
     }
 
-    fEventAction->fCPNRecorder[trackID] = CPN;
+    if(fEventAction->fCPNRecorder.find(trackID) == fEventAction->fCPNRecorder.end())
+    {
+        fEventAction->fCPNRecorder[trackID] = CPN;
+        fEventAction->fEnergyRecorder[trackID] = track->GetTotalEnergy();
+    }
     fEventAction->fFVPathRecorder[trackID] = FVPath;
     fEventAction->fEPNRecorder[trackID] = EPN;
 

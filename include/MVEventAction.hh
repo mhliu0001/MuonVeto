@@ -24,6 +24,7 @@ class MVEventAction : public G4UserEventAction
         RECORDER fCPNRecorder;
         RECORDER fFVPathRecorder;
         RECORDER fEPNRecorder;
+        std::map<G4int, G4double> fEnergyRecorder;
         STRLIST fStrList;
 };
 

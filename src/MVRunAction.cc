@@ -5,15 +5,14 @@
 #include <filesystem>
 #include "G4SystemOfUnits.hh"
 #include "G4AnalysisManager.hh"
-#include "json.hpp"
-using json = nlohmann::json;
 
 namespace MuonVeto
 {
 
-MVRunAction::MVRunAction(const G4int SiPMCount, const G4String& outputFilePath, const G4bool useBuiltinAnalysis): 
-    fSiPMCount(SiPMCount), fOutputFilePath(outputFilePath), fUseBuiltinAnalysis(useBuiltinAnalysis)
-{}
+MVRunAction::MVRunAction(const Config& config): 
+    fConfig(config)
+{
+}
 
 MVRunAction::~MVRunAction()
 {
@@ -308,7 +307,7 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
         }
         
         // Data output
-        const char* optDirName = fOutputFilePath.c_str();
+        const char* optDirName = fConfig.outputFilePath.c_str();
         G4int runID = aRun->GetRunID();
         char dirName[100];
         sprintf(dirName, "%s/run%d", optDirName, runID);
@@ -329,7 +328,7 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
         fclose(RCFP);
 
         // Analysis Manager Output
-        G4bool builtinAnalysis = fUseBuiltinAnalysis;
+        G4bool builtinAnalysis = fConfig.useBuiltinAnalysis;
         const char* builtinAnalysisFileName = "data.csv";
         if(builtinAnalysis)
         {
@@ -369,10 +368,28 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
                 }
                 fprintf(fp, "# %s: %s\n", (const char*) (singleType.first), (const char*) (strList[histIDAndStrIndex.second]));
                 for(auto it : counter)
-                    fprintf(fp, "%d,\n", it[histIDAndStrIndex.second]);
+                    fprintf(fp, "%d\n", it[histIDAndStrIndex.second]);
                 fclose(fp);
             }
+        }
 
+        // Spectrum output
+        G4String dir = G4String(dirName) + "/Spectrum";
+        std::filesystem::create_directory(dir.c_str());
+        for(auto singleProcess : MTRun->GetProcessSpectrum())
+        {
+            char fileName[400];
+            sprintf(fileName, "%s/%s%s", dir.c_str(), strList[singleProcess.first].c_str(), ".csv");
+            auto fp = fopen(fileName, "w");
+            if(!fp)
+            {   
+                G4cerr << "Open File Failed: " << fileName << G4endl;
+                continue;
+            }
+            fprintf(fp, "# %s: %s\n", "Spectrum", (const char*) (strList[singleProcess.first]));
+            for(auto it : singleProcess.second)
+                fprintf(fp, "%f\n", it/eV);
+            fclose(fp);
         }
 
         // Output for .csv

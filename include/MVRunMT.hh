@@ -20,6 +20,7 @@ class MVRunMT : public G4Run
         inline COUNTER GetCPNCounter() const { return fCPNCounter; }
         inline COUNTER GetFVPathCounter() const { return fFVPathCounter; }
         inline COUNTER GetEPNCounter() const { return fEPNCounter; }
+        inline std::map<G4int, std::vector<G4double>> GetProcessSpectrum() const { return fProcessSpectrum; }
         inline STRLIST GetStrList() const { return fStrList; }
         inline G4ThreeVector GetParticlePosition() const { return fParticlePosition; }
         inline G4double GetParticleEnergy() const { return fParticleEnergy; }
@@ -30,6 +31,7 @@ class MVRunMT : public G4Run
         COUNTER fCPNCounter;
         COUNTER fFVPathCounter;
         COUNTER fEPNCounter;
+        std::map<G4int, std::vector<G4double>> fProcessSpectrum;
         STRLIST fStrList;
         G4ThreeVector fParticlePosition;
         G4double fParticleEnergy = 0;

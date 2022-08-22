@@ -14,7 +14,7 @@ namespace MuonVeto
 class MVRunAction : public G4UserRunAction
 {
     public:
-        MVRunAction(const G4int SiPMCount, const G4String& outputFilePath, const G4bool useBuiltinAnalysis);
+        MVRunAction(const Config& config);
         ~MVRunAction();
 
         G4Run* GenerateRun() override;
@@ -22,9 +22,7 @@ class MVRunAction : public G4UserRunAction
         void EndOfRunAction(const G4Run* run) override;
     
     private:
-        const G4int fSiPMCount;
-        const G4String fOutputFilePath;
-        const G4bool fUseBuiltinAnalysis;
+        const Config fConfig;
         // G4int fPhotonCountCut = 100000;
         std::map<G4int, G4double>* GetMeanAndRMSOfCounter(COUNTER counter, G4int eventCount) const;
 

@@ -5,9 +5,14 @@
 #include <vector>
 #include <algorithm>
 #include "globals.hh"
+#include <filesystem>
+#include "json.hpp"
 
 namespace MuonVeto
 {
+/* JSON support 
+*/
+using nlohmann::json;
 
 /* COUNTERS are used to count how many photons are created in some process(CPNCounter),
 ** ended in some volume(FVPathCounter), ended with some process(EPNCounter), or detected
@@ -29,6 +34,27 @@ using STRLIST = std::vector<G4String>;
 ** It is only for a single event, and will be transformed to COUNTERS in MVEventAction.
 */
 using RECORDER = std::map<G4int, G4String>;
+
+/* Config
+*/
+struct Config
+{
+    G4bool useBuiltinAnalysis;    // Use G4AnalysisManager to create histograms, use "-b" to enable
+    G4String macro;               // Path for macro file, use "-m" to specify
+    G4String outputFilePath;      // Directory where output files are put, use "-o" to specify
+    G4int nThreads;               // Number of threads, use "-t" to specify
+    G4String probeConfigFilePath; // Probe mode, a probe_config must be provided after "-p"
+};
+
+void PrintUsage();
+
+bool isNumber(const char* str);
+
+Config ParseConfig(int argc, char** argv);
+
+/* Probe Mode
+*/
+void RunProbe(const Config config);
 
 // Find the string's index in a STRLIST
 inline G4int GetIndexOfString(const G4String& str, const STRLIST &strList)

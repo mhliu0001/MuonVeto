@@ -132,6 +132,20 @@ void MVEventAction::EndOfEventAction(const G4Event *event)
             ++EPNCounter[GetIndexOfString(track.second, fStrList)];
         }
     }
+    // Spectrum analysis
+    std::map<G4int, std::vector<G4double>> processSpectrum;
+    for(auto singlePhoton : fEnergyRecorder)
+    {
+        if(processSpectrum.find(GetIndexOfString(fCPNRecorder[singlePhoton.first], fStrList)) == processSpectrum.end())
+        {
+            std::vector<G4double> singleProcessSpectrum = {singlePhoton.second};
+            processSpectrum.insert(std::make_pair(GetIndexOfString(fCPNRecorder[singlePhoton.first], fStrList), singleProcessSpectrum));
+        }
+        else
+        {
+            processSpectrum[GetIndexOfString(fCPNRecorder[singlePhoton.first], fStrList)].push_back(singlePhoton.second);
+        }
+    }
 
     MVEventInformation* info = dynamic_cast<MVEventInformation*> (event->GetUserInformation());
     info->SetStrList(fStrList);
@@ -139,11 +153,14 @@ void MVEventAction::EndOfEventAction(const G4Event *event)
     info->SetCPNCounter(CPNCounter);
     info->SetFVPathCounter(FVPathCounter);
     info->SetEPNCounter(EPNCounter);
+    info->SetProcessSpectrum(processSpectrum);
     info->Print();
 
     fCPNRecorder.clear();
     fFVPathRecorder.clear();
     fEPNRecorder.clear();
+    fEnergyRecorder.clear();
+    fStrList.clear();
 
     /*
     G4int SiPM_0_id = SDMan->GetCollectionID("SiPM_0/photon_counter_0");

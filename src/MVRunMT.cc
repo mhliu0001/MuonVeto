@@ -8,6 +8,8 @@
 #include "G4ParticleGun.hh"
 #include "MVEventInformation.hh"
 #include <string>
+#include <exception>
+#include "G4SystemOfUnits.hh"
 
 using namespace MuonVeto;
 
@@ -36,12 +38,14 @@ void MVRunMT::RecordEvent(const G4Event* event)
 {
     MVEventInformation* info = dynamic_cast<MVEventInformation*>(event->GetUserInformation());
 
+    // These are variables in a single event. Those with "f" are the variables for a MVRunMT object,
     auto strList = info->GetStrList();
     SINGLE_COUNTER SiPMPhotonCounter;
     SINGLE_COUNTER CPNCounter;
     SINGLE_COUNTER FVPathCounter;
     SINGLE_COUNTER EPNCounter;
 
+    // Update fStrList; Translate indices for strList into indices for fStrList
     for(auto it : info->GetSiPMPhotonCounter())
     {
         if(!IsStringInList(strList[it.first], fStrList))
@@ -78,6 +82,21 @@ void MVRunMT::RecordEvent(const G4Event* event)
     fCPNCounter.push_back(CPNCounter);
     fFVPathCounter.push_back(FVPathCounter);
     fEPNCounter.push_back(EPNCounter);
+
+    // Spectrum
+    for(auto singleProcess : info->GetProcessSpectrum())
+    {
+        if(!IsStringInList(strList[singleProcess.first], fStrList))
+            fStrList.push_back(strList[singleProcess.first]);
+
+        std::vector<G4double> singleProcessSpectrum;
+        if(fProcessSpectrum.find(GetIndexOfString(strList[singleProcess.first], fStrList)) != fProcessSpectrum.end())
+            singleProcessSpectrum = fProcessSpectrum[GetIndexOfString(strList[singleProcess.first], fStrList)];
+        for(auto energy : singleProcess.second)
+            singleProcessSpectrum.push_back(energy);
+
+        fProcessSpectrum.insert_or_assign(GetIndexOfString(strList[singleProcess.first], fStrList), singleProcessSpectrum);
+    }
 }
 
 void MVRunMT::Merge(const G4Run* run)
@@ -131,6 +150,20 @@ void MVRunMT::Merge(const G4Run* run)
             newSingleEventMap[GetIndexOfString(strList[it.first], fStrList)] = it.second;
         }
         fEPNCounter.push_back(newSingleEventMap);
+    }
+
+    for(auto singleProcess : localRun->fProcessSpectrum)
+    {
+        if(!IsStringInList(strList[singleProcess.first], fStrList))
+            fStrList.push_back(strList[singleProcess.first]);
+        
+        std::vector<G4double> singleProcessSpectrum;
+        if(fProcessSpectrum.find(GetIndexOfString(strList[singleProcess.first], fStrList)) != fProcessSpectrum.end())
+            singleProcessSpectrum = fProcessSpectrum[GetIndexOfString(strList[singleProcess.first], fStrList)];
+        for(auto energy : singleProcess.second)
+            singleProcessSpectrum.push_back(energy);
+
+        fProcessSpectrum.insert_or_assign(GetIndexOfString(strList[singleProcess.first], fStrList), singleProcessSpectrum);
     }
 
     if(fParticleEnergy != localRun->fParticleEnergy)    fParticleEnergy = localRun->fParticleEnergy;

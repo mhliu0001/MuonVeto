@@ -2,7 +2,7 @@
 #define MVActionInitializer_h 1
 
 #include "G4VUserActionInitialization.hh"
-#include "globals.hh"
+#include "MVGlobals.hh"
 
 namespace MuonVeto
 {
@@ -11,7 +11,7 @@ class MVActionInitializer : public G4VUserActionInitialization
 {
     public:
 
-    MVActionInitializer(const G4String& outputFilePath, const G4bool useBuiltinAnalysis);
+    MVActionInitializer(const Config& config);
     ~MVActionInitializer();
 
     void Build() const override;
@@ -19,8 +19,7 @@ class MVActionInitializer : public G4VUserActionInitialization
     
     private:
 
-    const G4String fOutputFilePath;
-    const G4bool fUseBuiltinAnalysis;
+    const Config fConfig;
 };
 
 }

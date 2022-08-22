@@ -7,9 +7,11 @@ class G4Material;
 class G4OpticalSurface;
 class G4IntersectionSolid;
 class G4Box;
+class G4MaterialPropertiesTable;
 
 namespace MuonVeto
 {
+class MVDetectorMessenger;
 
 class MVDetectorConstruction : public G4VUserDetectorConstruction
 {
@@ -20,7 +22,17 @@ class MVDetectorConstruction : public G4VUserDetectorConstruction
         G4VPhysicalVolume* Construct() override;
         void ConstructSDandField() override;
 
+        void UpdateGeometry();
+
+        // Set material properties.
+        void SetScintYield(G4double newScintYield);
+
+        // Get methods
+        inline G4double GetScintYield() { return scintYield; }
+
     private:
+        MVDetectorMessenger* fDetectorMessenger;
+
         // Experimental Hall
         G4double expHall_x;
         G4double expHall_y;
@@ -62,6 +74,9 @@ class MVDetectorConstruction : public G4VUserDetectorConstruction
         G4Material* Pethylene_1;
         G4Material* Pethylene_2;
         G4Material* groove_mat;
+
+        // Material Properties
+        G4double scintYield;
 
         // Optical surface
         G4OpticalSurface* op_LAB_teflon_surface;
