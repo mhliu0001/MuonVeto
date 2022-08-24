@@ -10,13 +10,14 @@ namespace MuonVeto
 void PrintUsage()
 {
     G4cerr << " Usage: " << G4endl;
-    G4cerr << " MuonVeto [-m macro] [-t nThreads] [-o output_file_path] [-p probe_config_file] [-b]"
+    G4cerr << " MuonVeto [-m macro] [-t nThreads] [-o output_file_path] [-p probe_config_file] [-b] [-s]"
             << G4endl;
     G4cerr << " -m : Specify macro file" << G4endl;
     G4cerr << " -t : Specify number of threads (default: 8)" << G4endl;
     G4cerr << " -o : Specify where the data files are located (default: data)" << G4endl;
     G4cerr << " -p : Use probe mode. A probe config file (.json) must be specified" << G4endl; 
     G4cerr << " -b : Use G4 built-in analysis" << G4endl;
+    G4cerr << " -s : Enable spectrum analysis" << G4endl;
 }
 
 bool isNumber(const char* str)
@@ -34,6 +35,7 @@ Config ParseConfig(int argc, char** argv)
     config.useBuiltinAnalysis = false;
     config.outputFilePath = "data";
     config.nThreads = 8;
+    config.spectrumAnalysis = false;
 
     // Parse from argument list
     int argN = 1;
@@ -90,6 +92,11 @@ Config ParseConfig(int argc, char** argv)
         else if(G4String(argv[argN]) == "-b")
         {
             config.useBuiltinAnalysis = true;
+            argN += 1;
+        }
+        else if(G4String(argv[argN]) == "-s")
+        {
+            config.spectrumAnalysis = true;
             argN += 1;
         }
         else

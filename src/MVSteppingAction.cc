@@ -49,7 +49,8 @@ void MVSteppingAction::UserSteppingAction(const G4Step* aStep)
     if(fEventAction->fCPNRecorder.find(trackID) == fEventAction->fCPNRecorder.end())
     {
         fEventAction->fCPNRecorder[trackID] = CPN;
-        fEventAction->fEnergyRecorder[trackID] = track->GetTotalEnergy();
+        if(fEventAction->fConfig.spectrumAnalysis)
+            fEventAction->fEnergyRecorder[trackID] = track->GetTotalEnergy();
     }
     fEventAction->fFVPathRecorder[trackID] = FVPath;
     fEventAction->fEPNRecorder[trackID] = EPN;

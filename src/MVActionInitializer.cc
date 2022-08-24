@@ -21,7 +21,7 @@ void MuonVeto::MVActionInitializer::Build() const
     SetUserAction(new MVPrimaryGeneratorAction);
     SetUserAction(new MVRunAction(fConfig));
 
-    auto eventAction = new MVEventAction();
+    auto eventAction = new MVEventAction(fConfig);
     SetUserAction(eventAction);
     SetUserAction(new MVSteppingAction(eventAction));
 }

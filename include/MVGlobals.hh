@@ -44,6 +44,7 @@ struct Config
     G4String outputFilePath;      // Directory where output files are put, use "-o" to specify
     G4int nThreads;               // Number of threads, use "-t" to specify
     G4String probeConfigFilePath; // Probe mode, a probe_config must be provided after "-p"
+    G4bool spectrumAnalysis;      // Spectrum analysis, use "-s" to enable
 };
 
 void PrintUsage();

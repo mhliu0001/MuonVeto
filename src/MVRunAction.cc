@@ -33,66 +33,26 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
     {
         G4cout << G4endl << "--------------------End of Global Run-----------------------" << G4endl;
 
-        // Run Conditions
         MVRunMT *MTRun = (MVRunMT *)aRun;
 
+        // Run Conditions
         G4double particleEnergy = MTRun->GetParticleEnergy();
         G4ThreeVector particlePosition = MTRun->GetParticlePosition();
         G4String particleName = MTRun->GetParticleName();
+        G4int eventCount = MTRun->GetSiPMPhotonCounter().size();
+
+        G4cout << "This run consists of " << eventCount << " events of " << particleName << " with energy " << particleEnergy / GeV << " GeV"
+                << " located at " << particlePosition << G4endl;
+
+        // Analysis
+        auto analysisManager = G4AnalysisManager::Instance();
+        analysisManager->SetVerboseLevel(1);
+
         auto SiPMPhotonCounter = MTRun->GetSiPMPhotonCounter();
         auto CPNCounter = MTRun->GetCPNCounter();
         auto FVPathCounter = MTRun->GetFVPathCounter();
         auto EPNCounter = MTRun->GetEPNCounter();
         auto strList = MTRun->GetStrList();
-
-        G4int eventCount = SiPMPhotonCounter.size();
-
-        G4cout << "This run consists of " << eventCount << " events of " << particleName << " with energy " << particleEnergy / GeV << " GeV"
-                << " located at " << particlePosition << G4endl;
-
-        if (CPNCounter.size() != 0)
-        {
-            auto CPNMeanAndRMS = GetMeanAndRMSOfCounter(CPNCounter, eventCount);
-            G4cout << ">>> Creator Process List: " << G4endl;
-            for (auto item : CPNMeanAndRMS[0])
-                G4cout << "    " << strList[item.first] << ": " << item.second << " +- " << (CPNMeanAndRMS[1].find(item.first) != CPNMeanAndRMS[1].end() ? (*CPNMeanAndRMS[1].find(item.first)).second : -1) << G4endl;
-            
-            delete[] CPNMeanAndRMS;
-        }
-
-        if (FVPathCounter.size() != 0)
-        {
-            auto FVPathMeanAndRMS = GetMeanAndRMSOfCounter(FVPathCounter, eventCount);
-            G4cout << ">>> Final Volume Path List: " << G4endl;
-            for (auto item : FVPathMeanAndRMS[0])
-                G4cout << "    " << strList[item.first] << ": " << item.second << " +- " << (FVPathMeanAndRMS[1].find(item.first) != FVPathMeanAndRMS[1].end() ? (*FVPathMeanAndRMS[1].find(item.first)).second : -1) << G4endl;
-
-            delete[] FVPathMeanAndRMS;
-        }
-
-        if (EPNCounter.size() != 0)
-        {
-            auto EPNMeanAndRMS = GetMeanAndRMSOfCounter(EPNCounter, eventCount);
-            G4cout << ">>> Ending Process List: " << G4endl;
-            for (auto item : EPNMeanAndRMS[0])
-                G4cout << "    " << strList[item.first] << ": " << item.second << " +- " << (EPNMeanAndRMS[1].find(item.first) != EPNMeanAndRMS[1].end() ? (*EPNMeanAndRMS[1].find(item.first)).second : -1) << G4endl;
-
-            delete[] EPNMeanAndRMS;
-        }
-
-        if (SiPMPhotonCounter.size() != 0)
-        {
-            auto EPNMeanAndRMS = GetMeanAndRMSOfCounter(SiPMPhotonCounter, eventCount);
-            G4cout << ">>> SiPM Photon Count: " << G4endl;
-            for (auto item : EPNMeanAndRMS[0])
-                G4cout << "    " << strList[item.first] << ": " << item.second << " +- " << (EPNMeanAndRMS[1].find(item.first) != EPNMeanAndRMS[1].end() ? (*EPNMeanAndRMS[1].find(item.first)).second : -1) << G4endl;
-
-            delete[] EPNMeanAndRMS;
-        }
-
-        // Analysis
-        auto analysisManager = G4AnalysisManager::Instance();
-        analysisManager->SetVerboseLevel(1);
 
         // A map whose aim is to create different histograms of all counters.
         // It should handle the names and titles properly, and store the H1IDs.
@@ -104,120 +64,59 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
         // The key is the H1ID, and the value is the maximum/minimum
         std::map<G4int, G4int> histXMax, histXMin;
 
+        // The map that stores the name and the counter
+        // The key is a counter name;
+        // The value is a pointer to the counter.
+        std::map<G4String, COUNTER*> nameAndCounter;
+        nameAndCounter.insert(std::make_pair(G4String("PEs of SiPM"), &SiPMPhotonCounter));
+        nameAndCounter.insert(std::make_pair(G4String("Creator Process Name"), &CPNCounter));
+        nameAndCounter.insert(std::make_pair(G4String("Final Volume Path"), &FVPathCounter));
+        nameAndCounter.insert(std::make_pair(G4String("Ending Process Name"), &EPNCounter));
+
+        // Print mean and rms information for each counter;
+        // Register H1ID, histmap, histXMax and histXMin
         G4int H1ID = 0;
-
-        if (SiPMPhotonCounter.size() != 0)
+        for (auto singleNameAndCounter : nameAndCounter)
         {
-            G4String counterName = "PEs of SiPM";
-            for(auto singleCounter : SiPMPhotonCounter)
+            if(singleNameAndCounter.second->size() != 0)
             {
-                for(auto it : singleCounter)
+                auto meanAndRMS = GetMeanAndRMSOfCounter(*(singleNameAndCounter.second), eventCount);
+                G4cout << ">>> " << singleNameAndCounter.first << ":" << G4endl;
+                for (auto item : meanAndRMS[0])
+                    G4cout << "    " << strList[item.first] << ": " << item.second << " +- " << (meanAndRMS[1].find(item.first) != meanAndRMS[1].end() ? (*meanAndRMS[1].find(item.first)).second : -1) << G4endl;
+                
+                delete[] meanAndRMS;
+        
+                for(auto singleCounter : *(singleNameAndCounter.second))
                 {
-                    if(MapFindValue(it.first, histMap[counterName]) == histMap[counterName].end())
+                    for(auto it : singleCounter)
                     {
-                        histMap[counterName][H1ID] = it.first;
-                        ++H1ID;
-                    }
-                    G4int local_h1id = MapFindValue(it.first, histMap[counterName])->first;
-                    if(histXMax.find(local_h1id) == histXMax.end())
-                    {
-                        histXMax[local_h1id] = it.second;
-                        histXMin[local_h1id] = it.second;
-                    }
-                    else
-                    {
-                        if(it.second > histXMax[local_h1id])    histXMax[local_h1id] = it.second;
-                        if(it.second < histXMin[local_h1id])    histXMin[local_h1id] = it.second;
+                        G4String counterName = singleNameAndCounter.first;
+                        if(MapFindValue(it.first, histMap[counterName]) == histMap[counterName].end())
+                        {
+                            histMap[counterName][H1ID] = it.first;
+                            ++H1ID;
+                        }
+                        G4int local_h1id = MapFindValue(it.first, histMap[counterName])->first;
+                        if(histXMax.find(local_h1id) == histXMax.end())
+                        {
+                            histXMax[local_h1id] = it.second;
+                            histXMin[local_h1id] = it.second;
+                        }
+                        else
+                        {
+                            if(it.second > histXMax[local_h1id])    histXMax[local_h1id] = it.second;
+                            if(it.second < histXMin[local_h1id])    histXMin[local_h1id] = it.second;
+                        }
                     }
                 }
             }
         }
 
-        if (CPNCounter.size() != 0)
-        {
-            G4String counterName = "Creator Process Name";
-            for(auto singleCounter : CPNCounter)
-            {
-                for(auto it : singleCounter)
-                {
-                    if(MapFindValue(it.first, histMap[counterName]) == histMap[counterName].end())
-                    {
-                        histMap[counterName][H1ID] = it.first;
-                        ++H1ID;
-                    }
-                    G4int local_h1id = MapFindValue(it.first, histMap[counterName])->first;
-                    if(histXMax.find(local_h1id) == histXMax.end())
-                    {
-                        histXMax[local_h1id] = it.second;
-                        histXMin[local_h1id] = it.second;
-                    }
-                    else
-                    {
-                        if(it.second > histXMax[local_h1id])    histXMax[local_h1id] = it.second;
-                        if(it.second < histXMin[local_h1id])    histXMin[local_h1id] = it.second;
-                    }
-                }
-            }
-        }
-
-        if (FVPathCounter.size() != 0)
-        {
-            G4String counterName = "Final Volume Path";
-            for(auto singleCounter : FVPathCounter)
-            {
-                for(auto it : singleCounter)
-                {
-                    if(MapFindValue(it.first, histMap[counterName]) == histMap[counterName].end())
-                    {
-                        histMap[counterName][H1ID] = it.first;
-                        ++H1ID;
-                    }
-                    G4int local_h1id = MapFindValue(it.first, histMap[counterName])->first;
-                    if(histXMax.find(local_h1id) == histXMax.end())
-                    {
-                        histXMax[local_h1id] = it.second;
-                        histXMin[local_h1id] = it.second;
-                    }
-                    else
-                    {
-                        if(it.second > histXMax[local_h1id])    histXMax[local_h1id] = it.second;
-                        if(it.second < histXMin[local_h1id])    histXMin[local_h1id] = it.second;
-                    }
-                }
-            }
-        }
-        if (EPNCounter.size() != 0)
-        {
-            G4String counterName = "Ending Process Name";
-            for(auto singleCounter : EPNCounter)
-            {
-                for(auto it : singleCounter)
-                {
-                    if(MapFindValue(it.first, histMap[counterName]) == histMap[counterName].end())
-                    {
-                        histMap[counterName][H1ID] = it.first;
-                        ++H1ID;
-                    }
-                    G4int local_h1id = MapFindValue(it.first, histMap[counterName])->first;
-                    if(histXMax.find(local_h1id) == histXMax.end())
-                    {
-                        histXMax[local_h1id] = it.second;
-                        histXMin[local_h1id] = it.second;
-                    }
-                    else
-                    {
-                        if(it.second > histXMax[local_h1id])    histXMax[local_h1id] = it.second;
-                        if(it.second < histXMin[local_h1id])    histXMin[local_h1id] = it.second;
-                    }
-                }
-            }
-        }
-
-        G4cout << "H1ID is " << H1ID << G4endl;
         // Create histograms
         for(G4int local_h1id = 0; local_h1id < H1ID; ++local_h1id)
         {
-            G4String histTitle = "Not Found";
+            G4String histTitle;
             for(auto singleType : histMap)
             {
                 for(auto histIDAndStrIndex : singleType.second)
@@ -232,113 +131,63 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
                             histXMin[histIDAndStrIndex.first]/50*50,
                             (histXMax[histIDAndStrIndex.first]/50+1)*50
                         );
-                        analysisManager->SetH1Plotting(local_h1id,true);
-                        // G4cout << "Creating histogram with title " << histTitle;
+                        analysisManager->SetH1Plotting(local_h1id, true);
                         break;
                     }
                 }
-                if(histTitle != "Not Found")   break;
+                if(histTitle.size())   break;
             }
         }
-        /*
-        for(auto singleType : histMap)
-        {
-            for(auto histIDAndStrIndex : singleType.second)
-            {
-                analysisManager->CreateH1(
-                    std::to_string(histIDAndStrIndex.first),
-                    singleType.first + ": " + strList[histIDAndStrIndex.second],
-                    50,
-                    histXMin[histIDAndStrIndex.first]/50*50,
-                    (histXMax[histIDAndStrIndex.first]/50+1)*50
-                );
-                G4cout << "Creating histogram with name " << singleType.first + ": " + strList[histIDAndStrIndex.second] << G4endl;
-            }
-        }
-        */
 
-        // Filling histograms
+        // Fill histograms
         for(auto singleType : histMap)
         {
             for(auto histIDAndStrIndex : singleType.second)
             {
-                if(singleType.first == "PEs of SiPM")
+                for(auto it : *(nameAndCounter[singleType.first]))
                 {
-                    for(auto it : SiPMPhotonCounter)
-                    {
-                        analysisManager->FillH1(
-                            histIDAndStrIndex.first,
-                            (double)it[histIDAndStrIndex.second]
-                        );
-                    }
-                }
-                else if(singleType.first == "Creator Process Name")
-                {
-                    for(auto it : CPNCounter)
-                    {
-                        analysisManager->FillH1(
-                            histIDAndStrIndex.first,
-                            (double)it[histIDAndStrIndex.second]
-                        );
-                    }
-                }
-                else if(singleType.first == "Final Volume Path")
-                {
-                    for(auto it : FVPathCounter)
-                    {
-                        analysisManager->FillH1(
-                            histIDAndStrIndex.first,
-                            (double)it[histIDAndStrIndex.second]
-                        );
-                    }
-                }
-                else if(singleType.first == "Ending Process Name")
-                {
-                    for(auto it : EPNCounter)
-                    {
-                        analysisManager->FillH1(
-                            histIDAndStrIndex.first,
-                            (double)it[histIDAndStrIndex.second]
-                        );
-                        //G4cout << "Filling histogram " << histIDAndStrIndex.first << " with " << it[histIDAndStrIndex.second] << G4endl;
-                    }
+                    analysisManager->FillH1(
+                        histIDAndStrIndex.first,
+                        (double)it[histIDAndStrIndex.second]
+                    );
                 }
             }
         }
         
         // Data output
-        const char* optDirName = fConfig.outputFilePath.c_str();
-        G4int runID = aRun->GetRunID();
-        char dirName[100];
-        sprintf(dirName, "%s/run%d", optDirName, runID);
-        std::filesystem::create_directories(dirName);
+        std::stringstream optDirStream;
+        optDirStream << fConfig.outputFilePath << "/run" << aRun->GetRunID();
+        std::filesystem::create_directories(optDirStream.str());
 
-        // Run Conditions Output
-        char RCFileName[120];
-        sprintf(RCFileName, "%s/%s", dirName, "RunConditions.json");
-        auto RCFP = fopen(RCFileName, "w");
+        // Run Conditions Output  
         json runConditions;
-        runConditions["RunID"] = runID;
+        runConditions["RunID"] = aRun->GetRunID();
         runConditions["ParticleName"] = (const char*)particleName;
         runConditions["KineticEnergy/MeV"] = particleEnergy/MeV;
         runConditions["GunXPosition/cm"] = particlePosition.x()/cm;
         runConditions["GunYPosition/cm"] = particlePosition.y()/cm;
         runConditions["GunZPosition/cm"] = particlePosition.z()/cm;
-        fprintf(RCFP, "%s", runConditions.dump(4).c_str());
-        fclose(RCFP);
+
+        std::stringstream RCFileNameStream;
+        RCFileNameStream << optDirStream.str() << "/RunConditions.json";
+        std::ofstream RCFileStream(RCFileNameStream.str());
+        if(RCFileStream.is_open())
+            RCFileStream << runConditions.dump(4);
+        else
+            G4cerr << "Open File \"" << RCFileNameStream.str() << "\" Failed!";
+        RCFileStream.close();
 
         // Analysis Manager Output
         G4bool builtinAnalysis = fConfig.useBuiltinAnalysis;
-        const char* builtinAnalysisFileName = "data.csv";
         if(builtinAnalysis)
         {
-            char dirNameForBA[200];
-            sprintf(dirNameForBA, "%s/%s", dirName, "built-in");
-            std::filesystem::create_directory(dirNameForBA);
+            std::stringstream dirNameForBAStream;
+            dirNameForBAStream << optDirStream.str() << "/" << "built-in";
+            std::filesystem::create_directory(dirNameForBAStream.str());
 
-            char fileName[300];
-            sprintf(fileName, "%s/%s", dirNameForBA, builtinAnalysisFileName);
-            analysisManager->OpenFile(fileName);
+            std::stringstream BAFileNameStream;
+            BAFileNameStream << dirNameForBAStream.str() << "/data.csv";
+            analysisManager->OpenFile(BAFileNameStream.str());
             analysisManager->Write();
             analysisManager->CloseFile();
         }
@@ -346,67 +195,50 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
         // csv output
         for(auto singleType : histMap)
         {
-            G4String dir = G4String(dirName) + G4String("/") + singleType.first;
-            std::filesystem::create_directory((const char*)dir);
-            
-            COUNTER counter;
-            if(singleType.first == "Creator Process Name") counter = CPNCounter;
-            else if(singleType.first == "Final Volume Path") counter = FVPathCounter;
-            else if(singleType.first == "Ending Process Name") counter = EPNCounter;
-            else if(singleType.first == "PEs of SiPM") counter = SiPMPhotonCounter;
-            else throw "Name Error";
+            std::stringstream counterDirStream;
+            counterDirStream << optDirStream.str() << "/" << singleType.first;
+            std::filesystem::create_directory(counterDirStream.str());
 
             for(auto histIDAndStrIndex : singleType.second)
             {
-                char fileName[400];
-                sprintf(fileName, "%s/%s%s", (const char*)dir, (const char*)(strList[histIDAndStrIndex.second]), ".csv");
-                auto fp = fopen(fileName, "w");
-                if(!fp)
+                std::stringstream counterFileNameStream;
+                counterFileNameStream << counterDirStream.str() << "/" << strList[histIDAndStrIndex.second] << ".csv";
+                std::ofstream counterFileStream(counterFileNameStream.str());
+                if(!counterFileStream.is_open())
                 {   
-                    G4cerr << "Open File Failed: " << fileName << G4endl;
+                    G4cerr << "Open File \"" << counterFileNameStream.str() << "\" Failed!" << G4endl;
                     continue;
                 }
-                fprintf(fp, "# %s: %s\n", (const char*) (singleType.first), (const char*) (strList[histIDAndStrIndex.second]));
-                for(auto it : counter)
-                    fprintf(fp, "%d\n", it[histIDAndStrIndex.second]);
-                fclose(fp);
+                counterFileStream << "# " << counterDirStream.str() << ": " << strList[histIDAndStrIndex.second] << std::endl;
+                for(auto it : *(nameAndCounter[singleType.first]))
+                    counterFileStream << it[histIDAndStrIndex.second] << std::endl;
+                counterFileStream.close();
             }
         }
 
         // Spectrum output
-        G4String dir = G4String(dirName) + "/Spectrum";
-        std::filesystem::create_directory(dir.c_str());
-        for(auto singleProcess : MTRun->GetProcessSpectrum())
+        if(fConfig.spectrumAnalysis)
         {
-            char fileName[400];
-            sprintf(fileName, "%s/%s%s", dir.c_str(), strList[singleProcess.first].c_str(), ".csv");
-            auto fp = fopen(fileName, "w");
-            if(!fp)
-            {   
-                G4cerr << "Open File Failed: " << fileName << G4endl;
-                continue;
+            std::stringstream spectrumDirStream;
+            spectrumDirStream << optDirStream.str() << "/Spectrum";
+            std::filesystem::create_directory(spectrumDirStream.str());
+    
+            for(auto singleProcess : MTRun->GetProcessSpectrum())
+            {
+                std::stringstream spectrumFileNameStream;
+                spectrumFileNameStream << spectrumDirStream.str() << "/" << strList[singleProcess.first] << ".csv";
+                std::ofstream spectrumFileStream(spectrumFileNameStream.str());
+                if(!spectrumFileStream.is_open())
+                {   
+                    G4cerr << "Open File \"" << spectrumFileNameStream.str() << "\" Failed!" << G4endl;
+                    continue;
+                }
+                spectrumFileStream << "# " << "Spectrum: " << strList[singleProcess.first] << std::endl;
+                for(auto it : singleProcess.second)
+                    spectrumFileStream << it/eV << std::endl;
+                spectrumFileStream.close();
             }
-            fprintf(fp, "# %s: %s\n", "Spectrum", (const char*) (strList[singleProcess.first]));
-            for(auto it : singleProcess.second)
-                fprintf(fp, "%f\n", it/eV);
-            fclose(fp);
         }
-
-        // Output for .csv
-        /*
-        G4int particleNb = -1;
-        if (particleName == "mu-")
-            particleNb = 0;
-        if (particleName == "gamma")
-            particleNb = 1;
-
-        G4cout << ">>>> " << particlePosition.z() << "," << particlePosition.x() << "," << particleNb << "," << particleEnergy / GeV << ",";
-        for (int SiPMNb = 0; SiPMNb < fSiPMCount; SiPMNb++)
-        {
-            G4cout << mean[SiPMNb] << "," << rms[SiPMNb] << (SiPMNb == fSiPMCount - 1 ? "" : ",");
-        }
-        G4cout << G4endl;
-        */
     }
     else
     {
@@ -446,7 +278,5 @@ std::map<G4int, G4double>* MVRunAction::GetMeanAndRMSOfCounter(COUNTER counter, 
 
     return meanAndRMS;
 }
-
-
 
 }

@@ -13,7 +13,7 @@ class MVRunAction;
 class MVEventAction : public G4UserEventAction
 {
     public:
-        MVEventAction();
+        MVEventAction(const Config& config);
         ~MVEventAction() override;
 
         void  BeginOfEventAction(const G4Event* ) override;
@@ -26,6 +26,7 @@ class MVEventAction : public G4UserEventAction
         RECORDER fEPNRecorder;
         std::map<G4int, G4double> fEnergyRecorder;
         STRLIST fStrList;
+        const Config fConfig;
 };
 
 }
