@@ -61,9 +61,9 @@ void MVDetectorConstruction::SetDefaults()
     // Fiber
     fiber_d = 1.*mm;
     fiber_count = 6;
-    fiber_bend_r = 750*mm; // Not used in new geometry
-    fiber_depth_upper = 1.5*mm; // Not used in new geometry
-    fiber_depth_lower = 3.0*mm; // Not used in new geometry
+    // fiber_bend_r = 750*mm; // Not used in new geometry
+    // fiber_depth_upper = 1.5*mm; // Not used in new geometry
+    // fiber_depth_lower = 3.0*mm; // Not used in new geometry
     cladding_depth_1 = 0.015*mm;
     cladding_depth_2 = 0.045*mm;
 
@@ -419,66 +419,11 @@ G4VPhysicalVolume* MVDetectorConstruction::ConstructDetector() const
 
     /* This is the new way of defining grooves and fibers, the same as the real design
     ** The grooves consist of three straight parts
-    ** The fibers consist of three straight parts and two bending parts
+    ** The fibers consist of two straight parts and two(or one) bending part(s)
     ** Really a headache...
     */
 
-    // Input the parameters from design
-    std::vector<G4double> straight_groove_length;
-    G4double merged_groove_z;
-    G4double merged_groove_x;
-    assert(fiber_count == 4 || fiber_count == 6);
-    if(fiber_count == 4)
-    {
-        // Four fiber configuration
-        straight_groove_length.push_back(460.00*mm);
-        straight_groove_length.push_back(500.00*mm);
-        assert(straight_groove_length.size() == fiber_count/2);
-
-        merged_groove_z = 15.00*mm;
-        merged_groove_x = 4.00*mm;
-    }
-    else
-    {
-        straight_groove_length.push_back(440.00*mm);
-        straight_groove_length.push_back(460.00*mm);
-        straight_groove_length.push_back(500.00*mm);
-        assert(straight_groove_length.size() == fiber_count/2);
-
-        merged_groove_z = 22.00*mm;
-        merged_groove_x = 5.00*mm;
-    }
-
-    // Calculate parameters for grooves
-    G4double x_interval_between_grooves = (pscint_x - fiber_count*groove_width)/(fiber_count+1);
-    std::vector<G4double> oblique_groove_length;
-    std::vector<G4double> oblique_groove_angle;
-    G4double unmerged_total_x = merged_groove_z/(pscint_z/2-straight_groove_length[0]/2)*((fiber_count-1)*x_interval_between_grooves+fiber_count*groove_width-merged_groove_x)+merged_groove_x;
     
-    for(int groove_index = 0; groove_index < fiber_count/2; ++groove_index)
-    {
-        G4double starting_z = straight_groove_length[groove_index]/2;
-        G4double ending_z = pscint_z/2;
-        G4double delta_z = ending_z - starting_z;
-
-        G4double delta_x;
-        if(groove_index == 0)
-        {
-            G4double starting_x = (fiber_count/2-0.5-groove_index)*x_interval_between_grooves + (fiber_count/2-groove_index)*groove_width;
-            G4double ending_x = merged_groove_x/(fiber_count-1.0)*(fiber_count/2-0.5-groove_index);
-            delta_x = starting_x - ending_x;
-            oblique_groove_angle.push_back(std::atan(delta_x/delta_z));
-        }
-        else
-        {
-            G4double x1 = (unmerged_total_x - 2*groove_width/std::cos(oblique_groove_angle[0]))/(fiber_count-2)*(fiber_count/2-groove_index-1);
-            G4double x2 = (fiber_count/2-0.5-groove_index)*x_interval_between_grooves + (fiber_count/2-groove_index)*groove_width;
-            G4double delta_z_prime = pscint_z/2-merged_groove_z-straight_groove_length[groove_index]/2;
-            oblique_groove_angle.push_back(std::atan((x2-x1)/delta_z_prime) + std::asin(-groove_width/std::sqrt(delta_z_prime*delta_z_prime+(x2-x1)*(x2-x1))));
-        }
-        oblique_groove_length.push_back(delta_z/std::cos(oblique_groove_angle[groove_index]));
-    }
-
     /*
     G4Box* unmerged_pscint_part = new G4Box(
         "unmerged_pscint_part",
@@ -595,13 +540,181 @@ G4VPhysicalVolume* MVDetectorConstruction::ConstructDetector() const
 
     // Fibers
     
+    
+    for(int fiber_index = 0; fiber_index < fiber_count/2; ++fiber_index)
+    {
+        G4MultiUnion* fiber_outer_cladding_solid = GetFiberPart("fiber_outer_cladding_solid_" + std::to_string(fiber_index), fiber_d, pscint_solid, fiber_index);
+        G4MultiUnion* fiber_inner_cladding_solid = GetFiberPart("fiber_inner_cladding_solid_" + std::to_string(fiber_index), fiber_d-2*cladding_depth_1, pscint_solid, fiber_index);
+        G4MultiUnion* fiber_core_solid = GetFiberPart("fiber_core_solid_" + std::to_string(fiber_index), fiber_d-2*cladding_depth_1-2*cladding_depth_2, pscint_solid, fiber_index);
+
+        G4LogicalVolume* fiber_outer_cladding_log_1 = new G4LogicalVolume(
+            fiber_outer_cladding_solid,
+            Pethylene_1,
+            "fiber_outer_cladding_log_1_"+std::to_string(fiber_index)
+        );
+        G4LogicalVolume* fiber_outer_cladding_log_2 = new G4LogicalVolume(
+            fiber_outer_cladding_solid,
+            Pethylene_1,
+            "fiber_outer_cladding_log_2"+std::to_string(fiber_index)
+        );
+        G4LogicalVolume* fiber_inner_cladding_log_1 = new G4LogicalVolume(
+            fiber_inner_cladding_solid,
+            Pethylene_2,
+            "fiber_inner_cladding_log_1_"+std::to_string(fiber_index)
+        );
+        G4LogicalVolume* fiber_inner_cladding_log_2 = new G4LogicalVolume(
+            fiber_inner_cladding_solid,
+            Pethylene_2,
+            "fiber_inner_cladding_log_2_"+std::to_string(fiber_index)
+        );
+        G4LogicalVolume* fiber_core_log_1 = new G4LogicalVolume(
+            fiber_core_solid,
+            PMMA,
+            "fiber_core_log_"+std::to_string(fiber_index)
+        );
+        G4LogicalVolume* fiber_core_log_2 = new G4LogicalVolume(
+            fiber_core_solid,
+            PMMA,
+            "fiber_core_log_"+std::to_string(fiber_index)
+        );
+
+        G4PVPlacement* fiber_outer_cladding_phys_1 = new G4PVPlacement(
+            G4Transform3D(),
+            "fiber_outer_cladding_phys_" + std::to_string(fiber_index),
+            fiber_outer_cladding_log_1,
+            groove_phys,
+            false,
+            fiber_index,
+            checkOverlaps
+        );
+
+        G4PVPlacement* fiber_outer_cladding_phys_2 = new G4PVPlacement(
+            G4Transform3D(
+                (new G4RotationMatrix())->rotateZ(180*degree),
+                G4ThreeVector(0, -fiber_d, 0)
+            ),
+            "fiber_outer_cladding_phys_" + std::to_string(fiber_count-1-fiber_index),
+            fiber_outer_cladding_log_2,
+            groove_phys,
+            false,
+            fiber_count-1-fiber_index,
+            checkOverlaps
+        );
+
+        G4PVPlacement* fiber_inner_cladding_phys_1 = new G4PVPlacement(
+            G4Transform3D(),
+            "fiber_inner_cladding_phys_" + std::to_string(fiber_index),
+            fiber_inner_cladding_log_1,
+            fiber_outer_cladding_phys_1,
+            false,
+            fiber_index,
+            checkOverlaps
+        );
+
+        G4PVPlacement* fiber_inner_cladding_phys_2 = new G4PVPlacement(
+            G4Transform3D(),
+            "fiber_inner_cladding_phys_" + std::to_string(fiber_count-1-fiber_index),
+            fiber_inner_cladding_log_2,
+            fiber_outer_cladding_phys_2,
+            false,
+            fiber_count-1-fiber_index,
+            checkOverlaps
+        );
+        
+        new G4PVPlacement(
+            G4Transform3D(),
+            "fiber_core_phys_" + std::to_string(fiber_index),
+            fiber_core_log_1,
+            fiber_inner_cladding_phys_1,
+            false,
+            fiber_index,
+            checkOverlaps
+        );
+
+        new G4PVPlacement(
+            G4Transform3D(),
+            "fiber_core_phys_" + std::to_string(fiber_count-1-fiber_index),
+            fiber_core_log_2,
+            fiber_inner_cladding_phys_2,
+            false,
+            fiber_count-1-fiber_index,
+            checkOverlaps
+        );
+    }
+
+    // Optical surfaces
+
+    // The skin definition
+    new G4LogicalSkinSurface("teflon_surface", shell_log, op_LAB_teflon_surface);
+
+    // Or the border definition
+    /*
+    new G4LogicalBorderSurface(
+        "LAB_teflon_surface", pscint_phys, shell_phys, op_LAB_teflon_surface
+    );
+
+    new G4LogicalBorderSurface(
+        "teflon_air_surface", groove_phys, shell_phys, op_teflon_air_surface
+    );
+    */
+    return experimentalHall_phys;
+}
+
+void MVDetectorConstruction::CalculateParameters()
+{
+    // Input the parameters from design
+    assert(fiber_count == 4 || fiber_count == 6);
+    if(fiber_count == 4)
+    {
+        // Four fiber configuration
+        straight_groove_length.push_back(460.00*mm);
+        straight_groove_length.push_back(500.00*mm);
+        assert(straight_groove_length.size() == fiber_count/2);
+
+        merged_groove_z = 15.00*mm;
+        merged_groove_x = 4.00*mm;
+    }
+    else
+    {
+        // Six fiber configuration
+        straight_groove_length.push_back(440.00*mm);
+        straight_groove_length.push_back(460.00*mm);
+        straight_groove_length.push_back(500.00*mm);
+        assert(straight_groove_length.size() == fiber_count/2);
+
+        merged_groove_z = 22.00*mm;
+        merged_groove_x = 5.00*mm;
+    }
+
+    // Calculate parameters for grooves
+    x_interval_between_grooves = (pscint_x - fiber_count*groove_width)/(fiber_count+1);
+    unmerged_total_x = merged_groove_z/(pscint_z/2-straight_groove_length[0]/2)*((fiber_count-1)*x_interval_between_grooves+fiber_count*groove_width-merged_groove_x)+merged_groove_x;
+    
+    for(int groove_index = 0; groove_index < fiber_count/2; ++groove_index)
+    {
+        G4double starting_z = straight_groove_length[groove_index]/2;
+        G4double ending_z = pscint_z/2;
+        G4double delta_z = ending_z - starting_z;
+
+        G4double delta_x;
+        if(groove_index == 0)
+        {
+            G4double starting_x = (fiber_count/2-0.5-groove_index)*x_interval_between_grooves + (fiber_count/2-groove_index)*groove_width;
+            G4double ending_x = merged_groove_x/(fiber_count-1.0)*(fiber_count/2-0.5-groove_index);
+            delta_x = starting_x - ending_x;
+            oblique_groove_angle.push_back(std::atan(delta_x/delta_z));
+        }
+        else
+        {
+            G4double x1 = (unmerged_total_x - 2*groove_width/std::cos(oblique_groove_angle[0]))/(fiber_count-2)*(fiber_count/2-groove_index-1);
+            G4double x2 = (fiber_count/2-0.5-groove_index)*x_interval_between_grooves + (fiber_count/2-groove_index)*groove_width;
+            G4double delta_z_prime = pscint_z/2-merged_groove_z-straight_groove_length[groove_index]/2;
+            oblique_groove_angle.push_back(std::atan((x2-x1)/delta_z_prime) + std::asin(-groove_width/std::sqrt(delta_z_prime*delta_z_prime+(x2-x1)*(x2-x1))));
+        }
+        oblique_groove_length.push_back(delta_z/std::cos(oblique_groove_angle[groove_index]));
+    }
+
     // Calculate parameters for fibers
-    std::vector<G4double> fiber_straight_1_length;
-    std::vector<G4double> fiber_radius_1;
-    std::vector<G4double> fiber_angle_1;
-    std::vector<G4double> fiber_straight_2_length;
-    std::vector<G4double> fiber_radius_2;
-    std::vector<G4double> fiber_angle_2;
 
     for(int fiber_index = 0; fiber_index < fiber_count/2; ++fiber_index)
     {
@@ -647,254 +760,17 @@ G4VPhysicalVolume* MVDetectorConstruction::ConstructDetector() const
             
             fiber_radius_2.push_back(r2+fiber_d/2);
             fiber_angle_2.push_back(theta2);
-            G4cout << "Calculated radius: " << r2/mm << "mm" << G4endl;
-            G4cout << "Calculated angle: " << theta2/degree << "degree" << G4endl;
         }
     }
 
-    for(int fiber_index = 0; fiber_index < fiber_count/2; ++fiber_index)
-    {
-        G4Tubs* straight_fiber_1_solid = new G4Tubs(
-            "straight_fiber_1_solid_" + std::to_string(fiber_index),
-            0,
-            fiber_d/2,
-            fiber_straight_1_length[fiber_index]/2 + 0.1*mm,
-            0,
-            360*degree
-        );
-        G4Torus* bending_fiber_1_solid = new G4Torus(
-            "bending_fiber_1_solid_" + std::to_string(fiber_index),
-            0,
-            fiber_d/2,
-            fiber_radius_1[fiber_index],
-            0,
-            fiber_angle_1[fiber_index]
-        );
-        G4Tubs* straight_fiber_2_solid = new G4Tubs(
-            "straight_fiber_2_solid_" + std::to_string(fiber_index),
-            0,
-            fiber_d/2,
-            fiber_straight_2_length[fiber_index]/2 + 0.1*mm,
-            0,
-            360*degree
-        );
-
-        G4MultiUnion* fiber_union_solid = new G4MultiUnion();
-        fiber_union_solid->AddNode(straight_fiber_1_solid, G4TranslateX3D(
-            (fiber_count/2-0.5-fiber_index)*x_interval_between_grooves + (fiber_count/2-fiber_index)*groove_width - fiber_d/2
-        ));
-        fiber_union_solid->AddNode(bending_fiber_1_solid, G4Transform3D(
-            (new G4RotationMatrix())->rotateX(90*degree),
-            G4ThreeVector(
-                (fiber_count/2-0.5-fiber_index)*x_interval_between_grooves + (fiber_count/2-fiber_index)*groove_width - fiber_d/2 - fiber_radius_1[fiber_index], 
-                0,
-                fiber_straight_1_length[fiber_index]/2
-            )
-        ));
-        fiber_union_solid->AddNode(bending_fiber_1_solid, G4Transform3D(
-            (new G4RotationMatrix())->rotateX(-90*degree),
-            G4ThreeVector(
-                (fiber_count/2-0.5-fiber_index)*x_interval_between_grooves + (fiber_count/2-fiber_index)*groove_width - fiber_d/2 - fiber_radius_1[fiber_index], 
-                0,
-                -fiber_straight_1_length[fiber_index]/2
-            )
-        ));
-        if(fiber_index == 0)
-        {
-            G4IntersectionSolid* fiber_last_part_1 = new G4IntersectionSolid(
-                "fiber_last_part_1_" + std::to_string(fiber_index),
-                pscint_solid,
-                straight_fiber_2_solid,
-                G4Transform3D(
-                    (new G4RotationMatrix())->rotateY(oblique_groove_angle[fiber_index]),
-                    G4ThreeVector(
-                        (fiber_count/2-fiber_index-0.5)*x_interval_between_grooves
-                            +(fiber_count/2-1-fiber_index)*groove_width
-                            -(fiber_radius_1[fiber_index]-fiber_d/2)
-                            *(std::cos(oblique_groove_angle[fiber_index]/2)-std::cos(oblique_groove_angle[fiber_index]))
-                            +fiber_d/2*std::cos(oblique_groove_angle[fiber_index])
-                            -fiber_straight_2_length[fiber_index]/2*std::sin(oblique_groove_angle[fiber_index]),
-                        0, // TODO: ADD FIBER DEPTH
-                        -(fiber_radius_1[fiber_index]-fiber_d/2)*std::sin(oblique_groove_angle[fiber_index])
-                            -fiber_straight_1_length[fiber_index]/2
-                            -fiber_d/2*std::sin(oblique_groove_angle[fiber_index])
-                            -fiber_straight_2_length[fiber_index]/2*std::cos(oblique_groove_angle[fiber_index])
-                    )
-                )
-            );
-            fiber_union_solid->AddNode(fiber_last_part_1, G4Transform3D());
-            G4IntersectionSolid* fiber_last_part_2 = new G4IntersectionSolid(
-                "fiber_last_part_2_" + std::to_string(fiber_index),
-                pscint_solid,
-                straight_fiber_2_solid,
-                G4Transform3D(
-                    (new G4RotationMatrix())->rotateY(-oblique_groove_angle[fiber_index]),
-                    G4ThreeVector(
-                        (fiber_count/2-fiber_index-0.5)*x_interval_between_grooves
-                            +(fiber_count/2-1-fiber_index)*groove_width
-                            -(fiber_radius_1[fiber_index]-fiber_d/2)
-                            *(std::cos(oblique_groove_angle[fiber_index]/2)-std::cos(oblique_groove_angle[fiber_index]))
-                            +fiber_d/2*std::cos(oblique_groove_angle[fiber_index])
-                            -fiber_straight_2_length[fiber_index]/2*std::sin(oblique_groove_angle[fiber_index]),
-                        0, // TODO: ADD FIBER DEPTH
-                        (fiber_radius_1[fiber_index]-fiber_d/2)*std::sin(oblique_groove_angle[fiber_index])
-                            +fiber_straight_1_length[fiber_index]/2
-                            +fiber_d/2*std::sin(oblique_groove_angle[fiber_index])
-                            +fiber_straight_2_length[fiber_index]/2*std::cos(oblique_groove_angle[fiber_index])
-                    )
-                )
-            );
-            fiber_union_solid->AddNode(fiber_last_part_2, G4Transform3D());
-        }
-        else
-        {
-            fiber_union_solid->AddNode(straight_fiber_2_solid, G4Transform3D(
-                (new G4RotationMatrix())->rotateY(oblique_groove_angle[fiber_index]),
-                G4ThreeVector(
-                    (fiber_count/2-fiber_index-0.5)*x_interval_between_grooves
-                        +(fiber_count/2-1-fiber_index)*groove_width
-                        -(fiber_radius_1[fiber_index]-fiber_d/2)
-                        *(std::cos(oblique_groove_angle[fiber_index]/2)-std::cos(oblique_groove_angle[fiber_index]))
-                        +fiber_d/2*std::cos(oblique_groove_angle[fiber_index])
-                        -fiber_straight_2_length[fiber_index]/2*std::sin(oblique_groove_angle[fiber_index]),
-                    0, // TODO: ADD FIBER DEPTH
-                    -(fiber_radius_1[fiber_index]-fiber_d/2)*std::sin(oblique_groove_angle[fiber_index])
-                        -fiber_straight_1_length[fiber_index]/2
-                        -fiber_d/2*std::sin(oblique_groove_angle[fiber_index])
-                        -fiber_straight_2_length[fiber_index]/2*std::cos(oblique_groove_angle[fiber_index])
-                )
-            ));
-            fiber_union_solid->AddNode(straight_fiber_2_solid, G4Transform3D(
-                (new G4RotationMatrix())->rotateY(-oblique_groove_angle[fiber_index]),
-                G4ThreeVector(
-                    (fiber_count/2-fiber_index-0.5)*x_interval_between_grooves
-                        +(fiber_count/2-1-fiber_index)*groove_width
-                        -(fiber_radius_1[fiber_index]-fiber_d/2)
-                        *(std::cos(oblique_groove_angle[fiber_index]/2)-std::cos(oblique_groove_angle[fiber_index]))
-                        +fiber_d/2*std::cos(oblique_groove_angle[fiber_index])
-                        -fiber_straight_2_length[fiber_index]/2*std::sin(oblique_groove_angle[fiber_index]),
-                    0, // TODO: ADD FIBER DEPTH
-                    (fiber_radius_1[fiber_index]-fiber_d/2)*std::sin(oblique_groove_angle[fiber_index])
-                        +fiber_straight_1_length[fiber_index]/2
-                        +fiber_d/2*std::sin(oblique_groove_angle[fiber_index])
-                        +fiber_straight_2_length[fiber_index]/2*std::cos(oblique_groove_angle[fiber_index])
-                )
-            ));
-
-            G4double theta1 = oblique_groove_angle[fiber_index];
-            G4double r1 = fiber_radius_1[fiber_index];
-            G4double l2 = fiber_straight_2_length[fiber_index];
-            G4double x1 =  (fiber_count/2 - 0.5 - fiber_index)*x_interval_between_grooves
-                          +(fiber_count/2 - 1 - fiber_index)*groove_width
-                          -r1*(std::cos(theta1/2)-std::cos(theta1))
-                          -l2*std::sin(theta1);
-            G4double theta2 = fiber_angle_2[fiber_index-1];
-            G4double r2 = fiber_radius_2[fiber_index-1]-fiber_d/2;
-
-            G4Torus* bending_fiber_2_solid = new G4Torus(
-                "bending_fiber_2_solid_" + std::to_string(fiber_index),
-                0,
-                fiber_d/2,
-                r2+fiber_d/2,
-                0,
-                theta2
-            );
-
-            G4RotationMatrix* rot_1 = new G4RotationMatrix();
-            rot_1->rotateX(90*degree);
-            rot_1->rotateY(-theta1);
-
-            G4RotationMatrix* rot_2 = new G4RotationMatrix();
-            rot_2->rotateX(-90*degree);
-            rot_2->rotateY(theta1);
-            
-            G4IntersectionSolid* fiber_last_part_1 = new G4IntersectionSolid(
-                "fiber_last_part_1_" + std::to_string(fiber_index),
-                pscint_solid,
-                bending_fiber_2_solid,
-                G4Transform3D(
-                    *rot_1,
-                    G4ThreeVector(
-                        x1 - r2*std::cos(theta1),
-                        0, 
-                        pscint_z/2-merged_groove_z-r2*std::sin(theta1)
-                    )
-                )
-            );
-            
-            fiber_union_solid->AddNode(fiber_last_part_1, G4Transform3D());
-
-            G4IntersectionSolid* fiber_last_part_2 = new G4IntersectionSolid(
-                "fiber_last_part_2_" + std::to_string(fiber_index),
-                pscint_solid,
-                bending_fiber_2_solid,
-                G4Transform3D(
-                    *rot_2,
-                    G4ThreeVector(
-                        x1 - r2*std::cos(theta1),
-                        0, 
-                        -pscint_z/2+merged_groove_z+r2*std::sin(theta1)
-                    )
-                )
-            );
-            fiber_union_solid->AddNode(fiber_last_part_2, G4Transform3D());
-        }
-
-        fiber_union_solid->Voxelize();
-
-        G4LogicalVolume* fiber_log = new G4LogicalVolume(
-            fiber_union_solid,
-            PMMA,
-            "fiber_log_"+std::to_string(fiber_index)
-        );
-
-        new G4PVPlacement(
-            G4Transform3D(),
-            "fiber_phys_" + std::to_string(fiber_index),
-            fiber_log,
-            groove_phys,
-            false,
-            fiber_index,
-            checkOverlaps
-        );
-
-        new G4PVPlacement(
-            G4Transform3D(
-                (new G4RotationMatrix())->rotateZ(180*degree),
-                G4ThreeVector(0, -fiber_d, 0)
-            ),
-            "fiber_phys_" + std::to_string(fiber_index),
-            fiber_log,
-            groove_phys,
-            false,
-            fiber_count-1-fiber_index,
-            checkOverlaps
-        );
-    }
-
-    // Optical surfaces
-
-    // The skin definition
-    new G4LogicalSkinSurface("teflon_surface", shell_log, op_LAB_teflon_surface);
-
-    // Or the border definition
-    /*
-    new G4LogicalBorderSurface(
-        "LAB_teflon_surface", pscint_phys, shell_phys, op_LAB_teflon_surface
-    );
-
-    new G4LogicalBorderSurface(
-        "teflon_air_surface", groove_phys, shell_phys, op_teflon_air_surface
-    );
-    */
-    return experimentalHall_phys;
 }
 
-G4IntersectionSolid* MVDetectorConstruction::GetFiberPart(const G4String &name, G4double diameter, G4Box* pscint_solid, G4int fiber_index) const
-{   
+G4MultiUnion* MVDetectorConstruction::GetFiberPart(const G4String &name, G4double diameter, G4Box* pscint_solid, G4int fiber_index) const
+{
     // counter so that names are unique
     static G4int id = 0;
 
+    /*
     // parameter calculation
     G4double straight_fiber_x_position = pscint_x/2 - pscint_x/(fiber_count+1)*(fiber_index+1);
     G4double bend_fiber_end_x_position = SiPM_length/2 - SiPM_length/(fiber_count/2+1)*(fiber_index%(fiber_count/2)+1);
@@ -948,6 +824,201 @@ G4IntersectionSolid* MVDetectorConstruction::GetFiberPart(const G4String &name, 
 
     id++;
     return new G4IntersectionSolid(name, pscint_solid, fiber_union_solid, fiber_transform);
+    */
+
+    G4Tubs* straight_fiber_1_solid = new G4Tubs(
+        "straight_fiber_1_solid_" + std::to_string(fiber_index) + std::to_string(id),
+        0,
+        diameter/2,
+        fiber_straight_1_length[fiber_index]/2 + 0.1*mm,
+        0,
+        360*degree
+    );
+    G4Torus* bending_fiber_1_solid = new G4Torus(
+        "bending_fiber_1_solid_" + std::to_string(fiber_index) + std::to_string(id),
+        0,
+        diameter/2,
+        fiber_radius_1[fiber_index],
+        0,
+        fiber_angle_1[fiber_index]
+    );
+    G4Tubs* straight_fiber_2_solid = new G4Tubs(
+        "straight_fiber_2_solid_" + std::to_string(fiber_index) + std::to_string(id),
+        0,
+        diameter/2,
+        fiber_straight_2_length[fiber_index]/2 + 0.1*mm,
+        0,
+        360*degree
+    );
+
+    G4MultiUnion* fiber_union_solid = new G4MultiUnion(name);
+    fiber_union_solid->AddNode(straight_fiber_1_solid, G4TranslateX3D(
+         (fiber_count/2-0.5-fiber_index)*x_interval_between_grooves 
+        +(fiber_count/2-fiber_index)*groove_width - fiber_d/2
+    ));
+    fiber_union_solid->AddNode(bending_fiber_1_solid, G4Transform3D(
+        (new G4RotationMatrix())->rotateX(90*degree),
+        G4ThreeVector(
+            (fiber_count/2-0.5-fiber_index)*x_interval_between_grooves 
+                + (fiber_count/2-fiber_index)*groove_width 
+                - fiber_d/2 - fiber_radius_1[fiber_index], 
+            0,
+            fiber_straight_1_length[fiber_index]/2
+        )
+    ));
+    fiber_union_solid->AddNode(bending_fiber_1_solid, G4Transform3D(
+        (new G4RotationMatrix())->rotateX(-90*degree),
+        G4ThreeVector(
+            (fiber_count/2-0.5-fiber_index)*x_interval_between_grooves 
+                + (fiber_count/2-fiber_index)*groove_width
+                - fiber_d/2 - fiber_radius_1[fiber_index], 
+            0,
+            -fiber_straight_1_length[fiber_index]/2
+        )
+    ));
+    if(fiber_index == 0)
+    {
+        G4IntersectionSolid* fiber_last_part_1 = new G4IntersectionSolid(
+            "fiber_last_part_1_" + std::to_string(fiber_index) + std::to_string(id),
+            pscint_solid,
+            straight_fiber_2_solid,
+            G4Transform3D(
+                (new G4RotationMatrix())->rotateY(oblique_groove_angle[fiber_index]),
+                G4ThreeVector(
+                    (fiber_count/2-fiber_index-0.5)*x_interval_between_grooves
+                        +(fiber_count/2-1-fiber_index)*groove_width
+                        -(fiber_radius_1[fiber_index]-fiber_d/2)
+                        *(std::cos(oblique_groove_angle[fiber_index]/2)-std::cos(oblique_groove_angle[fiber_index]))
+                        +fiber_d/2*std::cos(oblique_groove_angle[fiber_index])
+                        -fiber_straight_2_length[fiber_index]/2*std::sin(oblique_groove_angle[fiber_index]),
+                    0, // TODO: ADD FIBER DEPTH
+                    -(fiber_radius_1[fiber_index]-fiber_d/2)*std::sin(oblique_groove_angle[fiber_index])
+                        -fiber_straight_1_length[fiber_index]/2
+                        -fiber_d/2*std::sin(oblique_groove_angle[fiber_index])
+                        -fiber_straight_2_length[fiber_index]/2*std::cos(oblique_groove_angle[fiber_index])
+                )
+            )
+        );
+        fiber_union_solid->AddNode(fiber_last_part_1, G4Transform3D());
+        G4IntersectionSolid* fiber_last_part_2 = new G4IntersectionSolid(
+            "fiber_last_part_2_" + std::to_string(fiber_index) + std::to_string(id),
+            pscint_solid,
+            straight_fiber_2_solid,
+            G4Transform3D(
+                (new G4RotationMatrix())->rotateY(-oblique_groove_angle[fiber_index]),
+                G4ThreeVector(
+                    (fiber_count/2-fiber_index-0.5)*x_interval_between_grooves
+                        +(fiber_count/2-1-fiber_index)*groove_width
+                        -(fiber_radius_1[fiber_index]-fiber_d/2)
+                        *(std::cos(oblique_groove_angle[fiber_index]/2)-std::cos(oblique_groove_angle[fiber_index]))
+                        +fiber_d/2*std::cos(oblique_groove_angle[fiber_index])
+                        -fiber_straight_2_length[fiber_index]/2*std::sin(oblique_groove_angle[fiber_index]),
+                    0, // TODO: ADD FIBER DEPTH
+                    (fiber_radius_1[fiber_index]-fiber_d/2)*std::sin(oblique_groove_angle[fiber_index])
+                        +fiber_straight_1_length[fiber_index]/2
+                        +fiber_d/2*std::sin(oblique_groove_angle[fiber_index])
+                        +fiber_straight_2_length[fiber_index]/2*std::cos(oblique_groove_angle[fiber_index])
+                )
+            )
+        );
+        fiber_union_solid->AddNode(fiber_last_part_2, G4Transform3D());
+    }
+    else
+    {
+        fiber_union_solid->AddNode(straight_fiber_2_solid, G4Transform3D(
+            (new G4RotationMatrix())->rotateY(oblique_groove_angle[fiber_index]),
+            G4ThreeVector(
+                (fiber_count/2-fiber_index-0.5)*x_interval_between_grooves
+                    +(fiber_count/2-1-fiber_index)*groove_width
+                    -(fiber_radius_1[fiber_index]-fiber_d/2)
+                    *(std::cos(oblique_groove_angle[fiber_index]/2)-std::cos(oblique_groove_angle[fiber_index]))
+                    +fiber_d/2*std::cos(oblique_groove_angle[fiber_index])
+                    -fiber_straight_2_length[fiber_index]/2*std::sin(oblique_groove_angle[fiber_index]),
+                0, // TODO: ADD FIBER DEPTH
+                -(fiber_radius_1[fiber_index]-fiber_d/2)*std::sin(oblique_groove_angle[fiber_index])
+                    -fiber_straight_1_length[fiber_index]/2
+                    -fiber_d/2*std::sin(oblique_groove_angle[fiber_index])
+                    -fiber_straight_2_length[fiber_index]/2*std::cos(oblique_groove_angle[fiber_index])
+            )
+        ));
+        fiber_union_solid->AddNode(straight_fiber_2_solid, G4Transform3D(
+            (new G4RotationMatrix())->rotateY(-oblique_groove_angle[fiber_index]),
+            G4ThreeVector(
+                (fiber_count/2-fiber_index-0.5)*x_interval_between_grooves
+                    +(fiber_count/2-1-fiber_index)*groove_width
+                    -(fiber_radius_1[fiber_index]-fiber_d/2)
+                    *(std::cos(oblique_groove_angle[fiber_index]/2)-std::cos(oblique_groove_angle[fiber_index]))
+                    +fiber_d/2*std::cos(oblique_groove_angle[fiber_index])
+                    -fiber_straight_2_length[fiber_index]/2*std::sin(oblique_groove_angle[fiber_index]),
+                0, // TODO: ADD FIBER DEPTH
+                (fiber_radius_1[fiber_index]-fiber_d/2)*std::sin(oblique_groove_angle[fiber_index])
+                    +fiber_straight_1_length[fiber_index]/2
+                    +fiber_d/2*std::sin(oblique_groove_angle[fiber_index])
+                    +fiber_straight_2_length[fiber_index]/2*std::cos(oblique_groove_angle[fiber_index])
+            )
+        ));
+
+        G4double theta1 = oblique_groove_angle[fiber_index];
+        G4double r1 = fiber_radius_1[fiber_index];
+        G4double l2 = fiber_straight_2_length[fiber_index];
+        G4double x1 =  (fiber_count/2 - 0.5 - fiber_index)*x_interval_between_grooves
+                        +(fiber_count/2 - 1 - fiber_index)*groove_width
+                        -r1*(std::cos(theta1/2)-std::cos(theta1))
+                        -l2*std::sin(theta1);
+        G4double theta2 = fiber_angle_2[fiber_index-1];
+        G4double r2 = fiber_radius_2[fiber_index-1]-fiber_d/2;
+
+        G4Torus* bending_fiber_2_solid = new G4Torus(
+            "bending_fiber_2_solid_" + std::to_string(fiber_index) + std::to_string(id),
+            0,
+            diameter/2,
+            r2+fiber_d/2,
+            0,
+            theta2
+        );
+
+        G4RotationMatrix* rot_1 = new G4RotationMatrix();
+        rot_1->rotateX(90*degree);
+        rot_1->rotateY(-theta1);
+
+        G4RotationMatrix* rot_2 = new G4RotationMatrix();
+        rot_2->rotateX(-90*degree);
+        rot_2->rotateY(theta1);
+        
+        G4IntersectionSolid* fiber_last_part_1 = new G4IntersectionSolid(
+            "fiber_last_part_1_" + std::to_string(fiber_index) + std::to_string(id),
+            pscint_solid,
+            bending_fiber_2_solid,
+            G4Transform3D(
+                *rot_1,
+                G4ThreeVector(
+                    x1 - r2*std::cos(theta1),
+                    0, 
+                    pscint_z/2-merged_groove_z-r2*std::sin(theta1)
+                )
+            )
+        );
+        
+        fiber_union_solid->AddNode(fiber_last_part_1, G4Transform3D());
+
+        G4IntersectionSolid* fiber_last_part_2 = new G4IntersectionSolid(
+            "fiber_last_part_2_" + std::to_string(fiber_index) + std::to_string(id),
+            pscint_solid,
+            bending_fiber_2_solid,
+            G4Transform3D(
+                *rot_2,
+                G4ThreeVector(
+                    x1 - r2*std::cos(theta1),
+                    0, 
+                    -pscint_z/2+merged_groove_z+r2*std::sin(theta1)
+                )
+            )
+        );
+        fiber_union_solid->AddNode(fiber_last_part_2, G4Transform3D());
+    }
+
+    fiber_union_solid->Voxelize();
+    return fiber_union_solid;
 }
 
 G4VPhysicalVolume* MVDetectorConstruction::Construct()
@@ -955,6 +1026,7 @@ G4VPhysicalVolume* MVDetectorConstruction::Construct()
     DefineMaterials();
     DefineMaterialTables();
     DefineOpticalSurfaces();
+    CalculateParameters();
     return ConstructDetector();
 }
 
