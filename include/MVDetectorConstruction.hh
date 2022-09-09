@@ -26,9 +26,13 @@ class MVDetectorConstruction : public G4VUserDetectorConstruction
 
         // Set material properties.
         void SetScintYield(G4double newScintYield);
+        
+        // Set detector constants
+        void SetFiberCount(G4int newFiberCount);
 
         // Get methods
-        inline G4double GetScintYield() { return scintYield; }
+        inline G4double GetScintYield() const { return scintYield; }
+        inline G4int GetFiberCount() const { return fiber_count; }
 
     private:
         MVDetectorMessenger* fDetectorMessenger;

@@ -20,15 +20,23 @@ MVDetectorMessenger::MVDetectorMessenger(MVDetectorConstruction* detector):
     fScintYieldCmd = new G4UIcmdWithADoubleAndUnit("/detector/scintYield", this);
     fScintYieldCmd->SetGuidance("Set scintillation yield for the plastic scintillator.");
     fScintYieldCmd->SetGuidance("Default unit is /MeV. Default value is 8000/MeV.");
-    fScintYieldCmd->SetParameterName("ScintYield", false);
+    fScintYieldCmd->SetParameterName("scintYield", false);
     fScintYieldCmd->SetDefaultUnit("/MeV");
     fScintYieldCmd->SetUnitCandidates("/eV /keV /MeV /GeV");
     fScintYieldCmd->AvailableForStates(G4State_PreInit,G4State_Idle);
+
+    fFiberCountCmd = new G4UIcmdWithAnInteger("/detector/fiberCount", this);
+    fFiberCountCmd->SetGuidance("Set fiber count.");
+    fFiberCountCmd->SetGuidance("Possible values: 4 or 6.");
+    fFiberCountCmd->SetParameterName("fiberCount", false);
+    fFiberCountCmd->SetRange("fiberCount == 4 || fiberCount == 6");
+    fFiberCountCmd->AvailableForStates(G4State_PreInit,G4State_Idle);
 }
 
 MVDetectorMessenger::~MVDetectorMessenger()
 {
     delete fScintYieldCmd;
+    delete fFiberCountCmd;
     delete fDetectorDirectory;
 }
 
@@ -38,6 +46,10 @@ void MVDetectorMessenger::SetNewValue(G4UIcommand* command, G4String newValues)
     {
         fDetector->SetScintYield(fScintYieldCmd->GetNewDoubleValue(newValues));
     }
+    if(command == fFiberCountCmd)
+    {
+        fDetector->SetFiberCount(fFiberCountCmd->GetNewIntValue(newValues));
+    }
 }
 
 G4String MVDetectorMessenger::GetCurrentValue(G4UIcommand* command)
@@ -46,6 +58,10 @@ G4String MVDetectorMessenger::GetCurrentValue(G4UIcommand* command)
     if(command == fScintYieldCmd)
     {
         cv = fScintYieldCmd->ConvertToString(fDetector->GetScintYield());
+    }
+    else if(command == fFiberCountCmd)
+    {
+        cv = fFiberCountCmd->ConvertToString(fDetector->GetFiberCount());
     }
     return cv;
 }

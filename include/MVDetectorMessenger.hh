@@ -3,6 +3,7 @@
 
 #include "G4UImessenger.hh"
 #include "G4UIcmdWithADoubleAndUnit.hh"
+#include "G4UIcmdWithAnInteger.hh"
 
 namespace MuonVeto
 {
@@ -21,6 +22,7 @@ class MVDetectorMessenger : public G4UImessenger
         MVDetectorConstruction* fDetector;
         G4UIdirectory* fDetectorDirectory;
         G4UIcmdWithADoubleAndUnit* fScintYieldCmd;
+        G4UIcmdWithAnInteger* fFiberCountCmd;
 };
 
 

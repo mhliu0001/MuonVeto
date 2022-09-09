@@ -755,7 +755,6 @@ void MVDetectorConstruction::CalculateParameters()
 
             G4double r2 = (x*x+z*z)/(2*x*std::cos(theta1)-2*z*std::sin(theta1));
             G4double theta2 =  90*degree-theta1
-                              -std::atan(x*std::sin(theta1)/(r2-x*std::cos(theta1)))
                               -std::asin(std::cos(theta1)-x/r2);
             
             fiber_radius_2.push_back(r2+fiber_d/2);
@@ -1081,7 +1080,7 @@ void MuonVeto::MVDetectorConstruction::UpdateGeometry()
     G4PhysicalVolumeStore::GetInstance()->Clean();
 
     auto runManager = G4RunManager::GetRunManager();
-    runManager->DefineWorldVolume(ConstructDetector());
+    runManager->DefineWorldVolume(Construct());
     runManager->GeometryHasBeenModified();
 }
 
@@ -1092,4 +1091,10 @@ void MVDetectorConstruction::SetScintYield(G4double newScintYield)
     MPTScint->RemoveConstProperty("SCINTILLATIONYIELD");
     MPTScint->AddConstProperty("SCINTILLATIONYIELD", scintYield);
     G4RunManager::GetRunManager()->GeometryHasBeenModified();
+}
+
+void MVDetectorConstruction::SetFiberCount(G4int newFiberCount)
+{
+    fiber_count = newFiberCount;
+    UpdateGeometry();
 }
