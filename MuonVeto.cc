@@ -50,7 +50,7 @@ int main(int argc, char** argv)
     runManager->SetNumberOfThreads(config.nThreads);
 
     // Detector construction
-    auto* detector = new MVDetectorConstruction();
+    auto* detector = new MVDetectorConstruction(config);
     runManager->SetUserInitialization(detector);
 
     // Physics list

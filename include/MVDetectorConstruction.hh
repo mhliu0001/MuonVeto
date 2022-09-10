@@ -2,6 +2,7 @@
 #define MVDetectorConstruction_H 1
 
 #include "G4VUserDetectorConstruction.hh"
+#include "MVGlobals.hh"
 class G4VPhysicalVolume;
 class G4Material;
 class G4OpticalSurface;
@@ -16,7 +17,7 @@ class MVDetectorMessenger;
 class MVDetectorConstruction : public G4VUserDetectorConstruction
 {
     public:
-        MVDetectorConstruction();
+        MVDetectorConstruction(Config& config);
         ~MVDetectorConstruction();
 
         G4VPhysicalVolume* Construct() override;
@@ -35,6 +36,7 @@ class MVDetectorConstruction : public G4VUserDetectorConstruction
         inline G4int GetFiberCount() const { return fiber_count; }
 
     private:
+        Config fConfig;
         MVDetectorMessenger* fDetectorMessenger;
 
         // Experimental Hall

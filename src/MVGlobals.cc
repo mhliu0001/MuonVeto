@@ -10,12 +10,13 @@ namespace MuonVeto
 void PrintUsage()
 {
     G4cerr << " Usage: " << G4endl;
-    G4cerr << " MuonVeto [-m macro] [-t nThreads] [-o output_file_path] [-p probe_config_file] [-b] [-s]"
+    G4cerr << " MuonVeto [-m macro] [-t nThreads] [-o output_file_path] [-p probe_config_file] [-f fiber_count] [-b] [-s]"
             << G4endl;
     G4cerr << " -m : Specify macro file" << G4endl;
     G4cerr << " -t : Specify number of threads (default: 8)" << G4endl;
     G4cerr << " -o : Specify where the data files are located (default: data)" << G4endl;
-    G4cerr << " -p : Use probe mode. A probe config file (.json) must be specified" << G4endl; 
+    G4cerr << " -p : Use probe mode. A probe config file (.json) must be specified" << G4endl;
+    G4cerr << " -f : Specify fiber count (default: 6; can be 4 or 6)" << G4endl;
     G4cerr << " -b : Use G4 built-in analysis" << G4endl;
     G4cerr << " -s : Enable spectrum analysis" << G4endl;
 }
@@ -35,6 +36,7 @@ Config ParseConfig(int argc, char** argv)
     config.useBuiltinAnalysis = false;
     config.outputFilePath = "data";
     config.nThreads = 8;
+    config.fiberCount = 6;
     config.spectrumAnalysis = false;
 
     // Parse from argument list
@@ -87,6 +89,19 @@ Config ParseConfig(int argc, char** argv)
             {
                 throw G4String("Probe config file not found! Given path: " + config.probeConfigFilePath);
             }
+            argN += 2;
+        }
+        else if(G4String(argv[argN]) == "-f")
+        {
+            if(argN+1 >= argc)
+            {
+                throw G4String("Fiber count must be specified after \"-f\"!");
+            }
+            if(G4String(argv[argN+1]) != std::to_string(4) && G4String(argv[argN+1]) != std::to_string(6))
+            {
+                throw G4String(G4String("Fiber count must be 4 or 6, but ") + G4String(argv[argN+1]) + G4String(" is specified!"));
+            }
+            config.fiberCount = G4UIcommand::ConvertToInt(argv[argN+1]);
             argN += 2;
         }
         else if(G4String(argv[argN]) == "-b")

@@ -32,7 +32,7 @@
 
 using namespace MuonVeto;
 
-MVDetectorConstruction::MVDetectorConstruction()
+MVDetectorConstruction::MVDetectorConstruction(Config& config): fConfig(config)
 {
     fDetectorMessenger = new MVDetectorMessenger(this);
     SetDefaults();
@@ -60,7 +60,7 @@ void MVDetectorConstruction::SetDefaults()
 
     // Fiber
     fiber_d = 1.*mm;
-    fiber_count = 6;
+    fiber_count = fConfig.fiberCount;
     // fiber_bend_r = 750*mm; // Not used in new geometry
     // fiber_depth_upper = 1.5*mm; // Not used in new geometry
     // fiber_depth_lower = 3.0*mm; // Not used in new geometry
