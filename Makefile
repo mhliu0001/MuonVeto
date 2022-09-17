@@ -1,3 +1,5 @@
+# CURRENTLY NOT USED: USE ARGUMENT LIST INSTEAD.
+
 DEFAULT_PARTICLE=mu-
 DEFAULT_ENERGY=3 GeV
 DEFAULT_ZPOSITION=0
@@ -19,6 +21,13 @@ data: ./data/muon_z.csv ./data/muon_x.csv ./data/gamma_z.csv
 
 .PHONY: macro
 macro: ./macro/muon_z.mac ./macro/muon_x.mac ./macro/gamma_z.mac
+
+.PHONY: probe
+probe: ./probe/Makefile ./build/MuonVeto
+	cd ./probe; make -j40
+
+./probe/Makefile: ./probe/probe_config.json
+	cd ./probe; python3 gen_makefile.py
 
 ./build/MuonVeto: ./macro/muon_z.mac ./macro/muon_x.mac ./macro/gamma_z.mac
 	mkdir -p build/

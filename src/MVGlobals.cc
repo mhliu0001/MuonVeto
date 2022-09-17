@@ -10,13 +10,14 @@ namespace MuonVeto
 void PrintUsage()
 {
     G4cerr << " Usage: " << G4endl;
-    G4cerr << " MuonVeto [-m macro] [-t nThreads] [-o output_file_path] [-p probe_config_file] [-f fiber_count] [-b] [-s]"
+    G4cerr << " MuonVeto [-m macro] [-t nThreads] [-o output_file_path] [-p probe_config_file] [-f fiber_count] [-n runID] [-b] [-s]"
             << G4endl;
     G4cerr << " -m : Specify macro file" << G4endl;
     G4cerr << " -t : Specify number of threads (default: 8)" << G4endl;
     G4cerr << " -o : Specify where the data files are located (default: data)" << G4endl;
     G4cerr << " -p : Use probe mode. A probe config file (.json) must be specified" << G4endl;
     G4cerr << " -f : Specify fiber count (default: 6; can be 4 or 6)" << G4endl;
+    G4cerr << " -n : Specify runID (useful in probe mode, if this is specified in probe mode, only ONE run is generated)" << G4endl;
     G4cerr << " -b : Use G4 built-in analysis" << G4endl;
     G4cerr << " -s : Enable spectrum analysis" << G4endl;
 }
@@ -37,6 +38,7 @@ Config ParseConfig(int argc, char** argv)
     config.outputFilePath = "data";
     config.nThreads = 8;
     config.fiberCount = 6;
+    config.runID = -1;
     config.spectrumAnalysis = false;
 
     // Parse from argument list
@@ -104,6 +106,19 @@ Config ParseConfig(int argc, char** argv)
             config.fiberCount = G4UIcommand::ConvertToInt(argv[argN+1]);
             argN += 2;
         }
+        else if(G4String(argv[argN]) == "-n")
+        {
+            if(argN+1 >= argc)
+            {
+                throw G4String("RunID must be specified after \"-n\"!");
+            }
+            if(!isNumber(argv[argN+1]))
+            {
+                throw G4String(G4String("RunID must be an integer, but ") + G4String(argv[argN+1]) + G4String(" is specified!"));
+            }
+            config.runID = G4UIcommand::ConvertToInt(argv[argN+1]);
+            argN += 2;
+        }
         else if(G4String(argv[argN]) == "-b")
         {
             config.useBuiltinAnalysis = true;
@@ -158,7 +173,7 @@ void RunProbe(Config config)
     G4double GunZPosition = GunZMin;
 
     // Read from last RunConditions.json
-    if(runNumber != 0)
+    if(runNumber != 0 && config.runID == -1)
     {
         std::ostringstream pathOS;
         pathOS << config.outputFilePath << "/" << "run" << runNumber-1 << "/RunConditions.json";
@@ -193,7 +208,9 @@ void RunProbe(Config config)
     UImanager->ApplyCommand("/gun/particle alpha");
     UImanager->ApplyCommand("/gun/energy 1 keV");
     UImanager->ApplyCommand("/detector/scintYield 40000 /keV");
-    runManager->SetRunIDCounter(runNumber);
+    runManager->SetRunIDCounter(config.runID == -1 ? runNumber : config.runID);
+
+    G4int local_runID = 0;
 
     // Start the probe
     for(; GunXPosition < (GunXMax+GunXStep/10); GunXPosition += GunXStep)
@@ -202,12 +219,17 @@ void RunProbe(Config config)
         {
             for(; GunZPosition < (GunZMax+GunZStep/10); GunZPosition += GunZStep)
             {
-                std::ostringstream commandPositionOS;
-                commandPositionOS << "/gun/position " << GunXPosition/cm << " " << GunYPosition/cm << " " << GunZPosition/cm << " " << "cm";
-                UImanager->ApplyCommand(commandPositionOS.str());
-                std::ostringstream commandRunOS;
-                commandRunOS << "/run/beamOn " << runCount;
-                UImanager->ApplyCommand(commandRunOS.str());
+                ++local_runID;
+                if(config.runID == -1 || (config.runID != -1 && local_runID == config.runID+1))
+                {
+                    std::ostringstream commandPositionOS;
+                    commandPositionOS << "/gun/position " << GunXPosition/cm << " " << GunYPosition/cm << " " << GunZPosition/cm << " " << "cm";
+                    UImanager->ApplyCommand(commandPositionOS.str());
+                    std::ostringstream commandRunOS;
+                    commandRunOS << "/run/beamOn " << runCount;
+                    UImanager->ApplyCommand(commandRunOS.str());
+                    if(config.runID != -1)  return;
+                }
             }
             GunZPosition = GunZMin;
         }
