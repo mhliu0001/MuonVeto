@@ -10,7 +10,7 @@ namespace MuonVeto
 void PrintUsage()
 {
     G4cerr << " Usage: " << G4endl;
-    G4cerr << " MuonVeto [-m macro] [-t nThreads] [-o output_file_path] [-p probe_config_file] [-f fiber_count] [-n runID] [-b] [-s]"
+    G4cerr << " MuonVeto [-m macro] [-t nThreads] [-o output_file_path] [-p probe_config_file] [-f fiber_count] [-n runID] [-e events_per_run] [-b] [-s] [-r]"
             << G4endl;
     G4cerr << " -m : Specify macro file" << G4endl;
     G4cerr << " -t : Specify number of threads (default: 8)" << G4endl;
@@ -18,8 +18,10 @@ void PrintUsage()
     G4cerr << " -p : Use probe mode. A probe config file (.json) must be specified" << G4endl;
     G4cerr << " -f : Specify fiber count (default: 6; can be 4 or 6)" << G4endl;
     G4cerr << " -n : Specify runID (useful in probe mode, if this is specified in probe mode, only ONE run is generated)" << G4endl;
+    G4cerr << " -e : Specify events per run (default: 1000), used in random points (-r)" << G4endl;
     G4cerr << " -b : Use G4 built-in analysis" << G4endl;
     G4cerr << " -s : Enable spectrum analysis" << G4endl;
+    G4cerr << " -r : Use random points as gun position" << G4endl;
 }
 
 bool isNumber(const char* str)
@@ -40,6 +42,8 @@ Config ParseConfig(int argc, char** argv)
     config.fiberCount = 6;
     config.runID = -1;
     config.spectrumAnalysis = false;
+    config.eventPerRun = 1000;
+    config.randomPoints = false;
 
     // Parse from argument list
     int argN = 1;
@@ -119,6 +123,23 @@ Config ParseConfig(int argc, char** argv)
             config.runID = G4UIcommand::ConvertToInt(argv[argN+1]);
             argN += 2;
         }
+        else if(G4String(argv[argN]) == "-e")
+        {
+            if(argN+1 >= argc)
+            {
+                throw G4String("EventPerRun must be specified after \"-e\"!");
+            }
+            if(!isNumber(argv[argN+1]))
+            {
+                throw G4String(G4String("EventPerRun must be an positive integer, but ") + G4String(argv[argN+1]) + G4String(" is specified!"));
+            }
+            config.eventPerRun = G4UIcommand::ConvertToInt(argv[argN+1]);
+            if(config.eventPerRun <= 0)
+            {
+                throw G4String(G4String("EventPerRun must be an positive integer, but ") + G4String(argv[argN+1]) + G4String(" is specified!"));
+            }
+            argN += 2;
+        }
         else if(G4String(argv[argN]) == "-b")
         {
             config.useBuiltinAnalysis = true;
@@ -127,6 +148,11 @@ Config ParseConfig(int argc, char** argv)
         else if(G4String(argv[argN]) == "-s")
         {
             config.spectrumAnalysis = true;
+            argN += 1;
+        }
+        else if(G4String(argv[argN]) == "-r")
+        {
+            config.randomPoints = true;
             argN += 1;
         }
         else

@@ -39,14 +39,16 @@ using RECORDER = std::map<G4int, G4String>;
 */
 struct Config
 {
-    G4bool useBuiltinAnalysis;    // Use G4AnalysisManager to create histograms, use "-b" to enable
-    G4String macro;               // Path for macro file, use "-m" to specify
-    G4String outputFilePath;      // Directory where output files are put, use "-o" to specify
-    G4int nThreads;               // Number of threads, use "-t" to specify
-    G4int fiberCount;             // Number of fibers, use "-f" to specify
-    G4int runID;                  // RunID, use "-n" to specify
-    G4String probeConfigFilePath; // Probe mode, a probe_config must be provided after "-p"
-    G4bool spectrumAnalysis;      // Spectrum analysis, use "-s" to enable
+    G4bool useBuiltinAnalysis;    // Use G4AnalysisManager to create histograms; use "-b" to enable
+    G4String macro;               // Path for macro file; use "-m" to specify
+    G4String outputFilePath;      // Directory where output files are put; use "-o" to specify
+    G4int nThreads;               // Number of threads; use "-t" to specify
+    G4int fiberCount;             // Number of fibers; use "-f" to specify
+    G4int runID;                  // RunID; use "-n" to specify
+    G4String probeConfigFilePath; // Probe mode; a probe_config must be provided after "-p"
+    G4bool spectrumAnalysis;      // Spectrum analysis; use "-s" to enable
+    G4bool randomPoints;          // Use random points as gun position; use "-r" to enable
+    G4int eventPerRun;            // Number of events per run; use "-e" to specify
 };
 
 void PrintUsage();

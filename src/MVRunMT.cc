@@ -15,6 +15,8 @@ using namespace MuonVeto;
 
 MVRunMT::MVRunMT()
 {
+    // Record information about the generator which does not vary in the run
+    // Currently the particle name and the energy is recorded here.
     const MVPrimaryGeneratorAction* generatorAction
         = dynamic_cast<const MVPrimaryGeneratorAction*>
             (G4RunManager::GetRunManager()->GetUserPrimaryGeneratorAction());
@@ -23,10 +25,8 @@ MVRunMT::MVRunMT()
         // G4cout << "<<<< This is not a master thread" << G4endl;
         G4ParticleGun* particleGun = generatorAction->GetParticleGun();
         fParticleEnergy = particleGun->GetParticleEnergy();
-        fParticlePosition = particleGun->GetParticlePosition();
         fParticleName = particleGun->GetParticleDefinition()->GetParticleName();
     }
-
 }
 
 MVRunMT::~MVRunMT()
@@ -44,6 +44,16 @@ void MVRunMT::RecordEvent(const G4Event* event)
     SINGLE_COUNTER CPNCounter;
     SINGLE_COUNTER FVPathCounter;
     SINGLE_COUNTER EPNCounter;
+
+    const MVPrimaryGeneratorAction* generatorAction
+        = dynamic_cast<const MVPrimaryGeneratorAction*>
+            (G4RunManager::GetRunManager()->GetUserPrimaryGeneratorAction());
+    if(generatorAction)
+    {
+        // G4cout << "<<<< This is not a master thread" << G4endl;
+        G4ParticleGun* particleGun = generatorAction->GetParticleGun();
+        fParticlePosition.push_back(particleGun->GetParticlePosition());
+    }
 
     // Update fStrList; Translate indices for strList into indices for fStrList
     for(auto it : info->GetSiPMPhotonCounter())
@@ -103,6 +113,8 @@ void MVRunMT::Merge(const G4Run* run)
 {
     const MVRunMT* localRun = dynamic_cast<const MVRunMT*>(run);
     auto strList = localRun->GetStrList();
+
+    fParticlePosition.insert(fParticlePosition.end(), localRun->fParticlePosition.begin(), localRun->fParticlePosition.end());
 
     for(auto singleEventMap : localRun->fSiPMPhotonCounter)
     {
@@ -167,7 +179,6 @@ void MVRunMT::Merge(const G4Run* run)
     }
 
     if(fParticleEnergy != localRun->fParticleEnergy)    fParticleEnergy = localRun->fParticleEnergy;
-    if(fParticlePosition != localRun->fParticlePosition)    fParticlePosition = localRun->fParticlePosition;
     if(fParticleName != localRun->fParticleName)    fParticleName = localRun->fParticleName;
 
     G4Run::Merge(run);

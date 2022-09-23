@@ -18,7 +18,7 @@ void MuonVeto::MVActionInitializer::BuildForMaster() const
 
 void MuonVeto::MVActionInitializer::Build() const
 {
-    SetUserAction(new MVPrimaryGeneratorAction);
+    SetUserAction(new MVPrimaryGeneratorAction(fConfig));
     SetUserAction(new MVRunAction(fConfig));
 
     auto eventAction = new MVEventAction(fConfig);

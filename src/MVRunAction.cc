@@ -37,12 +37,20 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
 
         // Run Conditions
         G4double particleEnergy = MTRun->GetParticleEnergy();
-        G4ThreeVector particlePosition = MTRun->GetParticlePosition();
+        std::vector<G4ThreeVector> particlePosition = MTRun->GetParticlePosition();
         G4String particleName = MTRun->GetParticleName();
         G4int eventCount = MTRun->GetSiPMPhotonCounter().size();
-
-        G4cout << "This run consists of " << eventCount << " events of " << particleName << " with energy " << particleEnergy / GeV << " GeV"
-                << " located at " << particlePosition << G4endl;
+        
+        if(!fConfig.randomPoints)
+        {
+            G4cout << "This run consists of " << eventCount << " events of " << particleName << " with energy " << particleEnergy / GeV << " GeV"
+                << " located at " << particlePosition[0] << G4endl;
+        }
+        else
+        {
+            G4cout << "This run consists of " << eventCount << " events of " << particleName << " with energy " << particleEnergy / GeV << " GeV"
+                << " located randomly inside pscint " << G4endl;
+        }
 
         // Analysis
         auto analysisManager = G4AnalysisManager::Instance();
@@ -164,9 +172,14 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
         runConditions["RunID"] = aRun->GetRunID();
         runConditions["ParticleName"] = (const char*)particleName;
         runConditions["KineticEnergy/MeV"] = particleEnergy/MeV;
-        runConditions["GunXPosition/cm"] = particlePosition.x()/cm;
-        runConditions["GunYPosition/cm"] = particlePosition.y()/cm;
-        runConditions["GunZPosition/cm"] = particlePosition.z()/cm;
+        runConditions["RandomPoints"] = fConfig.randomPoints;
+
+        if(!fConfig.randomPoints)
+        {
+            runConditions["GunXPosition/cm"] = particlePosition[0].x()/cm;
+            runConditions["GunYPosition/cm"] = particlePosition[0].y()/cm;
+            runConditions["GunZPosition/cm"] = particlePosition[0].z()/cm;
+        }
 
         std::stringstream RCFileNameStream;
         RCFileNameStream << optDirStream.str() << "/RunConditions.json";
@@ -214,6 +227,30 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
                     counterFileStream << it[histIDAndStrIndex.second] << std::endl;
                 counterFileStream.close();
             }
+        }
+
+        // If random points, gun position output
+        if(fConfig.randomPoints)
+        {
+            std::stringstream GPDirStream;
+            GPDirStream << optDirStream.str() << "/" << "Gun Position";
+            std::filesystem::create_directory(GPDirStream.str());
+
+            std::stringstream GPFileNameStream;
+            GPFileNameStream << GPDirStream.str() << "/" << "Gun_Position.csv";
+            std::ofstream GPFileStream(GPFileNameStream.str());
+            if(!GPFileStream.is_open())
+            {   
+                G4cerr << "Open File \"" << GPFileNameStream.str() << "\" Failed!" << G4endl;
+            }
+            else
+            {
+                GPFileStream << "# " << GPDirStream.str() << ": " << "Gun Position" << std::endl;
+                for(auto singlePosition : particlePosition)
+                    GPFileStream << singlePosition.x() << "," << singlePosition.y() << "," << singlePosition.z() << std::endl;
+                GPFileStream.close();
+            }
+
         }
 
         // Spectrum output
