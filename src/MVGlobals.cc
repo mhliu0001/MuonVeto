@@ -263,4 +263,22 @@ void RunProbe(Config config)
     }
 }
 
+void RunRandom(Config config)
+{
+    G4UImanager* UImanager = G4UImanager::GetUIpointer();
+    auto* runManager = G4RunManager::GetRunManager();
+    UImanager->ApplyCommand("/run/initialize");
+    UImanager->ApplyCommand("/run/verbose 0");
+    UImanager->ApplyCommand("/event/verbose 0");
+    UImanager->ApplyCommand("/tracking/verbose 0");
+    UImanager->ApplyCommand("/gun/particle alpha");
+    UImanager->ApplyCommand("/gun/energy 1 keV");
+    UImanager->ApplyCommand("/detector/scintYield 40000 /keV");
+    runManager->SetRunIDCounter(config.runID == -1 ? 0 : config.runID);
+
+    std::ostringstream commandRunOS;
+    commandRunOS << "/run/beamOn " << config.eventPerRun;
+    UImanager->ApplyCommand(commandRunOS.str());
+}
+
 }

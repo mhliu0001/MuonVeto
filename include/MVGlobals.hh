@@ -61,6 +61,10 @@ Config ParseConfig(int argc, char** argv);
 */
 void RunProbe(const Config config);
 
+/* Random Mode
+*/
+void RunRandom(const Config config);
+
 // Find the string's index in a STRLIST
 inline G4int GetIndexOfString(const G4String& str, const STRLIST &strList)
 {

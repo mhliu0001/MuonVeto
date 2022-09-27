@@ -1,4 +1,6 @@
 import json
+import argparse
+import os
 
 def read_from_json(json_file, key, default_value):
     '''
@@ -10,8 +12,19 @@ def read_from_json(json_file, key, default_value):
         return json_file[key]
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Specify input probe_config and output Makefile directory.")
+
+    parser.add_argument("-i", type=str, dest='input_file', required=True)
+    parser.add_argument("-o", type=str, dest='output_path', required=True)
+
+    args = parser.parse_args()
+
+    # Validate args
+    assert(os.path.isfile(args.input_file))
+    assert(os.path.isdir(args.output_path))
+
     # Read probe_config.json
-    with open("probe_config.json", "r") as config_file:
+    with open(args.input_file, "r") as config_file:
         probe_config = json.load(config_file)
     
     # Parse probe_config.json
@@ -35,7 +48,11 @@ if __name__ == "__main__":
     # Calculate the total number of runs
     run_sum = int(((GunXMax-GunXMin)/GunXStep+1) * ((GunYMax-GunYMin)/GunYStep+1) * ((GunZMax-GunZMin)/GunZStep+1))
     
-    with open("Makefile", "w") as makefile:
+    # Get the relative path to the Makefile
+    muonveto_path = os.path.relpath(os.path.dirname(__file__)+'/../build/MuonVeto', args.output_path)
+    probe_config_path = os.path.relpath(args.input_file, args.output_path)
+
+    with open(f"{args.output_path}/Makefile", "w") as makefile:
         makefile.write("all: ")
         for runNb in range(run_sum):
             makefile.write(f"./run{runNb}/RunConditions.json ")
@@ -43,5 +60,5 @@ if __name__ == "__main__":
 
         for runNb in range(run_sum):
             makefile.write(f"./run{runNb}/RunConditions.json: \n")
-            makefile.write(f"\t../build/MuonVeto -p probe_config.json -o . -t 1 -n {runNb}\n\n")
+            makefile.write(f"\t{muonveto_path} -p {probe_config_path} -o . -t 1 -n {runNb}\n\n")
 

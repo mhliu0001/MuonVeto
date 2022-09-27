@@ -5,6 +5,7 @@
 #include "G4ParticleDefinition.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4LogicalVolumeStore.hh"
+#include "G4PhysicalVolumeStore.hh"
 #include "G4Box.hh"
 #include "G4MultiUnion.hh"
 #include "Randomize.hh"
@@ -43,6 +44,9 @@ void MuonVeto::MVPrimaryGeneratorAction::GeneratePrimaries(G4Event *anEvent)
         if (!fGroove_solid)
         {
             G4LogicalVolume *groove_log = G4LogicalVolumeStore::GetInstance()->GetVolume("groove_log");
+            G4VPhysicalVolume *groove_phys = G4PhysicalVolumeStore::GetInstance()->GetVolume("groove_phys");
+            if(groove_phys)
+                fGroove_y_translate = groove_phys->GetFrameTranslation().y();
             if(groove_log)
                 fGroove_solid = dynamic_cast<G4MultiUnion *>(groove_log->GetSolid());
         }
@@ -67,7 +71,7 @@ void MuonVeto::MVPrimaryGeneratorAction::GeneratePrimaries(G4Event *anEvent)
             y0 = pscint_y * (G4UniformRand() - 0.5);
             z0 = pscint_z * (G4UniformRand() - 0.5);
 
-            if (fPscint_solid->Inside(G4ThreeVector(x0, y0, z0)) == kInside && fGroove_solid->Inside(G4ThreeVector(x0, y0, z0)) == kOutside)
+            if (fPscint_solid->Inside(G4ThreeVector(x0, y0, z0)) == kInside && fGroove_solid->Inside(G4ThreeVector(x0, y0+fGroove_y_translate, z0)) == kOutside)
                 break;
         }
         //G4cout << "The point generated is " << G4ThreeVector(x0, y0, z0) << G4endl;
