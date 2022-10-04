@@ -42,7 +42,7 @@ int main(int argc, char** argv)
     CLHEP::HepRandom::setTheSeed(seed);
 
     // Interactive mode
-    if(!config.macro.size() && !config.probeConfigFilePath.size())
+    if(!config.macro.size() && !config.probeConfigFilePath.size() && !config.randomPoints)
         ui = new G4UIExecutive(argc, argv);
 
     // Run manager
@@ -73,12 +73,15 @@ int main(int argc, char** argv)
 
     // Get the pointer to the User Interface manager
     G4UImanager* UImanager = G4UImanager::GetUIpointer();
-
+    
     // Start processing run
     if ( ! ui ) 
     {
         if(config.probeConfigFilePath.size())
             RunProbe(config);
+
+        else if(config.randomPoints)
+            RunRandom(config);
 
         else
         {
