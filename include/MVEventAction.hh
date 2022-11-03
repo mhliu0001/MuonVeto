@@ -2,6 +2,7 @@
 #define MVEventAction_h 1
 
 #include "G4UserEventAction.hh"
+#include "MVEventInformation.hh"
 #include "MVSteppingAction.hh"
 #include "MVGlobals.hh"
 
@@ -18,14 +19,11 @@ class MVEventAction : public G4UserEventAction
 
         void  BeginOfEventAction(const G4Event* ) override;
         void    EndOfEventAction(const G4Event* ) override;
+        MVEventInformation* eventInformation;
+        std::map<G4int, G4double> fEnergyRecorder;
 
     private:
         friend class MVSteppingAction;
-        RECORDER fCPNRecorder;
-        RECORDER fFVPathRecorder;
-        RECORDER fEPNRecorder;
-        std::map<G4int, G4double> fEnergyRecorder;
-        STRLIST fStrList;
         const Config fConfig;
 };
 

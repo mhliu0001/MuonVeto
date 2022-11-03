@@ -21,6 +21,121 @@ using nlohmann::json;
 ** A SINGLE_COUNTER is a map with the key to be the index in STRLIST, and value to be the count.
 ** A COUNTER is just a vector of SINGLE_COUNTERs.
 */
+template<class datatype>
+class MVSingleCounter
+{
+    public:
+        MVSingleCounter(G4String name, G4String description, G4bool hasRecorder=true): fName(name), fDescription(description), fHasRecorder(hasRecorder){}
+        ~MVSingleCounter(){}
+        void UpdateRecorder(G4int trackID, datatype data)
+        {
+            if(std::find(fDataList.begin(), fDataList.end(), data) == fDataList.end())
+                fDataList.push_back(data);
+            G4int dataIndex = std::distance(fDataList.begin(), std::find(fDataList.begin(), fDataList.end(), data));
+            fRecorder[trackID] = dataIndex;
+        }
+        void UpdateCounter()
+        {
+            assert(fHasRecorder);
+            for (datatype data : fDataList)
+                fCounter[data] = 0;
+            for (std::pair<G4int, G4int> pair : fRecorder)
+                ++fCounter[fDataList[pair.second]];
+        }
+        void UpdateCounter(std::map<datatype, G4int> counter)
+        {
+            assert(!fHasRecorder);
+            fCounter = counter;
+        }
+        inline G4String GetName() const { return fName; }
+        inline G4String GetDescription() const { return fDescription; }
+        inline std::map<G4int, G4int> GetRecorder() const { return fRecorder; }
+        inline std::map<datatype, G4int> GetCounter() const { return fCounter; }
+    private:
+        const G4String fName;
+        const G4String fDescription;
+        const G4bool fHasRecorder;
+        std::map<datatype, G4int> fCounter;
+        std::map<G4int, G4int> fRecorder;
+        std::vector<datatype> fDataList;
+};
+
+template<class datatype>
+class MVGlobalCounter
+{
+    public:
+        MVGlobalCounter(G4String name, G4String description): fName(name), fDescription(description){}
+        MVGlobalCounter(const MVSingleCounter<datatype>& singleCounter)
+        {
+            fEntries = 1;
+            for (std::pair<datatype, G4int> singleCounterItem : singleCounter.GetCounter())
+            {
+                fGlobalCounter[singleCounterItem.first].push_back(singleCounterItem.second);
+            }
+        }
+        
+        ~MVGlobalCounter(){}
+        
+        inline bool operator== (const MVGlobalCounter<datatype>& gc) const
+        {
+            return this->fName == gc.fName && this->fDescription == gc.fDescription;
+        }
+
+        void Merge(MVGlobalCounter<datatype>& anotherCounter)
+        {
+            assert(*this == anotherCounter);
+
+            // First, search for all "this" keys in anotherCounter. If exists, push_back a value; if not, push_back 0.
+            for(std::pair<datatype, std::vector<G4int>> thisCounterItem : fGlobalCounter)
+            {
+                if(anotherCounter.fGlobalCounter.find(thisCounterItem.first) != anotherCounter.fGlobalCounter.end())
+                    fGlobalCounter[thisCounterItem.first].insert(
+                        fGlobalCounter[thisCounterItem.first].end(),
+                        anotherCounter.fGlobalCounter[thisCounterItem.first].begin(),
+                        anotherCounter.fGlobalCounter[thisCounterItem.first].end()
+                    );
+                else
+                    fGlobalCounter[thisCounterItem.first].insert(
+                        fGlobalCounter[thisCounterItem.first].end(),
+                        anotherCounter.fEntries, 0
+                    );
+            }
+            // Second, search for all SingleCounter keys in GlobalCounter. If a key doesn't exist, create one and insert lots of 0s.
+            for(std::pair<datatype, std::vector<G4int>> anotherCounterItem : anotherCounter.fGlobalCounter)
+            {
+                if(fGlobalCounter.find(anotherCounterItem.first) == fGlobalCounter.end())
+                {
+                    fGlobalCounter[anotherCounterItem.first].insert(
+                        fGlobalCounter[anotherCounterItem.first].end(),
+                        fEntries, 0
+                    );
+                    fGlobalCounter[anotherCounterItem.first].insert(
+                        fGlobalCounter[anotherCounterItem.first].end(),
+                        anotherCounter.fGlobalCounter[anotherCounterItem.first].begin(),
+                        anotherCounter.fGlobalCounter[anotherCounterItem.first].end()
+                    );
+                }
+            }
+            fEntries += anotherCounter.fEntries;
+        }
+        void AppendSingle(const MVSingleCounter<datatype>& singleCounter)
+        {
+            assert(singleCounter.GetName() == this->fName && singleCounter.GetDescription() == this->fDescription);
+            MVGlobalCounter<datatype> newGlobalCounter(singleCounter);
+            Merge(newGlobalCounter);
+        }
+        
+        inline G4String GetName() const { return fName; }
+        inline G4String GetDescription() const { return fDescription; }
+        inline std::map<datatype, std::vector<G4int>> GetGlobalCounter() const { return fGlobalCounter; }
+        inline G4int GetEntries() const { return fEntries; }
+    private:
+        const G4String fName;
+        const G4String fDescription;
+        G4int fEntries = 0;
+        std::map<datatype, std::vector<G4int>> fGlobalCounter;
+};
+
 using SINGLE_COUNTER = std::map<G4int, G4int>;
 using COUNTER = std::vector<SINGLE_COUNTER>;
 

@@ -16,23 +16,14 @@ class MVRunMT : public G4Run
         ~MVRunMT() override;
         void RecordEvent(const G4Event*) override;
         void Merge(const G4Run*) override;
-        inline COUNTER GetSiPMPhotonCounter() const { return fSiPMPhotonCounter; }
-        inline COUNTER GetCPNCounter() const { return fCPNCounter; }
-        inline COUNTER GetFVPathCounter() const { return fFVPathCounter; }
-        inline COUNTER GetEPNCounter() const { return fEPNCounter; }
+        std::vector<MVGlobalCounter<G4String>> runCounters;
         inline std::map<G4int, std::vector<G4double>> GetProcessSpectrum() const { return fProcessSpectrum; }
-        inline STRLIST GetStrList() const { return fStrList; }
         inline std::vector<G4ThreeVector> GetParticlePosition() const { return fParticlePosition; }
         inline G4double GetParticleEnergy() const { return fParticleEnergy; }
         G4String GetParticleName() const { return fParticleName; }
 
     private:
-        COUNTER fSiPMPhotonCounter;
-        COUNTER fCPNCounter;
-        COUNTER fFVPathCounter;
-        COUNTER fEPNCounter;
         std::map<G4int, std::vector<G4double>> fProcessSpectrum;
-        STRLIST fStrList;
         std::vector<G4ThreeVector> fParticlePosition;
         G4double fParticleEnergy = 0;
         G4String fParticleName;

@@ -39,7 +39,7 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
         G4double particleEnergy = MTRun->GetParticleEnergy();
         std::vector<G4ThreeVector> particlePosition = MTRun->GetParticlePosition();
         G4String particleName = MTRun->GetParticleName();
-        G4int eventCount = MTRun->GetSiPMPhotonCounter().size();
+        G4int eventCount = MTRun->runCounters[0].GetEntries();
         
         if(!fConfig.randomPoints)
         {
@@ -52,6 +52,8 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
                 << " located randomly inside pscint " << G4endl;
         }
 
+        // TODO: FIX HISTOGRAMS
+        /*
         // Analysis
         auto analysisManager = G4AnalysisManager::Instance();
         analysisManager->SetVerboseLevel(1);
@@ -161,6 +163,7 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
                 }
             }
         }
+        */
         
         // Data output
         std::stringstream optDirStream;
@@ -190,6 +193,7 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
             G4cerr << "Open File \"" << RCFileNameStream.str() << "\" Failed!";
         RCFileStream.close();
 
+        /* TODO: Fix built-in analysis
         // Analysis Manager Output
         G4bool builtinAnalysis = fConfig.useBuiltinAnalysis;
         if(builtinAnalysis)
@@ -204,27 +208,28 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
             analysisManager->Write();
             analysisManager->CloseFile();
         }
+        */
 
         // csv output
-        for(auto singleType : histMap)
+        for(auto runCounter : MTRun->runCounters)
         {
             std::stringstream counterDirStream;
-            counterDirStream << optDirStream.str() << "/" << singleType.first;
+            counterDirStream << optDirStream.str() << "/" << runCounter.GetName();
             std::filesystem::create_directory(counterDirStream.str());
 
-            for(auto histIDAndStrIndex : singleType.second)
+            for(auto nameAndValue: runCounter.GetGlobalCounter())
             {
                 std::stringstream counterFileNameStream;
-                counterFileNameStream << counterDirStream.str() << "/" << strList[histIDAndStrIndex.second] << ".csv";
+                counterFileNameStream << counterDirStream.str() << "/" << nameAndValue.first << ".csv";
                 std::ofstream counterFileStream(counterFileNameStream.str());
                 if(!counterFileStream.is_open())
                 {   
                     G4cerr << "Open File \"" << counterFileNameStream.str() << "\" Failed!" << G4endl;
                     continue;
                 }
-                counterFileStream << "# " << counterDirStream.str() << ": " << strList[histIDAndStrIndex.second] << std::endl;
-                for(auto it : *(nameAndCounter[singleType.first]))
-                    counterFileStream << it[histIDAndStrIndex.second] << std::endl;
+                counterFileStream << "# " << counterDirStream.str() << ": " << nameAndValue.first <<std::endl;
+                for(auto value : nameAndValue.second)
+                    counterFileStream << value << std::endl;
                 counterFileStream.close();
             }
         }
@@ -253,6 +258,8 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
 
         }
 
+        // TODO: Fix spectrum
+        /*
         // Spectrum output
         if(fConfig.spectrumAnalysis)
         {
@@ -276,6 +283,7 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
                 spectrumFileStream.close();
             }
         }
+        */
     }
     else
     {

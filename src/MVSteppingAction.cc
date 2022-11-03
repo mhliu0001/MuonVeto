@@ -32,6 +32,17 @@ static G4String Path(const G4TouchableHandle& th)
 void MVSteppingAction::UserSteppingAction(const G4Step* aStep)
 {
     const G4Track* track = aStep->GetTrack();
+    /*
+    G4double edepStep = aStep->GetTotalEnergyDeposit();
+    if(edepStep > 0)
+    {
+        G4int trackID = track->GetTrackID();
+        G4ThreeVector preStepPos = aStep->GetPreStepPoint()->GetPosition();
+        G4ThreeVector postStepPos = aStep->GetPostStepPoint()->GetPosition();
+        G4String particleName = track->GetParticleDefinition()->GetParticleName();
+        G4String processName = aStep->GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName();
+    }
+    */
     if(track->GetParticleDefinition()->GetParticleName() != "opticalphoton")    return;
     const G4int trackID = track->GetTrackID();
     const G4VProcess* CP = track->GetCreatorProcess();
@@ -46,15 +57,12 @@ void MVSteppingAction::UserSteppingAction(const G4Step* aStep)
         EPN = (!PDS ? "None" : PDS->GetProcessName());
     }
 
-    if(fEventAction->fCPNRecorder.find(trackID) == fEventAction->fCPNRecorder.end())
-    {
-        fEventAction->fCPNRecorder[trackID] = CPN;
-        if(fEventAction->fConfig.spectrumAnalysis)
-            fEventAction->fEnergyRecorder[trackID] = track->GetTotalEnergy();
-    }
-    fEventAction->fFVPathRecorder[trackID] = FVPath;
-    fEventAction->fEPNRecorder[trackID] = EPN;
+    fEventAction->eventInformation->counters[0].UpdateRecorder(trackID, CPN);
+    fEventAction->eventInformation->counters[1].UpdateRecorder(trackID, FVPath);
+    fEventAction->eventInformation->counters[2].UpdateRecorder(trackID, EPN);
 
+    if(fEventAction->fConfig.spectrumAnalysis)
+        fEventAction->fEnergyRecorder[trackID] = track->GetTotalEnergy();
     /*
     if(!IsStringInList(CPN, fEventAction->fStrList))   fEventAction->fStrList.push_back(CPN);
     if(!IsStringInList(FVPath, fEventAction->fStrList))    fEventAction->fStrList.push_back(FVPath);

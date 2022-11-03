@@ -26,7 +26,8 @@ MVEventAction::~MVEventAction()
 
 void MVEventAction::BeginOfEventAction(const G4Event *)
 {
-    fpEventManager->SetUserInformation(new MVEventInformation);
+    eventInformation = new MVEventInformation;
+    fpEventManager->SetUserInformation(eventInformation);
 }
 
 void MVEventAction::EndOfEventAction(const G4Event *event)
@@ -52,96 +53,22 @@ void MVEventAction::EndOfEventAction(const G4Event *event)
     G4HCofThisEvent *hce = event->GetHCofThisEvent();
     G4SDManager *SDMan = G4SDManager::GetSDMpointer();
 
-    SINGLE_COUNTER SiPMPhotonCounter;
-    SINGLE_COUNTER CPNCounter;
-    SINGLE_COUNTER FVPathCounter;
-    SINGLE_COUNTER EPNCounter;
+    MVEventInformation* info = dynamic_cast<MVEventInformation*> (event->GetUserInformation());
+    for (int counter_index = 0; counter_index < 3; counter_index++)
+        info->counters[counter_index].UpdateCounter();
     
     G4int SiPMCID_0 = SDMan->GetCollectionID("collection_0");
     G4int SiPMCID_1 = SDMan->GetCollectionID("collection_1");
     G4VHitsCollection *SiPMHC_0 = hce->GetHC(SiPMCID_0);
     G4VHitsCollection *SiPMHC_1 = hce->GetHC(SiPMCID_1);
-    fStrList.push_back("SiPM_0");
-    fStrList.push_back("SiPM_1");
-    SiPMPhotonCounter[GetIndexOfString("SiPM_0", fStrList)] = SiPMHC_0->GetSize();
-    SiPMPhotonCounter[GetIndexOfString("SiPM_1", fStrList)] = SiPMHC_1->GetSize();
-
-    /*
-    for(auto track : fCPNRecorder)
-    {
-        if(CPNCounter.find(track.second) == CPNCounter.end())
-        {
-            CPNCounter[track.second] = 1;
-        }
-        else
-            ++CPNCounter[track.second];
-    }
-    for(auto track : fFVPathRecorder)
-    {
-        if(FVPathCounter.find(track.second) == FVPathCounter.end())
-        {
-            FVPathCounter[track.second] = 1;
-        }
-        else
-            ++FVPathCounter[track.second];
-    }
-    for(auto track : fEPNRecorder)
-    {
-        if(EPNCounter.find(track.second) == EPNCounter.end())
-        {
-            EPNCounter[track.second] = 1;
-        }
-        else
-            ++EPNCounter[track.second];
-    }
-    */
-
-    for(auto track : fCPNRecorder)
-    {
-        if(!IsStringInList(track.second, fStrList))
-        {
-            fStrList.push_back(track.second);
-            CPNCounter[GetIndexOfString(track.second, fStrList)] = 1;
-        }
-        else
-        {
-            ++CPNCounter[GetIndexOfString(track.second, fStrList)];
-        }
-    }
-    for(auto track : fFVPathRecorder)
-    {
-        if(!IsStringInList(track.second, fStrList))
-        {
-            fStrList.push_back(track.second);
-            FVPathCounter[GetIndexOfString(track.second, fStrList)] = 1;
-        }
-        else
-        {
-            ++FVPathCounter[GetIndexOfString(track.second, fStrList)];
-        }
-    }
-    for(auto track : fEPNRecorder)
-    {
-        if(!IsStringInList(track.second, fStrList))
-        {
-            fStrList.push_back(track.second);
-            EPNCounter[GetIndexOfString(track.second, fStrList)] = 1;
-        }
-        else
-        {
-            ++EPNCounter[GetIndexOfString(track.second, fStrList)];
-        }
-    }
-
-    MVEventInformation* info = dynamic_cast<MVEventInformation*> (event->GetUserInformation());
-    info->SetStrList(fStrList);
-    info->SetSiPMPhotonCounter(SiPMPhotonCounter);
-    info->SetCPNCounter(CPNCounter);
-    info->SetFVPathCounter(FVPathCounter);
-    info->SetEPNCounter(EPNCounter);
+    std::map<G4String, G4int> SiPMPhotonCounter;
+    SiPMPhotonCounter["SiPM_0"] = SiPMHC_0->GetSize();
+    SiPMPhotonCounter["SiPM_1"] = SiPMHC_1->GetSize();
+    info->counters[3].UpdateCounter(SiPMPhotonCounter);
     info->Print();
 
     // Spectrum analysis
+    /*
     if(fConfig.spectrumAnalysis)
     {
         std::map<G4int, std::vector<G4double>> processSpectrum;
@@ -157,14 +84,10 @@ void MVEventAction::EndOfEventAction(const G4Event *event)
                 processSpectrum[GetIndexOfString(fCPNRecorder[singlePhoton.first], fStrList)].push_back(singlePhoton.second);
             }
         }
-        info->SetProcessSpectrum(processSpectrum);
+        info->processSpectrum = processSpectrum;
         fEnergyRecorder.clear();
     }
-
-    fCPNRecorder.clear();
-    fFVPathRecorder.clear();
-    fEPNRecorder.clear();
-    fStrList.clear();
+    */
 
     /*
     G4int SiPM_0_id = SDMan->GetCollectionID("SiPM_0/photon_counter_0");

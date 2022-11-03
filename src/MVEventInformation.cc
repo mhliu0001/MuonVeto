@@ -4,6 +4,10 @@ using namespace MuonVeto;
 
 MVEventInformation::MVEventInformation()
 {
+    counters.push_back(MVSingleCounter<G4String>("CPNCounter", "Creator Process Name list", true));
+    counters.push_back(MVSingleCounter<G4String>("FVPathCounter", "Final Volume Path list", true));
+    counters.push_back(MVSingleCounter<G4String>("EPNCounter", "Ending Process Name list", true));
+    counters.push_back(MVSingleCounter<G4String>("SiPMPhotonCounter", "SiPM Photon Count", false));
 }
 
 MVEventInformation::~MVEventInformation()
@@ -12,24 +16,12 @@ MVEventInformation::~MVEventInformation()
 
 void MVEventInformation::Print() const
 {
-    G4cout << ">>> Creator Process Name list: " << G4endl;
-    for (auto it : fCPNCounter)
+    for (auto counter : counters)
     {
-        G4cout << "    " << fStrList[it.first] << ": " << it.second << G4endl;
-    }
-    G4cout << ">>> Final Volume Path list: " << G4endl;
-    for (auto it : fFVPathCounter)
-    {
-        G4cout << "    " << fStrList[it.first] << ": " << it.second << G4endl;
-    }
-    G4cout << ">>> Ending Process Name list: " << G4endl;
-    for (auto it : fEPNCounter)
-    {
-        G4cout << "    " << fStrList[it.first] << ": " << it.second << G4endl;
-    }
-    G4cout << ">>> SiPM Photon Count: " << G4endl;
-    for (auto it : fSiPMPhotonCounter)
-    {
-        G4cout << "    " << fStrList[it.first] << ": " << it.second << G4endl;
+        G4cout << ">>> " << counter.GetDescription() << ": " << G4endl;
+        for (auto it : counter.GetCounter())
+        {
+            G4cout << "    " << it.first << ": " << it.second << G4endl;
+        }
     }
 }
