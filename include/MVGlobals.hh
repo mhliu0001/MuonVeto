@@ -14,6 +14,9 @@ namespace MuonVeto
 */
 using nlohmann::json;
 
+// Generator enum
+typedef enum {DEFAULT, MUON, GAMMA} MVGen;
+
 /* COUNTERS are used to count how many photons are created in some process(CPNCounter),
 ** ended in some volume(FVPathCounter), ended with some process(EPNCounter), or detected
 ** by a SiPM(SiPMPhotonCounter).
@@ -154,6 +157,7 @@ using RECORDER = std::map<G4int, G4String>;
 */
 struct Config
 {
+    MVGen generator;              // Generator to be used ("default" or "muon")
     G4bool useBuiltinAnalysis;    // Use G4AnalysisManager to create histograms; use "-b" to enable
     G4String macro;               // Path for macro file; use "-m" to specify
     G4String outputFilePath;      // Directory where output files are put; use "-o" to specify

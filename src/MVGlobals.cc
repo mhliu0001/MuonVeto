@@ -10,8 +10,9 @@ namespace MuonVeto
 void PrintUsage()
 {
     G4cerr << " Usage: " << G4endl;
-    G4cerr << " MuonVeto [-m macro] [-t nThreads] [-o output_file_path] [-p probe_config_file] [-f fiber_count] [-n runID] [-e events_per_run] [-b] [-s] [-r]"
+    G4cerr << " MuonVeto [--gen generator][-m macro] [-t nThreads] [-o output_file_path] [-p probe_config_file] [-f fiber_count] [-n runID] [-e events_per_run] [-b] [-s] [-r]"
             << G4endl;
+    G4cerr << " --gen : Specify generator. Can be \"default\", \"muon\" or \"gamma\". " << G4endl;
     G4cerr << " -m : Specify macro file" << G4endl;
     G4cerr << " -t : Specify number of threads (default: 8)" << G4endl;
     G4cerr << " -o : Specify where the data files are located (default: data)" << G4endl;
@@ -36,6 +37,7 @@ Config ParseConfig(int argc, char** argv)
     Config config;
 
     // Default values
+    config.generator = DEFAULT;
     config.useBuiltinAnalysis = false;
     config.outputFilePath = "data";
     config.nThreads = 8;
@@ -49,7 +51,31 @@ Config ParseConfig(int argc, char** argv)
     int argN = 1;
     while (argN < argc)
     {
-        if(G4String(argv[argN]) == "-m")
+        if(G4String(argv[argN]) == "--gen")
+        {
+            if(argN+1 >= argc)
+            {
+                throw G4String("A generator must be specified after \"--gen\"!");
+            }
+            else if(G4String(argv[argN+1]) == "default")
+            {
+                config.generator = DEFAULT;
+            }
+            else if(G4String(argv[argN+1]) == "muon")
+            {
+                config.generator = MUON;
+            }
+            else if(G4String(argv[argN+1]) == "gamma")
+            {
+                config.generator = GAMMA;
+            }
+            else
+            {
+                throw G4String("Unrecognized generator " + G4String(argv[argN]));
+            }
+            argN += 2;
+        }
+        else if(G4String(argv[argN]) == "-m")
         {
             if(argN+1 >= argc)
             {

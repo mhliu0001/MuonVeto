@@ -17,6 +17,10 @@ MVRunMT::MVRunMT()
 {
     // Record information about the generator which does not vary in the run
     // Currently the particle name and the energy is recorded here.
+    // TODO: Fix generator information
+    fParticleEnergy = 0;
+    fParticleName = "FIXME";
+    /*
     const MVPrimaryGeneratorAction* generatorAction
         = dynamic_cast<const MVPrimaryGeneratorAction*>
             (G4RunManager::GetRunManager()->GetUserPrimaryGeneratorAction());
@@ -27,6 +31,7 @@ MVRunMT::MVRunMT()
         fParticleEnergy = particleGun->GetParticleEnergy();
         fParticleName = particleGun->GetParticleDefinition()->GetParticleName();
     }
+    */
 
     // Initialize runCounters
     runCounters.push_back(MVGlobalCounter<G4String>("CPNCounter", "Creator Process Name list"));
@@ -55,7 +60,10 @@ void MVRunMT::RecordEvent(const G4Event* event)
         G4ParticleGun* particleGun = generatorAction->GetParticleGun();
         fParticlePosition.push_back(particleGun->GetParticlePosition());
     }
-
+    else
+    {
+        fParticlePosition.push_back(G4ThreeVector(0,0,0));
+    }
     for(int counter_index = 0; counter_index < 4; counter_index++)
     {
         runCounters[counter_index].AppendSingle(info->counters[counter_index]);
