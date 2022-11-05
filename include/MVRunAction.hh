@@ -9,6 +9,8 @@ class G4Run;
 namespace MuonVeto
 {
 
+class MVRunMT;
+
 /// Run action class
 
 class MVRunAction : public G4UserRunAction
@@ -25,6 +27,7 @@ class MVRunAction : public G4UserRunAction
         const Config fConfig;
         // G4int fPhotonCountCut = 100000;
         std::map<G4int, G4double>* GetMeanAndRMSOfCounter(COUNTER counter, G4int eventCount) const;
+        void CreateHists(const MVRunMT* run) const;
 
 };
 

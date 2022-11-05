@@ -52,118 +52,10 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
                 << " located randomly inside pscint " << G4endl;
         }
 
-        // TODO: FIX HISTOGRAMS
-        /*
+
         // Analysis
-        auto analysisManager = G4AnalysisManager::Instance();
-        analysisManager->SetVerboseLevel(1);
-
-        auto SiPMPhotonCounter = MTRun->GetSiPMPhotonCounter();
-        auto CPNCounter = MTRun->GetCPNCounter();
-        auto FVPathCounter = MTRun->GetFVPathCounter();
-        auto EPNCounter = MTRun->GetEPNCounter();
-        auto strList = MTRun->GetStrList();
-
-        // A map whose aim is to create different histograms of all counters.
-        // It should handle the names and titles properly, and store the H1IDs.
-        // The key is a counter name;
-        // The value is a map with the key to be H1ID, and the value to be the index in strList.
-        std::map<G4String, std::map<G4int, G4int>> histMap;
-        
-        // These are maps aiming to deal with xmax and xmin properly.
-        // The key is the H1ID, and the value is the maximum/minimum
-        std::map<G4int, G4int> histXMax, histXMin;
-
-        // The map that stores the name and the counter
-        // The key is a counter name;
-        // The value is a pointer to the counter.
-        std::map<G4String, COUNTER*> nameAndCounter;
-        nameAndCounter.insert(std::make_pair(G4String("PEs of SiPM"), &SiPMPhotonCounter));
-        nameAndCounter.insert(std::make_pair(G4String("Creator Process Name"), &CPNCounter));
-        nameAndCounter.insert(std::make_pair(G4String("Final Volume Path"), &FVPathCounter));
-        nameAndCounter.insert(std::make_pair(G4String("Ending Process Name"), &EPNCounter));
-
-        // Print mean and rms information for each counter;
-        // Register H1ID, histmap, histXMax and histXMin
-        G4int H1ID = 0;
-        for (auto singleNameAndCounter : nameAndCounter)
-        {
-            if(singleNameAndCounter.second->size() != 0)
-            {
-                auto meanAndRMS = GetMeanAndRMSOfCounter(*(singleNameAndCounter.second), eventCount);
-                G4cout << ">>> " << singleNameAndCounter.first << ":" << G4endl;
-                for (auto item : meanAndRMS[0])
-                    G4cout << "    " << strList[item.first] << ": " << item.second << " +- " << (meanAndRMS[1].find(item.first) != meanAndRMS[1].end() ? (*meanAndRMS[1].find(item.first)).second : -1) << G4endl;
-                
-                delete[] meanAndRMS;
-        
-                for(auto singleCounter : *(singleNameAndCounter.second))
-                {
-                    for(auto it : singleCounter)
-                    {
-                        G4String counterName = singleNameAndCounter.first;
-                        if(MapFindValue(it.first, histMap[counterName]) == histMap[counterName].end())
-                        {
-                            histMap[counterName][H1ID] = it.first;
-                            ++H1ID;
-                        }
-                        G4int local_h1id = MapFindValue(it.first, histMap[counterName])->first;
-                        if(histXMax.find(local_h1id) == histXMax.end())
-                        {
-                            histXMax[local_h1id] = it.second;
-                            histXMin[local_h1id] = it.second;
-                        }
-                        else
-                        {
-                            if(it.second > histXMax[local_h1id])    histXMax[local_h1id] = it.second;
-                            if(it.second < histXMin[local_h1id])    histXMin[local_h1id] = it.second;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Create histograms
-        for(G4int local_h1id = 0; local_h1id < H1ID; ++local_h1id)
-        {
-            G4String histTitle;
-            for(auto singleType : histMap)
-            {
-                for(auto histIDAndStrIndex : singleType.second)
-                {
-                    if(histIDAndStrIndex.first == local_h1id)
-                    {
-                        histTitle = singleType.first + ": " + strList[histIDAndStrIndex.second];
-                        analysisManager->CreateH1(
-                            std::to_string(local_h1id),
-                            histTitle,
-                            50,
-                            histXMin[histIDAndStrIndex.first]/50*50,
-                            (histXMax[histIDAndStrIndex.first]/50+1)*50
-                        );
-                        analysisManager->SetH1Plotting(local_h1id, true);
-                        break;
-                    }
-                }
-                if(histTitle.size())   break;
-            }
-        }
-
-        // Fill histograms
-        for(auto singleType : histMap)
-        {
-            for(auto histIDAndStrIndex : singleType.second)
-            {
-                for(auto it : *(nameAndCounter[singleType.first]))
-                {
-                    analysisManager->FillH1(
-                        histIDAndStrIndex.first,
-                        (double)it[histIDAndStrIndex.second]
-                    );
-                }
-            }
-        }
-        */
+        if(fConfig.useBuiltinAnalysis)
+            CreateHists(MTRun);
         
         // Data output
         std::stringstream optDirStream;
@@ -192,23 +84,6 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
         else
             G4cerr << "Open File \"" << RCFileNameStream.str() << "\" Failed!";
         RCFileStream.close();
-
-        /* TODO: Fix built-in analysis
-        // Analysis Manager Output
-        G4bool builtinAnalysis = fConfig.useBuiltinAnalysis;
-        if(builtinAnalysis)
-        {
-            std::stringstream dirNameForBAStream;
-            dirNameForBAStream << optDirStream.str() << "/" << "built-in";
-            std::filesystem::create_directory(dirNameForBAStream.str());
-
-            std::stringstream BAFileNameStream;
-            BAFileNameStream << dirNameForBAStream.str() << "/data.csv";
-            analysisManager->OpenFile(BAFileNameStream.str());
-            analysisManager->Write();
-            analysisManager->CloseFile();
-        }
-        */
 
         // csv output
         for(auto runCounter : MTRun->runCounters)
@@ -289,6 +164,90 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
     {
         G4cout << G4endl << "--------------------End of Local Run-----------------------" << G4endl;
     }
+}
+
+void MVRunAction::CreateHists(const MVRunMT* MTRun) const
+{
+    auto analysisManager = G4AnalysisManager::Instance();
+    analysisManager->SetVerboseLevel(1);
+
+    // titleMap maps H1ID to title
+    std::map<G4int, G4String> titleMap;
+    
+    // These are maps aiming to deal with xmax and xmin properly.
+    // The key is the H1ID, and the value is the maximum/minimum
+    std::map<G4int, G4int> histXMax, histXMin;
+
+    // Get all maps
+    int H1ID = 0;
+    for(int counter_index = 0; counter_index < 4; ++counter_index)
+    {
+        auto globalCounter = MTRun->runCounters[counter_index];
+        for(auto nameAndCounter : globalCounter.GetGlobalCounter())
+        {
+            titleMap[H1ID] = G4String(globalCounter.GetDescription() + G4String(":") + G4String(nameAndCounter.first));
+            for(auto count : nameAndCounter.second)
+            {
+                if(histXMax.find(H1ID) == histXMax.end())
+                {
+                    histXMax[H1ID] = count;
+                    histXMin[H1ID] = count;
+                }
+                else
+                {
+                    if(histXMax[H1ID] < count)
+                        histXMax[H1ID] = count;
+                    if(histXMin[H1ID] > count)
+                        histXMin[H1ID] = count;
+                }
+            }
+            ++H1ID;
+        }
+    }
+
+    // Create histograms
+    for(G4int local_h1id = 0; local_h1id < H1ID; ++local_h1id)
+    {
+        analysisManager->CreateH1(
+            std::to_string(local_h1id),
+            titleMap[local_h1id],
+            50,
+            histXMin[local_h1id]/50*50,
+            (histXMax[local_h1id]/50+1)*50
+        );
+        analysisManager->SetH1Plotting(local_h1id, true);
+    }
+
+    // Fill histograms
+    H1ID = 0;
+    for(int counter_index = 0; counter_index < 4; ++counter_index)
+    {
+        auto globalCounter = MTRun->runCounters[counter_index];
+        for(auto nameAndCounter : globalCounter.GetGlobalCounter())
+        {
+            for(auto count : nameAndCounter.second)
+            {
+                analysisManager->FillH1(
+                    H1ID,
+                    (double)count
+                );
+            }
+            ++H1ID;
+        }
+    }
+
+    // Analysis Manager Output
+    std::stringstream optDirStream;
+    optDirStream << fConfig.outputFilePath << "/run" << MTRun->GetRunID();
+    std::stringstream dirNameForBAStream;
+    dirNameForBAStream << optDirStream.str() << "/" << "built-in";
+    std::filesystem::create_directory(dirNameForBAStream.str());
+
+    std::stringstream BAFileNameStream;
+    BAFileNameStream << dirNameForBAStream.str() << "/data.csv";
+    analysisManager->OpenFile(BAFileNameStream.str());
+    analysisManager->Write();
+    analysisManager->CloseFile();
 }
 
 std::map<G4int, G4double>* MVRunAction::GetMeanAndRMSOfCounter(COUNTER counter, G4int eventCount) const
