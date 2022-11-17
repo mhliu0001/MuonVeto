@@ -64,6 +64,7 @@ void MVEventAction::EndOfEventAction(const G4Event *event)
     info->genInfo.constant.phi = generator->GetCurrentPhi();
     info->genInfo.constant.energy = generator->GetCurrentEnergy();
     info->genInfo.constant.position = generator->GetCurrentParticlePosition();
+    info->genInfo.constant.momentumDir = generator->GetCurrentMomentumDirection();
     
     G4int SiPMCID_0 = SDMan->GetCollectionID("collection_0");
     G4int SiPMCID_1 = SDMan->GetCollectionID("collection_1");

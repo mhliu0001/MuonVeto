@@ -18,12 +18,14 @@ class MVGenerator : public G4VUserPrimaryGeneratorAction
         inline G4double GetCurrentPhi() const { return fPhi; }
         inline G4double GetCurrentEnergy() const { return fEnergy; }
         inline G4ThreeVector GetCurrentParticlePosition() const { return fPosition; }
+        inline G4ThreeVector GetCurrentMomentumDirection() const { return fMomentumDir; }
     protected:
         G4String fParticleName;
         G4double fTheta;
         G4double fPhi;
         G4double fEnergy;
         G4ThreeVector fPosition;
+        G4ThreeVector fMomentumDir;
 };
 
 }

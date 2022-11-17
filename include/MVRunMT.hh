@@ -18,6 +18,8 @@ class MVRunMT : public G4Run
         void Merge(const G4Run*) override;
         std::vector<MVGlobalCounter<G4String>> runCounters;
         MVEventConstantVector<MVGeneratorInformation> genInfos;
+        MVEventConstantVector<G4double> trackLengths;
+        MVEventConstantVector<G4double> Edeps;
         inline std::map<G4int, std::vector<G4double>> GetProcessSpectrum() const { return fProcessSpectrum; }
 
     private:

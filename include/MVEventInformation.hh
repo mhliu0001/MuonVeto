@@ -15,6 +15,8 @@ class MVEventInformation : public G4VUserEventInformation
         virtual void Print() const override;
         std::vector<MVSingleCounter<G4String>> counters;
         MVEventConstant<MVGeneratorInformation> genInfo;
+        MVEventConstant<G4double> trackLength;
+        MVEventConstant<G4double> Edep;
         std::map<G4int, std::vector<G4double>> processSpectrum;
 };
 

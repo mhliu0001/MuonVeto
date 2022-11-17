@@ -95,11 +95,12 @@ void MVGammaGenerator::GeneratePrimaries(G4Event *anEvent) {
     fEnergy = energy;
     fPosition = G4ThreeVector(posX, posY, posZ);
     fParticleName = particle->GetParticleName();
+    fMomentumDir = G4ThreeVector(dirX, dirY, dirZ);
 
     gun->SetParticleDefinition(particle);
     gun->SetParticleEnergy(energy);
-    gun->SetParticlePosition(G4ThreeVector(posX, posY, posZ));
-    gun->SetParticleMomentumDirection(G4ThreeVector(dirX, dirY, dirZ));
+    gun->SetParticlePosition(fPosition);
+    gun->SetParticleMomentumDirection(fMomentumDir);
 
     gun->GeneratePrimaryVertex(anEvent);
 }

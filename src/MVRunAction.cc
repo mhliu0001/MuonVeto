@@ -161,9 +161,9 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
             }
             else
             {
-                GenFileStream << "# " << GenDirStream.str() << ": " << "energy" << std::endl;
+                GenFileStream << "# " << GenDirStream.str() << ": " << "energy (unit: MeV)" << std::endl;
                 for(auto genInfo : genInfos.GetVector())
-                    GenFileStream << genInfo.energy << std::endl;
+                    GenFileStream << genInfo.energy/MeV << std::endl;
                 GenFileStream.close();
             }
         }
@@ -193,14 +193,73 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
             }
             else
             {
-                GenFileStream << "# " << GenDirStream.str() << ": " << "position" << std::endl;
+                GenFileStream << "# " << GenDirStream.str() << ": " << "position (unit: mm)" << std::endl;
                 for(auto genInfo : genInfos.GetVector())
-                    GenFileStream << genInfo.position.x() << "," << genInfo.position.y() << "," << genInfo.position.z() << std::endl;
+                    GenFileStream << genInfo.position.x()/mm << "," << genInfo.position.y()/mm << "," << genInfo.position.z()/mm << std::endl;
+                GenFileStream.close();
+            }
+        }
+        {
+            std::stringstream GenFileNameStream;
+            GenFileNameStream << GenDirStream.str() << "/" << "momentum.csv";
+            std::ofstream GenFileStream(GenFileNameStream.str());
+            if(!GenFileStream.is_open())
+            {   
+                G4cerr << "Open File \"" << GenFileNameStream.str() << "\" Failed!" << G4endl;
+            }
+            else
+            {
+                GenFileStream << "# " << GenDirStream.str() << ": " << "momentum direction" << std::endl;
+                for(auto genInfo : genInfos.GetVector())
+                    GenFileStream << genInfo.momentumDir.x() << "," << genInfo.momentumDir.y() << "," << genInfo.momentumDir.z() << std::endl;
                 GenFileStream.close();
             }
         }
         
+        // Track length output
+        auto trackLengths = MTRun->trackLengths;
+        std::stringstream TLDirStream;
+        TLDirStream << optDirStream.str() << "/" << trackLengths.GetName();
+        std::filesystem::create_directory(TLDirStream.str());
 
+        std::stringstream TLFileNameStream;
+        TLFileNameStream << TLDirStream.str() << "/" << "trackLength.csv";
+        std::ofstream TLFileStream(TLFileNameStream.str());
+        if(!TLFileStream.is_open())
+        {   
+            G4cerr << "Open File \"" << TLFileNameStream.str() << "\" Failed!" << G4endl;
+        }
+        else
+        {
+            TLFileStream << "# " << TLDirStream.str() << ": " << trackLengths.GetDescription() << std::endl;
+            for(auto trackLength : trackLengths.GetVector())
+                TLFileStream << trackLength << std::endl;
+            TLFileStream.close();
+        }
+
+        // Edeps output
+        auto Edeps = MTRun->Edeps;
+        std::stringstream EDDirStream;
+        EDDirStream << optDirStream.str() << "/" << Edeps.GetName();
+        std::filesystem::create_directory(EDDirStream.str());
+
+        std::stringstream EDFileNameStream;
+        EDFileNameStream << EDDirStream.str() << "/" << "Edep.csv";
+        std::ofstream EDFileStream(EDFileNameStream.str());
+        if(!EDFileStream.is_open())
+        {   
+            G4cerr << "Open File \"" << EDFileNameStream.str() << "\" Failed!" << G4endl;
+        }
+        else
+        {
+            EDFileStream << "# " << EDDirStream.str() << ": " << Edeps.GetDescription() << std::endl;
+            for(auto Edep : Edeps.GetVector())
+                EDFileStream << Edep << std::endl;
+            EDFileStream.close();
+        }
+
+        
+        
         // TODO: Fix spectrum
         /*
         // Spectrum output

@@ -20,6 +20,10 @@ class MVSteppingAction : public G4UserSteppingAction
     
     private:
         MVEventAction* fEventAction;
+        G4double fwhole_x;
+        G4double fwhole_y;
+        G4double fwhole_z;
+        G4double kCarTolerance;
 };
 
 }

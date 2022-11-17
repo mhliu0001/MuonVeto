@@ -26,6 +26,7 @@ typedef struct
     G4double theta;
     G4double energy;
     G4ThreeVector position;
+    G4ThreeVector momentumDir;
 } MVGeneratorInformation;
 
 /* COUNTERS are used to count how many photons are created in some process(CPNCounter),

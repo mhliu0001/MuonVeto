@@ -13,7 +13,10 @@
 
 using namespace MuonVeto;
 
-MVRunMT::MVRunMT(): genInfos("MVGeneratorInformation", "Generator information")
+MVRunMT::MVRunMT():
+    genInfos("MVGeneratorInformation", "Generator information"), 
+    trackLengths("trackLength", "Track Length in whole_solid"), 
+    Edeps("Edep", "Energy Deposition of primary particle")
 {
     // Initialize runCounters
     runCounters.push_back(MVGlobalCounter<G4String>("CPNCounter", "Creator Process Name list"));
@@ -36,6 +39,9 @@ void MVRunMT::RecordEvent(const G4Event* event)
         runCounters[counter_index].AppendSingle(info->counters[counter_index]);
     }
     genInfos.Update(info->genInfo);
+    trackLengths.Update(info->trackLength);
+    Edeps.Update(info->Edep);
+    
 
     /*
     // Spectrum
@@ -65,6 +71,8 @@ void MVRunMT::Merge(const G4Run* run)
         runCounters[counter_index].Merge(localRunCounters[counter_index]);
     }
     genInfos.Merge(localRun->genInfos);
+    trackLengths.Merge(localRun->trackLengths);
+    Edeps.Merge(localRun->Edeps);
 
     /*
     for(auto singleProcess : localRun->fProcessSpectrum)

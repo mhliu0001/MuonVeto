@@ -6,10 +6,25 @@
 #include "G4VProcess.hh"
 #include "G4String.hh"
 #include "MVGlobals.hh"
+#include "G4SolidStore.hh"
+#include "G4Box.hh"
+#include "G4GeometryTolerance.hh"
 
 using namespace MuonVeto;
 
-MVSteppingAction::MVSteppingAction(MVEventAction* eventAction): fEventAction(eventAction){}
+MVSteppingAction::MVSteppingAction(MVEventAction* eventAction): fEventAction(eventAction)
+{
+    auto solidStore = G4SolidStore::GetInstance();
+    G4Box* whole_solid = dynamic_cast<G4Box*>(solidStore->GetSolid("whole_solid"));
+    if(!whole_solid)
+    {
+        throw std::runtime_error("MVSteppingAction: whole_solid not found!");
+    }
+    fwhole_x = whole_solid->GetXHalfLength();
+    fwhole_y = whole_solid->GetYHalfLength();
+    fwhole_z = whole_solid->GetZHalfLength();
+    kCarTolerance = G4GeometryTolerance::GetInstance()->GetSurfaceTolerance();
+}
 
 MVSteppingAction::~MVSteppingAction(){}
 
@@ -32,6 +47,25 @@ static G4String Path(const G4TouchableHandle& th)
 void MVSteppingAction::UserSteppingAction(const G4Step* aStep)
 {
     const G4Track* track = aStep->GetTrack();
+    G4String particleName = track->GetParticleDefinition()->GetParticleName();
+    const G4int trackID = track->GetTrackID();
+    if(trackID == 1)
+    {
+        G4ThreeVector preStepPos = aStep->GetPreStepPoint()->GetPosition();
+        G4ThreeVector postStepPos = aStep->GetPostStepPoint()->GetPosition();
+        if(
+               abs(preStepPos.x())-fwhole_x < kCarTolerance
+            && abs(preStepPos.y())-fwhole_y < kCarTolerance
+            && abs(preStepPos.z())-fwhole_z < kCarTolerance
+            && abs(postStepPos.x())-fwhole_x < kCarTolerance
+            && abs(postStepPos.y())-fwhole_y < kCarTolerance
+            && abs(postStepPos.z())-fwhole_z < kCarTolerance
+        )
+        {
+            fEventAction->eventInformation->trackLength.constant += track->GetStepLength();
+        }
+        fEventAction->eventInformation->Edep.constant += aStep->GetTotalEnergyDeposit();
+    }
     /*
     G4double edepStep = aStep->GetTotalEnergyDeposit();
     if(edepStep > 0)
@@ -44,7 +78,6 @@ void MVSteppingAction::UserSteppingAction(const G4Step* aStep)
     }
     */
     if(track->GetParticleDefinition()->GetParticleName() != "opticalphoton")    return;
-    const G4int trackID = track->GetTrackID();
     const G4VProcess* CP = track->GetCreatorProcess();
     const G4String CPN = (!CP ? "None": CP->GetProcessName());
     G4String FVPath;
