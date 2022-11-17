@@ -36,45 +36,49 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
         MVRunMT *MTRun = (MVRunMT *)aRun;
 
         // Run Conditions
-        G4double particleEnergy = MTRun->GetParticleEnergy();
-        std::vector<G4ThreeVector> particlePosition = MTRun->GetParticlePosition();
-        G4String particleName = MTRun->GetParticleName();
         G4int eventCount = MTRun->runCounters[0].GetEntries();
+        G4cout << "This run consists of " << eventCount << " events." << G4endl;
+        switch (fConfig.generator)
+        {
+        case DEFAULT:
+            G4cout << "Generator: Default" << G4endl;
+            if(fConfig.randomPoints)
+            {
+                G4cout << "Particle: " << MTRun->genInfos.GetVector()[0].name << G4endl;
+                G4cout << "Energy: " << MTRun->genInfos.GetVector()[0].energy/MeV << "MeV" << G4endl;
+                G4cout << "Position: Random" << G4endl;
+            }
+            else
+            {
+                G4cout << "Particle: " << MTRun->genInfos.GetVector()[0].name << G4endl;
+                G4cout << "Energy: " << MTRun->genInfos.GetVector()[0].energy/MeV << "MeV" << G4endl;
+                G4cout << "Position:" << MTRun->genInfos.GetVector()[0].position/mm << "mm" << G4endl;
+            }
+            break;
         
-        if(!fConfig.randomPoints)
-        {
-            G4cout << "This run consists of " << eventCount << " events of " << particleName << " with energy " << particleEnergy / GeV << " GeV"
-                << " located at " << particlePosition[0] << G4endl;
+        case GAMMA:
+            G4cout << "Generator: gamma" << G4endl;
+            break;
+        case MUON:
+            G4cout << "Generator: muon" << G4endl;
+            break;
         }
-        else
-        {
-            G4cout << "This run consists of " << eventCount << " events of " << particleName << " with energy " << particleEnergy / GeV << " GeV"
-                << " located randomly inside pscint " << G4endl;
-        }
-
-
-        // Analysis
-        if(fConfig.useBuiltinAnalysis)
-            CreateHists(MTRun);
         
         // Data output
         std::stringstream optDirStream;
         optDirStream << fConfig.outputFilePath << "/run" << aRun->GetRunID();
         std::filesystem::create_directories(optDirStream.str());
 
+        // Analysis
+        if(fConfig.useBuiltinAnalysis)
+            CreateHists(MTRun);
+
         // Run Conditions Output  
         json runConditions;
         runConditions["RunID"] = aRun->GetRunID();
-        runConditions["ParticleName"] = (const char*)particleName;
-        runConditions["KineticEnergy/MeV"] = particleEnergy/MeV;
+        runConditions["NumberOfEvents"] = eventCount;
+        runConditions["Generator"] = int(fConfig.generator);
         runConditions["RandomPoints"] = fConfig.randomPoints;
-
-        if(!fConfig.randomPoints)
-        {
-            runConditions["GunXPosition/cm"] = particlePosition[0].x()/cm;
-            runConditions["GunYPosition/cm"] = particlePosition[0].y()/cm;
-            runConditions["GunZPosition/cm"] = particlePosition[0].z()/cm;
-        }
 
         std::stringstream RCFileNameStream;
         RCFileNameStream << optDirStream.str() << "/RunConditions.json";
@@ -109,29 +113,93 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
             }
         }
 
-        // If random points, gun position output
-        if(fConfig.randomPoints)
-        {
-            std::stringstream GPDirStream;
-            GPDirStream << optDirStream.str() << "/" << "Gun Position";
-            std::filesystem::create_directory(GPDirStream.str());
+        // GenInfo csv output
+        auto genInfos = MTRun->genInfos;
+        std::stringstream GenDirStream;
+        GenDirStream << optDirStream.str() << "/" << genInfos.GetName();
+        std::filesystem::create_directory(GenDirStream.str());
 
-            std::stringstream GPFileNameStream;
-            GPFileNameStream << GPDirStream.str() << "/" << "Gun_Position.csv";
-            std::ofstream GPFileStream(GPFileNameStream.str());
-            if(!GPFileStream.is_open())
+        {
+            std::stringstream GenFileNameStream;
+            GenFileNameStream << GenDirStream.str() << "/" << "phi.csv";
+            std::ofstream GenFileStream(GenFileNameStream.str());
+            if(!GenFileStream.is_open())
             {   
-                G4cerr << "Open File \"" << GPFileNameStream.str() << "\" Failed!" << G4endl;
+                G4cerr << "Open File \"" << GenFileNameStream.str() << "\" Failed!" << G4endl;
             }
             else
             {
-                GPFileStream << "# " << GPDirStream.str() << ": " << "Gun Position" << std::endl;
-                for(auto singlePosition : particlePosition)
-                    GPFileStream << singlePosition.x() << "," << singlePosition.y() << "," << singlePosition.z() << std::endl;
-                GPFileStream.close();
+                GenFileStream << "# " << GenDirStream.str() << ": " << "phi" << std::endl;
+                for(auto genInfo : genInfos.GetVector())
+                    GenFileStream << genInfo.phi << std::endl;
+                GenFileStream.close();
             }
-
         }
+        {
+            std::stringstream GenFileNameStream;
+            GenFileNameStream << GenDirStream.str() << "/" << "theta.csv";
+            std::ofstream GenFileStream(GenFileNameStream.str());
+            if(!GenFileStream.is_open())
+            {   
+                G4cerr << "Open File \"" << GenFileNameStream.str() << "\" Failed!" << G4endl;
+            }
+            else
+            {
+                GenFileStream << "# " << GenDirStream.str() << ": " << "theta" << std::endl;
+                for(auto genInfo : genInfos.GetVector())
+                    GenFileStream << genInfo.theta << std::endl;
+                GenFileStream.close();
+            }
+        }
+        {
+            std::stringstream GenFileNameStream;
+            GenFileNameStream << GenDirStream.str() << "/" << "energy.csv";
+            std::ofstream GenFileStream(GenFileNameStream.str());
+            if(!GenFileStream.is_open())
+            {   
+                G4cerr << "Open File \"" << GenFileNameStream.str() << "\" Failed!" << G4endl;
+            }
+            else
+            {
+                GenFileStream << "# " << GenDirStream.str() << ": " << "energy" << std::endl;
+                for(auto genInfo : genInfos.GetVector())
+                    GenFileStream << genInfo.energy << std::endl;
+                GenFileStream.close();
+            }
+        }
+        {
+            std::stringstream GenFileNameStream;
+            GenFileNameStream << GenDirStream.str() << "/" << "name.csv";
+            std::ofstream GenFileStream(GenFileNameStream.str());
+            if(!GenFileStream.is_open())
+            {   
+                G4cerr << "Open File \"" << GenFileNameStream.str() << "\" Failed!" << G4endl;
+            }
+            else
+            {
+                GenFileStream << "# " << GenDirStream.str() << ": " << "name" << std::endl;
+                for(auto genInfo : genInfos.GetVector())
+                    GenFileStream << genInfo.name << std::endl;
+                GenFileStream.close();
+            }
+        }
+        {
+            std::stringstream GenFileNameStream;
+            GenFileNameStream << GenDirStream.str() << "/" << "position.csv";
+            std::ofstream GenFileStream(GenFileNameStream.str());
+            if(!GenFileStream.is_open())
+            {   
+                G4cerr << "Open File \"" << GenFileNameStream.str() << "\" Failed!" << G4endl;
+            }
+            else
+            {
+                GenFileStream << "# " << GenDirStream.str() << ": " << "position" << std::endl;
+                for(auto genInfo : genInfos.GetVector())
+                    GenFileStream << genInfo.position.x() << "," << genInfo.position.y() << "," << genInfo.position.z() << std::endl;
+                GenFileStream.close();
+            }
+        }
+        
 
         // TODO: Fix spectrum
         /*
@@ -248,39 +316,6 @@ void MVRunAction::CreateHists(const MVRunMT* MTRun) const
     analysisManager->OpenFile(BAFileNameStream.str());
     analysisManager->Write();
     analysisManager->CloseFile();
-}
-
-std::map<G4int, G4double>* MVRunAction::GetMeanAndRMSOfCounter(COUNTER counter, G4int eventCount) const
-{
-    auto meanAndRMS = new std::map<G4int, G4double>[2];
-    std::map<G4int, long long> sum;
-    std::map<G4int, long long> squaredSum;
-    for (auto singleCounter : counter)
-    {
-        for (auto item : singleCounter)
-        {
-            if (sum.find(item.first) != sum.end())
-            {
-                sum[item.first] += (long long)item.second;
-                squaredSum[item.first] += (long long)item.second * (long long)item.second;
-            }
-            else
-            {
-                sum[item.first] = (long long)item.second;
-                squaredSum[item.first] = (long long)item.second * (long long)item.second;
-            }
-        }
-    }
-    for (auto item : sum)
-    {
-        meanAndRMS[0][item.first] = (double)item.second / eventCount;
-    }
-    for (auto item : squaredSum)
-    {
-        meanAndRMS[1][item.first] = std::sqrt(-meanAndRMS[0][item.first] * meanAndRMS[0][item.first] + (double)item.second / eventCount);
-    }
-
-    return meanAndRMS;
 }
 
 }

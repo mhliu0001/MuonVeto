@@ -3,7 +3,7 @@
 #ifndef MVMuonGenerator_h
 #define MVMuonGenerator_h 1
 
-#include "G4VUserPrimaryGeneratorAction.hh"
+#include "MVGenerator.hh"
 #include "MVDetectorConstruction.hh"
 #include <G4ParticleGun.hh>
 
@@ -14,13 +14,13 @@ class G4Event;
 
 namespace MuonVeto
 {
-class MVMuonGenerator : public G4VUserPrimaryGeneratorAction {
+class MVMuonGenerator : public MVGenerator {
   public:
     MVMuonGenerator();
 
     ~MVMuonGenerator() = default;
 
-    virtual void GeneratePrimaries(G4Event *anEvent);
+    virtual void GeneratePrimaries(G4Event *anEvent) override;
 
   private:
     G4double n;

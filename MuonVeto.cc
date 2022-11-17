@@ -16,6 +16,7 @@
 #include <sstream>
 #include <fstream>
 #include "MVGlobals.hh"
+#include "MVSpecialModes.hh"
 
 using namespace MuonVeto;
 

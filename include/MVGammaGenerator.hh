@@ -1,7 +1,7 @@
 #ifndef MVGammaGenerator_h
 #define MVGammaGenerator_h 1
 
-#include "G4VUserPrimaryGeneratorAction.hh"
+#include "MVGenerator.hh"
 #include <G4ParticleGun.hh>
 
 class G4ParticleGun;
@@ -9,13 +9,13 @@ class G4Event;
 
 namespace MuonVeto
 {
-class MVGammaGenerator : public G4VUserPrimaryGeneratorAction {
+class MVGammaGenerator : public MVGenerator {
   public:
     MVGammaGenerator();
 
     ~MVGammaGenerator() = default;
 
-    virtual void GeneratePrimaries(G4Event *anEvent);
+    virtual void GeneratePrimaries(G4Event *anEvent) override;
 
   private:
     G4double E_gamma;

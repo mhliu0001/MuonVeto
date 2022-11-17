@@ -1,4 +1,4 @@
-#include "MVPrimaryGeneratorAction.hh"
+#include "MVDefaultGenerator.hh"
 #include "G4Event.hh"
 #include "G4ParticleGun.hh"
 #include "G4ParticleTable.hh"
@@ -10,7 +10,9 @@
 #include "G4MultiUnion.hh"
 #include "Randomize.hh"
 
-MuonVeto::MVPrimaryGeneratorAction::MVPrimaryGeneratorAction(const Config& config): fConfig(config)
+using namespace MuonVeto;
+
+MVDefaultGenerator::MVDefaultGenerator(const Config& config): fConfig(config)
 {
     G4int nofParticles = 1;
     fParticleGun = new G4ParticleGun(nofParticles);
@@ -24,12 +26,12 @@ MuonVeto::MVPrimaryGeneratorAction::MVPrimaryGeneratorAction(const Config& confi
     fParticleGun->SetParticlePosition(G4ThreeVector(0, -20 * cm, 0));
 }
 
-MuonVeto::MVPrimaryGeneratorAction::~MVPrimaryGeneratorAction()
+MVDefaultGenerator::~MVDefaultGenerator()
 {
     delete fParticleGun;
 }
 
-void MuonVeto::MVPrimaryGeneratorAction::GeneratePrimaries(G4Event *anEvent)
+void MVDefaultGenerator::GeneratePrimaries(G4Event *anEvent)
 {
     if (fConfig.randomPoints)
     {
@@ -79,4 +81,13 @@ void MuonVeto::MVPrimaryGeneratorAction::GeneratePrimaries(G4Event *anEvent)
     }
 
     fParticleGun->GeneratePrimaryVertex(anEvent);
+
+    // Update information in MVGenerator AFTER a vertex is generated
+    G4ThreeVector momentumDirection = fParticleGun->GetParticleMomentumDirection();
+    fTheta = acos(momentumDirection.y());
+    fPhi = (fTheta > 1e-10 ? atan(momentumDirection.x()/momentumDirection.z()) : 0);
+    fEnergy = fParticleGun->GetParticleEnergy();
+    fPosition = fParticleGun->GetParticlePosition();
+    fParticleName = fParticleGun->GetParticleDefinition()->GetParticleName();
+
 }

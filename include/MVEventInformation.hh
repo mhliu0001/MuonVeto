@@ -14,7 +14,7 @@ class MVEventInformation : public G4VUserEventInformation
         ~MVEventInformation() override;
         virtual void Print() const override;
         std::vector<MVSingleCounter<G4String>> counters;
-        std::map<G4String, G4int> SiPMPhotonCounter;
+        MVEventConstant<MVGeneratorInformation> genInfo;
         std::map<G4int, std::vector<G4double>> processSpectrum;
 };
 

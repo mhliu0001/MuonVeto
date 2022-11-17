@@ -7,6 +7,8 @@
 #include "globals.hh"
 #include <filesystem>
 #include "json.hpp"
+#include "G4SystemOfUnits.hh"
+#include "G4ThreeVector.hh"
 
 namespace MuonVeto
 {
@@ -16,6 +18,15 @@ using nlohmann::json;
 
 // Generator enum
 typedef enum {DEFAULT, MUON, GAMMA} MVGen;
+
+typedef struct 
+{
+    G4String name;
+    G4double phi;
+    G4double theta;
+    G4double energy;
+    G4ThreeVector position;
+} MVGeneratorInformation;
 
 /* COUNTERS are used to count how many photons are created in some process(CPNCounter),
 ** ended in some volume(FVPathCounter), ended with some process(EPNCounter), or detected
@@ -139,19 +150,51 @@ class MVGlobalCounter
         std::map<datatype, std::vector<G4int>> fGlobalCounter;
 };
 
-using SINGLE_COUNTER = std::map<G4int, G4int>;
-using COUNTER = std::vector<SINGLE_COUNTER>;
+template<class datatype>
+class MVEventConstant
+{
+    public:
+        MVEventConstant(G4String name): fName(name) {}
+        ~MVEventConstant() {}
+        datatype constant;
 
-/* To save memory, STRLISTs are used. It is a vector of G4String.
-** Using this can avoid G4Strings to be created multiple times.
-*/
-using STRLIST = std::vector<G4String>;
+    private:
+        inline G4String GetName() const { return fName; }
+        const G4String fName;
+        const G4String fDescription;
+};
 
-/* A RECORDER is used in MVSteppingAction. The key is the trackID, and the value is the
-** key of COUNTERS (Scintillation, SiPM_0, etc.)
-** It is only for a single event, and will be transformed to COUNTERS in MVEventAction.
-*/
-using RECORDER = std::map<G4int, G4String>;
+template<class datatype>
+class MVEventConstantVector
+{
+    public:
+        MVEventConstantVector(G4String name, G4String description): fName(name), fDescription(description) {}
+        ~MVEventConstantVector() {}
+        void Update(const MVEventConstant<datatype>& newValue)
+        {
+            assert(fName == newValue.GetName());
+            fVector.push_back(newValue.constant);
+        }
+        void Merge(const MVEventConstantVector<datatype>& anotherVector)
+        {
+            if(fVector.size() == 0)
+                fVector = anotherVector.GetVector();
+            else
+                fVector.insert(
+                    fVector.end(),
+                    anotherVector.GetVector().begin(),
+                    anotherVector.GetVector().end()
+                );
+        }
+        inline G4String GetName() const { return fName; }
+        inline G4String GetDescription() const { return fDescription; }
+        inline const std::vector<datatype>& GetVector() const { return fVector; }
+
+    private:
+        std::vector<datatype> fVector;
+        const G4String fName;
+        const G4String fDescription;
+};
 
 /* Config
 */
@@ -175,27 +218,6 @@ void PrintUsage();
 bool isNumber(const char* str);
 
 Config ParseConfig(int argc, char** argv);
-
-/* Probe Mode
-*/
-void RunProbe(const Config config);
-
-/* Random Mode
-*/
-void RunRandom(const Config config);
-
-// Find the string's index in a STRLIST
-inline G4int GetIndexOfString(const G4String& str, const STRLIST &strList)
-{
-    return std::distance(strList.begin(), std::find(strList.begin(), strList.end(), str));
-}
-
-// Judge whether a string is in the STRLIST
-inline bool IsStringInList(const G4String& str, const STRLIST &strList)
-{
-    //return std::binary_search(strList.begin(), strList.end(), str);
-    return std::find(strList.begin(), strList.end(), str) != strList.end();
-}
 
 // This class is used by MapFindValue only, and should not be used elsewhere.
 class int_map_finder

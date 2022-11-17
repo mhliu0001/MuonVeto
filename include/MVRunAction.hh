@@ -26,7 +26,6 @@ class MVRunAction : public G4UserRunAction
     private:
         const Config fConfig;
         // G4int fPhotonCountCut = 100000;
-        std::map<G4int, G4double>* GetMeanAndRMSOfCounter(COUNTER counter, G4int eventCount) const;
         void CreateHists(const MVRunMT* run) const;
 
 };

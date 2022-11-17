@@ -2,7 +2,7 @@
 
 using namespace MuonVeto;
 
-MVEventInformation::MVEventInformation()
+MVEventInformation::MVEventInformation(): genInfo("MVGeneratorInformation")
 {
     counters.push_back(MVSingleCounter<G4String>("CPNCounter", "Creator Process Name list", true));
     counters.push_back(MVSingleCounter<G4String>("FVPathCounter", "Final Volume Path list", true));

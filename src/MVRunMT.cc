@@ -3,7 +3,7 @@
 #include "G4SDManager.hh"
 #include "G4VHitsCollection.hh"
 #include "G4Event.hh"
-#include "MVPrimaryGeneratorAction.hh"
+#include "MVGenerator.hh"
 #include "G4RunManager.hh"
 #include "G4ParticleGun.hh"
 #include "MVEventInformation.hh"
@@ -13,26 +13,8 @@
 
 using namespace MuonVeto;
 
-MVRunMT::MVRunMT()
+MVRunMT::MVRunMT(): genInfos("MVGeneratorInformation", "Generator information")
 {
-    // Record information about the generator which does not vary in the run
-    // Currently the particle name and the energy is recorded here.
-    // TODO: Fix generator information
-    fParticleEnergy = 0;
-    fParticleName = "FIXME";
-    /*
-    const MVPrimaryGeneratorAction* generatorAction
-        = dynamic_cast<const MVPrimaryGeneratorAction*>
-            (G4RunManager::GetRunManager()->GetUserPrimaryGeneratorAction());
-    if(generatorAction)
-    {
-        // G4cout << "<<<< This is not a master thread" << G4endl;
-        G4ParticleGun* particleGun = generatorAction->GetParticleGun();
-        fParticleEnergy = particleGun->GetParticleEnergy();
-        fParticleName = particleGun->GetParticleDefinition()->GetParticleName();
-    }
-    */
-
     // Initialize runCounters
     runCounters.push_back(MVGlobalCounter<G4String>("CPNCounter", "Creator Process Name list"));
     runCounters.push_back(MVGlobalCounter<G4String>("FVPathCounter", "Final Volume Path list"));
@@ -49,25 +31,11 @@ void MVRunMT::RecordEvent(const G4Event* event)
 {
     MVEventInformation* info = dynamic_cast<MVEventInformation*>(event->GetUserInformation());
 
-    // These are variables in a single event. Those with "f" are the variables for a MVRunMT object,
-
-    const MVPrimaryGeneratorAction* generatorAction
-        = dynamic_cast<const MVPrimaryGeneratorAction*>
-            (G4RunManager::GetRunManager()->GetUserPrimaryGeneratorAction());
-    if(generatorAction)
-    {
-        // G4cout << "<<<< This is not a master thread" << G4endl;
-        G4ParticleGun* particleGun = generatorAction->GetParticleGun();
-        fParticlePosition.push_back(particleGun->GetParticlePosition());
-    }
-    else
-    {
-        fParticlePosition.push_back(G4ThreeVector(0,0,0));
-    }
     for(int counter_index = 0; counter_index < 4; counter_index++)
     {
         runCounters[counter_index].AppendSingle(info->counters[counter_index]);
     }
+    genInfos.Update(info->genInfo);
 
     /*
     // Spectrum
@@ -92,13 +60,11 @@ void MVRunMT::Merge(const G4Run* run)
     const MVRunMT* localRun = dynamic_cast<const MVRunMT*>(run);
     auto localRunCounters = localRun->runCounters;
 
-    fParticlePosition.insert(fParticlePosition.end(), localRun->fParticlePosition.begin(), localRun->fParticlePosition.end());
-
     for(int counter_index = 0; counter_index < 4; counter_index++)
     {
         runCounters[counter_index].Merge(localRunCounters[counter_index]);
     }
-   
+    genInfos.Merge(localRun->genInfos);
 
     /*
     for(auto singleProcess : localRun->fProcessSpectrum)
@@ -115,9 +81,6 @@ void MVRunMT::Merge(const G4Run* run)
         fProcessSpectrum.insert_or_assign(GetIndexOfString(strList[singleProcess.first], fStrList), singleProcessSpectrum);
     }
     */
-
-    if(fParticleEnergy != localRun->fParticleEnergy)    fParticleEnergy = localRun->fParticleEnergy;
-    if(fParticleName != localRun->fParticleName)    fParticleName = localRun->fParticleName;
 
     G4Run::Merge(run);
 }

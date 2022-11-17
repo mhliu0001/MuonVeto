@@ -13,7 +13,7 @@ using namespace MuonVeto;
 MVGammaGenerator::MVGammaGenerator() : gun{new G4ParticleGun}
 {
     // Energy range in simulation
-    E_gamma = 2 * MeV;
+    E_gamma = 2.6 * MeV;
 
     // Shielding size, gamma will appear on the surfaces
     auto solidStore = G4SolidStore::GetInstance();
@@ -89,6 +89,12 @@ void MVGammaGenerator::GeneratePrimaries(G4Event *anEvent) {
     }
 
     auto particle = G4ParticleTable::GetParticleTable()->FindParticle("gamma");
+
+    fTheta = theta;
+    fPhi = phi;
+    fEnergy = energy;
+    fPosition = G4ThreeVector(posX, posY, posZ);
+    fParticleName = particle->GetParticleName();
 
     gun->SetParticleDefinition(particle);
     gun->SetParticleEnergy(energy);

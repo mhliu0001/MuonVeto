@@ -99,23 +99,25 @@ void MVMuonGenerator::GeneratePrimaries(G4Event *anEvent) {
 
     G4double posX, posY, posZ;
     G4double dirX, dirY, dirZ;
-    G4double theta = getRandomTheta();
-    G4double phi = getRandomPhi();
-    G4double energy = getRandomEnergy();
+    fTheta = getRandomTheta();
+    fPhi = getRandomPhi();
+    fEnergy = getRandomEnergy();
 
-    dirZ = sin(theta) * cos(phi);
-    dirX = sin(theta) * sin(phi);
-    dirY = -cos(theta);
+    dirZ = sin(fTheta) * cos(fPhi);
+    dirX = sin(fTheta) * sin(fPhi);
+    dirY = -cos(fTheta);
     posX = (G4UniformRand() - 0.5) * shielding_x;
     posY = shielding_y/2;
     posZ = (G4UniformRand() - 0.5) * shielding_z;
+    fPosition = G4ThreeVector(posX, posY, posZ);
 
     auto particle = getMuonCharge();
+    fParticleName = particle->GetParticleName();
     G4double mass = particle->GetPDGMass();
 
     gun->SetParticleDefinition(particle);
-    gun->SetParticleEnergy(energy - mass);
-    gun->SetParticlePosition(G4ThreeVector(posX, posY, posZ));
+    gun->SetParticleEnergy(fEnergy - mass);
+    gun->SetParticlePosition(fPosition);
     gun->SetParticleMomentumDirection(G4ThreeVector(dirX, dirY, dirZ));
 
     gun->GeneratePrimaryVertex(anEvent);

@@ -1,8 +1,8 @@
 #include "MVActionInitializer.hh"
-#include "MVPrimaryGeneratorAction.hh"
 #include "MVRunAction.hh"
 #include "MVEventAction.hh"
 #include "MVSteppingAction.hh"
+#include "MVDefaultGenerator.hh"
 #include "MVMuonGenerator.hh"
 #include "MVGammaGenerator.hh"
 
@@ -23,7 +23,7 @@ void MuonVeto::MVActionInitializer::Build() const
     switch (fConfig.generator)
     {
     case DEFAULT:
-        SetUserAction(new MVPrimaryGeneratorAction(fConfig));
+        SetUserAction(new MVDefaultGenerator(fConfig));
         break;
     case MUON:
         SetUserAction(new MVMuonGenerator);

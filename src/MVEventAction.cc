@@ -2,6 +2,8 @@
 
 #include "MVRunAction.hh"
 #include "MVEventInformation.hh"
+#include "MVGenerator.hh"
+#include "G4RunManager.hh"
 #include "G4Event.hh"
 #include "G4EventManager.hh"
 #include "G4TrajectoryContainer.hh"
@@ -52,10 +54,16 @@ void MVEventAction::EndOfEventAction(const G4Event *event)
     
     G4HCofThisEvent *hce = event->GetHCofThisEvent();
     G4SDManager *SDMan = G4SDManager::GetSDMpointer();
+    const MVGenerator *generator = dynamic_cast<const MVGenerator*>(G4RunManager::GetRunManager()->GetUserPrimaryGeneratorAction());
 
     MVEventInformation* info = dynamic_cast<MVEventInformation*> (event->GetUserInformation());
     for (int counter_index = 0; counter_index < 3; counter_index++)
         info->counters[counter_index].UpdateCounter();
+    info->genInfo.constant.name = generator->GetCurrentParticleName();
+    info->genInfo.constant.theta = generator->GetCurrentTheta();
+    info->genInfo.constant.phi = generator->GetCurrentPhi();
+    info->genInfo.constant.energy = generator->GetCurrentEnergy();
+    info->genInfo.constant.position = generator->GetCurrentParticlePosition();
     
     G4int SiPMCID_0 = SDMan->GetCollectionID("collection_0");
     G4int SiPMCID_1 = SDMan->GetCollectionID("collection_1");
