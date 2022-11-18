@@ -64,19 +64,14 @@ void MVSteppingAction::UserSteppingAction(const G4Step* aStep)
         {
             fEventAction->eventInformation->trackLength.constant += track->GetStepLength();
         }
-        fEventAction->eventInformation->Edep.constant += aStep->GetTotalEnergyDeposit();
     }
-    /*
+
     G4double edepStep = aStep->GetTotalEnergyDeposit();
     if(edepStep > 0)
     {
-        G4int trackID = track->GetTrackID();
-        G4ThreeVector preStepPos = aStep->GetPreStepPoint()->GetPosition();
-        G4ThreeVector postStepPos = aStep->GetPostStepPoint()->GetPosition();
-        G4String particleName = track->GetParticleDefinition()->GetParticleName();
-        G4String processName = aStep->GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName();
+        fEventAction->eventInformation->Edep.constant += edepStep;
     }
-    */
+
     if(track->GetParticleDefinition()->GetParticleName() != "opticalphoton")    return;
     const G4VProcess* CP = track->GetCreatorProcess();
     const G4String CPN = (!CP ? "None": CP->GetProcessName());
