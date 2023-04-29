@@ -24,6 +24,7 @@ MVMuonGenerator::MVMuonGenerator() : gun{new G4ParticleGun}
     charge_ratio = 1.2766;
     charge_thres = 1 / (1 + charge_ratio);
     theta_low = 0.;
+    theta_max = 0.616327;
 
     // Energy range in simulation
     E_low = 0.5 * GeV;
@@ -36,15 +37,15 @@ MVMuonGenerator::MVMuonGenerator() : gun{new G4ParticleGun}
     {
         throw std::runtime_error("MVMuonGenerator: whole_solid not found, can't generate muons!");
     }
-    shielding_x = whole_solid->GetXHalfLength()*2;
-    shielding_y = whole_solid->GetYHalfLength()*2;
-    shielding_z = whole_solid->GetZHalfLength()*2;
+    shielding_x = whole_solid->GetXHalfLength()*4;
+    shielding_y = whole_solid->GetYHalfLength()*4;
+    shielding_z = whole_solid->GetZHalfLength()*4;
 }
 
 G4double MVMuonGenerator::thetaSpectrum(G4double theta)
 {
     G4double Dtheta = sqrt(Rd * Rd * cos(theta) * cos(theta) + 2 * Rd + 1) - Rd * cos(theta);
-    G4double Dtheta_n = pow(Dtheta, -(n - 1));
+    G4double Dtheta_n = pow(Dtheta, -(n - 1)) * sin(theta);
     return Dtheta_n;
 }
 
@@ -56,7 +57,7 @@ G4double MVMuonGenerator::energySpectrum(G4double energy)
 
 G4double MVMuonGenerator::getRandomTheta() {
     G4double theta, rvs=1., upper=0.;
-    G4double thetaSpectrum_max = thetaSpectrum(theta_low);
+    G4double thetaSpectrum_max = thetaSpectrum(theta_max);
     while (rvs > upper)
     {
         theta = G4UniformRand() * M_PI_2;
