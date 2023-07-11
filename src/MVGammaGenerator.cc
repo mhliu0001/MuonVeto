@@ -17,7 +17,7 @@ MVGammaGenerator::MVGammaGenerator() : gun{new G4ParticleGun}
 
     // Shielding size, gamma will appear on the surfaces
     auto solidStore = G4SolidStore::GetInstance();
-    G4Box* whole_solid = dynamic_cast<G4Box*>(solidStore->GetSolid("whole_solid"));
+    G4Box* whole_solid = dynamic_cast<G4Box*>(solidStore->GetSolid("WholePSBox"));
     if(!whole_solid)
     {
         throw std::runtime_error("MVGammaGenerator: whole_solid not found, can't generate gammas!");

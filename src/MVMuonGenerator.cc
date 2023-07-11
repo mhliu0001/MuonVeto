@@ -32,14 +32,14 @@ MVMuonGenerator::MVMuonGenerator() : gun{new G4ParticleGun}
 
     // Shielding size, muon will shower cling to the top
     auto solidStore = G4SolidStore::GetInstance();
-    G4Box* whole_solid = dynamic_cast<G4Box*>(solidStore->GetSolid("whole_solid"));
+    G4Box* whole_solid = dynamic_cast<G4Box*>(solidStore->GetSolid("WholePSBox"));
     if(!whole_solid)
     {
-        throw std::runtime_error("MVMuonGenerator: whole_solid not found, can't generate muons!");
+        throw std::runtime_error("MVMuonGenerator: WholePSBox not found, can't generate muons!");
     }
-    shielding_x = whole_solid->GetXHalfLength()*4;
-    shielding_y = whole_solid->GetYHalfLength()*4;
-    shielding_z = whole_solid->GetZHalfLength()*4;
+    shielding_x = whole_solid->GetXHalfLength()*2;
+    shielding_y = whole_solid->GetYHalfLength()*2;
+    shielding_z = whole_solid->GetZHalfLength()*2;
 }
 
 G4double MVMuonGenerator::thetaSpectrum(G4double theta)
@@ -104,13 +104,13 @@ void MVMuonGenerator::GeneratePrimaries(G4Event *anEvent) {
     fPhi = getRandomPhi();
     fEnergy = getRandomEnergy();
 
-    dirZ = sin(fTheta) * cos(fPhi);
-    dirX = sin(fTheta) * sin(fPhi);
-    dirY = -cos(fTheta);
+    dirX = sin(fTheta) * cos(fPhi);
+    dirY = sin(fTheta) * sin(fPhi);
+    dirZ = -cos(fTheta);
     fMomentumDir = G4ThreeVector(dirX, dirY, dirZ);
     posX = (G4UniformRand() - 0.5) * shielding_x;
-    posY = shielding_y/2;
-    posZ = (G4UniformRand() - 0.5) * shielding_z;
+    posY = (G4UniformRand() - 0.5) * shielding_y;
+    posZ = shielding_z/2;
     fPosition = G4ThreeVector(posX, posY, posZ);
 
     auto particle = getMuonCharge();

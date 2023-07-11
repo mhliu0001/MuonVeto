@@ -19,20 +19,21 @@
 #include "G4MultiFunctionalDetector.hh"
 #include "G4MultiUnion.hh"
 #include "G4IntersectionSolid.hh"
-//#include "G4VPrimitiveScorer.hh"
-//#include "SiPMPhotonAccumulator.hh"
+// #include "G4VPrimitiveScorer.hh"
+// #include "SiPMPhotonAccumulator.hh"
 #include "SiPMSD.hh"
 #include "MVDetectorMessenger.hh"
 #include "G4RunManager.hh"
 #include "G4SolidStore.hh"
 #include "G4LogicalVolumeStore.hh"
 #include "G4PhysicalVolumeStore.hh"
+#include "BambooUtils.hh"
 #include <string>
 #include <cmath>
 
 using namespace MuonVeto;
 
-MVDetectorConstruction::MVDetectorConstruction(Config& config): fConfig(config)
+MVDetectorConstruction::MVDetectorConstruction(Config &config) : fConfig(config)
 {
     fDetectorMessenger = new MVDetectorMessenger(this);
     SetDefaults();
@@ -46,142 +47,159 @@ MVDetectorConstruction::~MVDetectorConstruction()
 void MVDetectorConstruction::SetDefaults()
 {
     // Experimental Hall
-    expHall_x = 200*cm;
-    expHall_y = 200*cm;
-    expHall_z = 500*cm;
+    worldX = 500 * cm;
+    worldY = 200 * cm;
+    worldZ = 200 * cm;
 
     // Pscint
-    pscint_x = 100*mm;
-    pscint_y = 20*mm;
-    pscint_z = 1000*mm;
+    wholeX = 1000 * mm;
+    wholeY = 100 * mm;
+    wholeZ = 20 * mm;
 
     // Teflon reflection layer
-    teflon_depth = 1*mm;
+    shellThickness = 1 * mm;
+    reflectionThickness = 0.1 * mm;
 
     // Fiber
-    fiber_d = 1.*mm;
-    fiber_count = fConfig.fiberCount;
+    fiberDiameter = 1. * mm;
+    // fiber_count = fConfig.fiberCount;
     // fiber_bend_r = 750*mm; // Not used in new geometry
     // fiber_depth_upper = 1.5*mm; // Not used in new geometry
     // fiber_depth_lower = 3.0*mm; // Not used in new geometry
-    cladding_depth_1 = 0.015*mm;
-    cladding_depth_2 = 0.045*mm;
+    claddingDepth = 0.015 * mm;
+    FiberDepthLower = -grooveDepth / 2 + fiberDiameter / 2 - 0.1 * mm;
+    FiberDepthUpper = grooveDepth / 2 - fiberDiameter / 2 + 0.1 * mm;
 
     // Groove
-    groove_depth = 4.5*mm;
-    groove_width = 1.5*mm;
+    grooveDepth = 4.5 * mm;
+    grooveWidth = 1.5 * mm;
 
     // SiPM
-    SiPM_width = 6*mm;
-    SiPM_length = 6*mm;
-    SiPM_depth = 1*mm;
-    air_interval = 1*mm;
+    SiPMX = 1 * mm;
+    SiPMY = 6 * mm;
+    SiPMZ = 6 * mm;
 
     // Material Properties
-    scintYield = 8000./MeV;
+    scintYield = 8000. / MeV;
 
+    // Read from PS configuration file
+    std::ifstream psConfigStream(fConfig.psConfig);
+    json psConfig = json::parse(psConfigStream);
+    psType = psConfig["ps_type"];
+    fiberCount = psConfig["fiber_count"];
+    wholeX = BambooUtils::evaluate(psConfig["whole_x"]);
+    wholeY = BambooUtils::evaluate(psConfig["whole_y"]);
+    uninstrumentedX = BambooUtils::evaluate(psConfig["uninstrumented_x"]);
+    ps_scint = psConfig["ps_scint"];
+    fiber_abs = psConfig["fiber_abs"];
+    fiber_emi = psConfig["fiber_emi"];
 }
 
 void MVDetectorConstruction::DefineMaterials()
 {
-    G4NistManager* man = G4NistManager::Instance();
+    G4NistManager *man = G4NistManager::Instance();
 
     // Definition of elements
-    G4Element* C = man->FindOrBuildElement("C");
-    G4Element* H = man->FindOrBuildElement("H");
-    G4Element* O = man->FindOrBuildElement("O");
-    
-    // Definition of teflon, used in outer shell(reflection layer)
-    teflon = man->FindOrBuildMaterial("G4_TEFLON");
+    G4Element *C = man->FindOrBuildElement("C");
+    G4Element *H = man->FindOrBuildElement("H");
+    G4Element *O = man->FindOrBuildElement("O");
+    G4Element *Al = man->FindOrBuildElement("Al");
 
-    // Definition of air, used in world
-    air = man->FindOrBuildMaterial("G4_AIR");
-    G4MaterialPropertiesTable* air_table = new G4MaterialPropertiesTable();
-    air_table->AddProperty("RINDEX", "Air");
+    // Definition of PSPolystyrene, used in plastic scintillators
+    // http://relics.org.cn:9092/lib/exe/fetch.php?media=montecarlo:psmuonveto:sp101.pdf
+    PSPolystyrene = new G4Material("PSPolystyrene", 1.023 * g / cm3, 2, kStateSolid);
+    PSPolystyrene->AddElement(C, 0.5);
+    PSPolystyrene->AddElement(H, 0.5); //(C8H8)n
 
-    air->SetMaterialPropertiesTable(air_table);
+    // Definition of PSAluminum, used in plastic scintillator reflective layers
+    PSAluminum = new G4Material("PSAluminum", 2.699 * g / cm3, 1, kStateSolid);
+    PSAluminum->AddElement(Al, 1.);
 
-    // Definition of LAB, used in pscint
-    LAB = new G4Material("LAB", 1.05*g/cm3, 2);
-    LAB->AddElement(C,0.47);
-    LAB->AddElement(H,0.53);
+    // Definition of Air, used in world
+    Air = man->FindOrBuildMaterial("G4_AIR");
 
-    // Definition of glass, used in SiPM
-    glass = man->FindOrBuildMaterial("G4_GLASS_PLATE");
-    G4MaterialPropertiesTable* glass_table = new G4MaterialPropertiesTable();
-    std::vector<G4double> glass_energy = {2.8*eV, 2.9*eV, 3.0*eV};
-    std::vector<G4double> glass_rindex = {1.5, 1.5, 1.5};
-    glass_table->AddProperty("RINDEX", glass_energy, glass_rindex);
-    glass->SetMaterialPropertiesTable(glass_table);
+    // Definition of SiPMGlass, used in SiPM
+    SiPMGlass = man->FindOrBuildMaterial("G4_GLASS_PLATE");
 
-    // Definition of PMMA, used in fiber
-    PMMA = new G4Material("PMMA", 1190*kg/m3, 3);
-    PMMA->AddElement(H, 8);
-    PMMA->AddElement(C, 5);
-    PMMA->AddElement(O, 2);
+    // Definition of FiberPMMA, used in WLS fiber cladding
+    CladdingPMMA = new G4Material("CladdingPMMA", 1200 * kg / m3, 3);
+    CladdingPMMA->AddElement(H, 8);
+    CladdingPMMA->AddElement(C, 5);
+    CladdingPMMA->AddElement(O, 2);
 
-    // Definition of Pethylene_1 (Fluorinated Polyethylene), used in the outer fiber cladding
-    Pethylene_1 = new G4Material("Pethylene_1", 1400*kg/m3, 2);
-    Pethylene_1->AddElement(H, 4);
-    Pethylene_1->AddElement(C, 2);
+    // Definition of FiberPolystyrene, used in WLS fiber core
+    FiberPolystyrene = new G4Material("FiberPolystyrene", 1050 * kg / m3, 2);
+    FiberPolystyrene->AddElement(H, 0.5);
+    FiberPolystyrene->AddElement(C, 0.5);
 
-    // Definition of Pethylene_2 (Polyethylene), used in the inner fiber cladding
-    Pethylene_2 = new G4Material("Pethylene_2", 1200*kg/m3, 2);
-    Pethylene_2->AddElement(H, 4);
-    Pethylene_2->AddElement(C, 2);
-
-    // Definition of groove_mat, used in grooves
-    groove_mat = new G4Material("groove_mat", 1200*kg/m3, 2);
-    groove_mat->AddElement(H, 4);
-    groove_mat->AddElement(C, 2);
-
+    // Definition of GrooveGlue, used in groove
+    GrooveGlue = new G4Material("GrooveGlue", 1200 * kg / m3, 3); // Epoxy resin, (C11H12O3)n
+    GrooveGlue->AddElement(H, 12);
+    GrooveGlue->AddElement(C, 11);
+    GrooveGlue->AddElement(O, 3);
 }
 
 void MVDetectorConstruction::DefineMaterialTables()
 {
-    /*************Table of LAB*************/
+    // Table for PSPolystyrene
+    G4MaterialPropertiesTable *pPSPolystyreneTable = new G4MaterialPropertiesTable();
+    std::vector<G4double> pPSPolystyrenePhotonMomentum = {2.0 * eV, 3.0 * eV, 4.0 * eV};
+    std::vector<G4double> pPSPolystyreneRIndex = {1.58, 1.58, 1.58};
+    std::vector<G4double> pPSPolystyreneAbsLength = {210 * cm, 210 * cm, 210 * cm};
+    pPSPolystyreneTable->AddProperty("RINDEX", pPSPolystyrenePhotonMomentum, pPSPolystyreneRIndex);
+    pPSPolystyreneTable->AddProperty("ABSLENGTH", pPSPolystyrenePhotonMomentum, pPSPolystyreneAbsLength);
+    pPSPolystyreneTable->AddConstProperty("SCINTILLATIONYIELD", scintYield);
+    pPSPolystyreneTable->AddConstProperty("RESOLUTIONSCALE", 0.0); // Since we only want to get LCE, fluctuations in photons need not be considered
+    pPSPolystyreneTable->AddConstProperty("SCINTILLATIONYIELD1", 1.0);
+    pPSPolystyreneTable->AddConstProperty("SCINTILLATIONTIMECONSTANT1", 2.40 * ns);
+    std::vector<G4double> pPSPolystyreneComPhotonMomentum = {};
+    std::vector<G4double> pPSPolystyreneComFactor = {};
+    read_csv(ps_scint, pPSPolystyreneComPhotonMomentum, pPSPolystyreneComFactor);
+    pPSPolystyreneTable->AddProperty("SCINTILLATIONCOMPONENT1", pPSPolystyreneComPhotonMomentum, pPSPolystyreneComFactor);
+    PSPolystyrene->SetMaterialPropertiesTable(pPSPolystyreneTable);
 
-    G4MaterialPropertiesTable* MPTscint = new G4MaterialPropertiesTable();
+    // Table for PSAluminum
+    G4MaterialPropertiesTable *pPSAluminumTable = new G4MaterialPropertiesTable();
+    std::vector<G4double> pPSAluminumPhotonMomentum = {2.0 * eV, 3.0 * eV, 4.0 * eV};
+    std::vector<G4double> pPSAluminumReflectivity = {0.85, 0.85, 0.85};
+    pPSAluminumTable->AddProperty("REFLECTIVITY", pPSAluminumPhotonMomentum, pPSAluminumReflectivity);
+    PSAluminum->SetMaterialPropertiesTable(pPSAluminumTable);
 
-    // Absorption
-    G4double scintABSEnergy[502] = {1.3778*eV, 1.3793*eV, 1.3808*eV, 1.3824*eV, 1.3839*eV, 1.3855*eV, 1.3870*eV, 1.3886*eV, 1.3901*eV, 1.3917*eV, 1.3933*eV, 1.3948*eV, 1.3964*eV, 1.3980*eV, 1.3995*eV, 1.4011*eV, 1.4027*eV, 1.4043*eV, 1.4059*eV, 1.4075*eV, 1.4091*eV, 1.4107*eV, 1.4123*eV, 1.4139*eV, 1.4155*eV, 1.4171*eV, 1.4188*eV, 1.4204*eV, 1.4220*eV, 1.4237*eV, 1.4253*eV, 1.4269*eV, 1.4286*eV, 1.4302*eV, 1.4319*eV, 1.4335*eV, 1.4352*eV, 1.4368*eV, 1.4385*eV, 1.4402*eV, 1.4419*eV, 1.4435*eV, 1.4452*eV, 1.4469*eV, 1.4486*eV, 1.4503*eV, 1.4520*eV, 1.4537*eV, 1.4554*eV, 1.4571*eV, 1.4588*eV, 1.4605*eV, 1.4623*eV, 1.4640*eV, 1.4657*eV, 1.4675*eV, 1.4692*eV, 1.4709*eV, 1.4727*eV, 1.4744*eV, 1.4762*eV, 1.4779*eV, 1.4797*eV, 1.4815*eV, 1.4833*eV, 1.4850*eV, 1.4868*eV, 1.4886*eV, 1.4904*eV, 1.4922*eV, 1.4940*eV, 1.4958*eV, 1.4976*eV, 1.4994*eV, 1.5012*eV, 1.5030*eV, 1.5049*eV, 1.5067*eV, 1.5085*eV, 1.5104*eV, 1.5122*eV, 1.5140*eV, 1.5159*eV, 1.5177*eV, 1.5196*eV, 1.5215*eV, 1.5233*eV, 1.5252*eV, 1.5271*eV, 1.5290*eV, 1.5309*eV, 1.5328*eV, 1.5347*eV, 1.5366*eV, 1.5385*eV, 1.5404*eV, 1.5423*eV, 1.5442*eV, 1.5461*eV, 1.5481*eV, 1.5500*eV, 1.5519*eV, 1.5539*eV, 1.5558*eV, 1.5578*eV, 1.5597*eV, 1.5617*eV, 1.5637*eV, 1.5657*eV, 1.5676*eV, 1.5696*eV, 1.5716*eV, 1.5736*eV, 1.5756*eV, 1.5776*eV, 1.5796*eV, 1.5816*eV, 1.5837*eV, 1.5857*eV, 1.5877*eV, 1.5897*eV, 1.5918*eV, 1.5938*eV, 1.5959*eV, 1.5979*eV, 1.6000*eV, 1.6021*eV, 1.6041*eV, 1.6062*eV, 1.6083*eV, 1.6104*eV, 1.6125*eV, 1.6146*eV, 1.6167*eV, 1.6188*eV, 1.6209*eV, 1.6230*eV, 1.6252*eV, 1.6273*eV, 1.6294*eV, 1.6316*eV, 1.6337*eV, 1.6359*eV, 1.6380*eV, 1.6402*eV, 1.6424*eV, 1.6446*eV, 1.6467*eV, 1.6489*eV, 1.6511*eV, 1.6533*eV, 1.6555*eV, 1.6578*eV, 1.6600*eV, 1.6622*eV, 1.6644*eV, 1.6667*eV, 1.6689*eV, 1.6712*eV, 1.6734*eV, 1.6757*eV, 1.6779*eV, 1.6802*eV, 1.6825*eV, 1.6848*eV, 1.6871*eV, 1.6894*eV, 1.6917*eV, 1.6940*eV, 1.6963*eV, 1.6986*eV, 1.7010*eV, 1.7033*eV, 1.7056*eV, 1.7080*eV, 1.7103*eV, 1.7127*eV, 1.7151*eV, 1.7175*eV, 1.7198*eV, 1.7222*eV, 1.7246*eV, 1.7270*eV, 1.7294*eV, 1.7318*eV, 1.7343*eV, 1.7367*eV, 1.7391*eV, 1.7416*eV, 1.7440*eV, 1.7465*eV, 1.7489*eV, 1.7514*eV, 1.7539*eV, 1.7564*eV, 1.7589*eV, 1.7614*eV, 1.7639*eV, 1.7664*eV, 1.7689*eV, 1.7714*eV, 1.7740*eV, 1.7765*eV, 1.7791*eV, 1.7816*eV, 1.7842*eV, 1.7867*eV, 1.7893*eV, 1.7919*eV, 1.7945*eV, 1.7971*eV, 1.7997*eV, 1.8023*eV, 1.8049*eV, 1.8076*eV, 1.8102*eV, 1.8129*eV, 1.8155*eV, 1.8182*eV, 1.8209*eV, 1.8235*eV, 1.8262*eV, 1.8289*eV, 1.8316*eV, 1.8343*eV, 1.8370*eV, 1.8398*eV, 1.8425*eV, 1.8452*eV, 1.8480*eV, 1.8507*eV, 1.8535*eV, 1.8563*eV, 1.8591*eV, 1.8619*eV, 1.8647*eV, 1.8675*eV, 1.8703*eV, 1.8731*eV, 1.8759*eV, 1.8788*eV, 1.8816*eV, 1.8845*eV, 1.8874*eV, 1.8902*eV, 1.8931*eV, 1.8960*eV, 1.8989*eV, 1.9018*eV, 1.9048*eV, 1.9077*eV, 1.9106*eV, 1.9136*eV, 1.9165*eV, 1.9195*eV, 1.9225*eV, 1.9255*eV, 1.9285*eV, 1.9315*eV, 1.9345*eV, 1.9375*eV, 1.9405*eV, 1.9436*eV, 1.9466*eV, 1.9497*eV, 1.9528*eV, 1.9558*eV, 1.9589*eV, 1.9620*eV, 1.9651*eV, 1.9683*eV, 1.9714*eV, 1.9745*eV, 1.9777*eV, 1.9808*eV, 1.9840*eV, 1.9872*eV, 1.9904*eV, 1.9936*eV, 1.9968*eV, 2.0000*eV, 2.0032*eV, 2.0065*eV, 2.0097*eV, 2.0130*eV, 2.0163*eV, 2.0195*eV, 2.0228*eV, 2.0261*eV, 2.0295*eV, 2.0328*eV, 2.0361*eV, 2.0395*eV, 2.0428*eV, 2.0462*eV, 2.0496*eV, 2.0530*eV, 2.0564*eV, 2.0598*eV, 2.0632*eV, 2.0771*eV, 2.0875*eV, 2.0981*eV, 2.1088*eV, 2.1197*eV, 2.1306*eV, 2.1416*eV, 2.1528*eV, 2.1640*eV, 2.1754*eV, 2.1869*eV, 2.1986*eV, 2.2103*eV, 2.2222*eV, 2.2342*eV, 2.2464*eV, 2.2587*eV, 2.2711*eV, 2.2836*eV, 2.2963*eV, 2.3091*eV, 2.3221*eV, 2.3352*eV, 2.3485*eV, 2.3619*eV, 2.3755*eV, 2.3892*eV, 2.4031*eV, 2.4172*eV, 2.4314*eV, 2.4458*eV, 2.4603*eV, 2.4750*eV, 2.4900*eV, 2.5051*eV, 2.5203*eV, 2.5358*eV, 2.5514*eV, 2.5673*eV, 2.5833*eV, 2.5996*eV, 2.6160*eV, 2.6327*eV, 2.6496*eV, 2.6667*eV, 2.6840*eV, 2.7015*eV, 2.7193*eV, 2.7373*eV, 2.7556*eV, 2.7740*eV, 2.7928*eV, 2.8118*eV, 2.8311*eV, 2.8506*eV, 2.8704*eV, 2.8904*eV, 2.8972*eV, 2.9040*eV, 2.9108*eV, 2.9176*eV, 2.9245*eV, 2.9314*eV, 2.9384*eV, 2.9454*eV, 2.9524*eV, 2.9594*eV, 2.9665*eV, 2.9736*eV, 2.9808*eV, 2.9880*eV, 2.9952*eV, 3.0024*eV, 3.0097*eV, 3.0170*eV, 3.0244*eV, 3.0318*eV, 3.0392*eV, 3.0467*eV, 3.0542*eV, 3.0617*eV, 3.0693*eV, 3.0769*eV, 3.0846*eV, 3.0923*eV, 3.1000*eV, 3.1078*eV, 3.1156*eV, 3.1234*eV, 3.1313*eV, 3.1000*eV, 3.1039*eV, 3.1078*eV, 3.1117*eV, 3.1156*eV, 3.1195*eV, 3.1234*eV, 3.1274*eV, 3.1313*eV, 3.1353*eV, 3.1392*eV, 3.1432*eV, 3.1472*eV, 3.1512*eV, 3.1552*eV, 3.1592*eV, 3.1633*eV, 3.1673*eV, 3.1714*eV, 3.1754*eV, 3.1795*eV, 3.1836*eV, 3.1877*eV, 3.1918*eV, 3.1959*eV, 3.2000*eV, 3.2041*eV, 3.2083*eV, 3.2124*eV, 3.2166*eV, 3.2208*eV, 3.2250*eV, 3.2292*eV, 3.2334*eV, 3.2376*eV, 3.2418*eV, 3.2461*eV, 3.2503*eV, 3.2546*eV, 3.2589*eV, 3.2632*eV, 3.2675*eV, 3.2718*eV, 3.2761*eV, 3.2804*eV, 3.2848*eV, 3.2891*eV, 3.2935*eV, 3.2979*eV, 3.3023*eV, 3.3067*eV, 3.3111*eV, 3.3155*eV, 3.3199*eV, 3.3244*eV, 3.3289*eV, 3.3333*eV, 3.3378*eV, 3.3423*eV, 3.3468*eV, 3.3514*eV, 3.3559*eV, 3.3604*eV, 3.3650*eV, 3.3696*eV, 3.3741*eV, 3.3787*eV, 3.3834*eV, 3.3880*eV, 3.3926*eV, 3.3973*eV, 3.4019*eV, 3.4066*eV, 3.4113*eV, 3.4160*eV, 3.4207*eV, 3.4254*eV, 3.4302*eV, 3.4349*eV, 3.4397*eV, 3.4444*eV, 3.4492*eV, 3.4540*eV, 3.4589*eV, 3.4637*eV, 3.4685*eV, 3.4734*eV, 3.4783*eV, 3.4831*eV, 3.4880*eV, 3.4930*eV, 3.4979*eV, 3.5028*eV, 3.5078*eV, 3.5127*eV, 3.5177*eV, 3.5227*eV, 3.5277*eV, 3.5328*eV, 3.5378*eV, 3.5429*eV, 3.5479*eV, 3.5530*eV, 3.5581*eV, 3.5632*eV, 3.5683*eV, 3.5735*eV, 3.5786*eV, 3.5838*eV, 6.2000*eV, 10.3300*eV, 15.500*eV};
-	G4double scintABSLength[502] = {0.2919*m,  0.3005*m, 0.3176*m, 0.3441*m, 0.3873*m, 0.3902*m, 0.3959*m, 0.4209*m, 0.4422*m, 0.4531*m, 0.4600*m, 0.4718*m, 0.4652*m, 0.4396*m, 0.4214*m, 0.3918*m, 0.3653*m, 0.3409*m, 0.3169*m, 0.2999*m, 0.2751*m, 0.2570*m, 0.2437*m, 0.2357*m, 0.2337*m, 0.2357*m, 0.2465*m, 0.2665*m, 0.2888*m, 0.3165*m, 0.3487*m, 0.3872*m, 0.4388*m, 0.4955*m, 0.5627*m, 0.6195*m, 0.7014*m, 0.7829*m, 0.8771*m, 0.9682*m, 1.0587*m, 1.1284*m, 1.2284*m, 1.3007*m, 1.3541*m, 1.3977*m, 1.4458*m, 1.5217*m, 1.6116*m, 1.6694*m, 1.6499*m, 1.6705*m, 1.7253*m, 1.7555*m, 1.7929*m, 1.8192*m, 1.8041*m, 1.8179*m, 1.7608*m, 1.7770*m, 1.8262*m, 1.8372*m, 1.8307*m, 1.8275*m, 1.7740*m, 1.7716*m, 1.7626*m, 1.6933*m, 1.6630*m, 1.6509*m, 1.6775*m, 1.7281*m, 1.7449*m, 1.7531*m, 1.8066*m, 1.8211*m, 1.7991*m, 1.8307*m, 1.8850*m, 1.9106*m, 1.9728*m, 2.0210*m, 2.0472*m, 2.0249*m, 2.0569*m, 2.0882*m, 2.2132*m, 2.2721*m, 2.2622*m, 2.2370*m, 2.3279*m, 2.4254*m, 2.5777*m, 2.6245*m, 2.7147*m, 2.7578*m, 2.8973*m, 3.0392*m, 3.2215*m, 3.1744*m, 3.2435*m, 3.5948*m, 3.6273*m, 3.7258*m, 3.7419*m, 3.1045*m, 3.0818*m, 3.162*m, 3.1076*m, 3.1634*m, 3.2586*m, 3.2378*m, 3.2867*m, 3.1667*m, 3.2902*m, 2.4514*m, 2.3186*m, 2.0723*m, 2.9251*m, 2.8870*m, 2.6630*m, 2.4269*m, 2.3520*m, 2.0751*m, 2.9531*m, 2.7754*m, 2.5388*m, 2.3052*m, 2.0798*m, 1.8668*m, 1.6911*m, 1.5107*m, 1.3701*m, 1.2460*m, 1.1709*m, 1.0945*m, 1.0318*m, 0.9973*m, 0.9784*m, 0.9731*m, 0.9795*m, 0.9813*m, 0.9984*m, 1.0302*m, 1.0580*m, 1.0817*m, 1.1033*m, 1.1291*m, 1.1450*m, 1.1488*m, 1.1510*m, 1.1585*m, 1.1723*m, 1.2023*m, 1.2568*m, 1.3062*m, 1.3928*m, 1.5107*m, 1.6201*m, 1.7584*m, 1.8742*m, 2.0016*m, 2.1300*m, 2.2880*m, 2.4220*m, 2.6022*m, 2.7289*m, 2.8436*m, 3.0164*m, 3.1305*m, 3.2516*m, 3.2844*m, 3.3979*m, 3.4749*m, 3.5362*m, 3.4565*m, 3.2927*m, 3.1437*m, 2.9836*m, 2.7261*m, 2.4891*m, 2.3022*m, 2.1627*m, 2.0344*m, 1.9602*m, 1.9261*m, 1.9543*m, 2.0593*m, 2.2274*m, 2.4379*m, 2.6391*m, 2.7799*m, 2.9038*m, 3.1571*m, 3.3781*m, 3.6047*m, 3.8103*m, 3.9790*m, 2.1435*m, 2.3150*m, 2.4629*m, 2.4476*m, 2.6294*m, 2.7692*m, 2.7867*m, 2.9978*m, 2.1055*m, 2.1663*m, 2.3138*m, 2.4187*m, 2.6723*m, 2.8704*m, 2.0126*m, 2.3112*m, 2.3964*m, 2.4439*m, 2.2582*m, 2.1693*m, 2.3964*m, 2.6921*m, 2.9416*m, 2.5001*m, 2.8685*m, 2.3014*m, 2.1511*m, 2.2709*m, 2.4689*m, 2.5555*m, 2.5120*m, 2.2507*m, 2.4689*m, 2.4475*m, 2.6780*m, 2.7235*m, 2.6107*m, 2.2709*m, 2.1906*m, 2.5555*m, 2.1906*m, 2.0449*m, 1.8594*m, 1.8957*m, 1.6749*m, 1.2060*m, 1.8970*m, 1.3138*m, 1.9930*m, 1.8535*m, 1.8535*m, 1.8176*m, 1.6792*m, 1.6750*m, 1.7648*m, 1.8088*m, 1.8900*m, 1.0560*m, 2.1006*m, 2.1106*m, 2.3084*m, 2.1869*m, 2.2337*m, 2.0757*m, 2.1510*m, 1.3246*m, 1.4757*m, 1.6477*m, 1.8837*m, 1.2356*m, 2.4042*m, 2.6072*m, 1.7353*m, 2.9232*m, 2.2709*m, 2.5120*m, 2.87264*m, 1.95264*m, 1.58576*m, 1.38944*m, 1.49776*m, 1.30832*m, 1.13968*m, 1.71232*m, 1.23504*m, 1.8168*m, 1.30832*m, 1.92608*m, 1.19872*m, 2.5624*m, 2.15936*m, 1.69888*m, 1.37952*m, 1.42624*m, 1.63344*m, 1.86528*m, 2.1064*m, 2.19488*m, 1.30384*m, 1.23504*m, 1.03056*m, 1.08496*m, 1.09984*m, 1.5176*m, 1.28848*m, 1.82336*m, 1.05824*m, 2.2376*m, 3.14288*m, 2.43184*m, 2.44576*m, 2.88896*m, 3.02208*m, 3.25472*m, 3.4072*m, 3.17872*m, 3.26928*m, 3.83232*m, 3.40224*m, 1.21712*m, 3.58144*m, 3.96304*m, 2.78912*m, 2.47616*m, 2.71184*m, 2.5024*m, 2.432*m,  2.85456*m, 2.99776*m, 3.31344*m, 3.44656*m, 2.3232*m, 3.39888*m, 3.06416*m, 3.58672*m, 3.31136*m, 2.33328*m, 3.23728*m, 2.17328*m, 2.53008*m, 2.7384*m, 1.35072*m, 2.7976*m, 2.64288*m, 2.41792*m, 2.3008*m, 2.55232*m, 2.81904*m, 2.312*m,  2.42464*m, 2.1144*m, 2.2448*m, 2.0176*m, 2.47376*m, 2.0568*m, 2.10496*m, 2.98416*m, 2.19648*m, 2.25216*m, 2.64288*m, 2.25264*m, 2.69088*m, 2.27312*m, 2.11184*m, 1.94992*m, 1.48224*m, 1.73392*m, 1.6928*m, 1.9984*m, 1.9491*m, 1.6101*m, 1.8526*m, 1.1005*m, 1.5001*m, 1.8324*m, 1.758*m, 1.7928*m, 1.3715*m, 1.0455*m, 0.7664*m, 0.5591*m, 0.4065*m, 0.2934*m, 0.2101*m, 0.1529*m, 0.1133*m, 0.0849*m, 0.0650*m, 0.0503*m, 0.0393*m, 0.0314*m, 0.0255*m, 0.07207*m,  0.06294*m,  0.05539*m,  0.04875*m,  0.04280*m,  0.03801*m,  0.03402*m,  0.03047*m,  0.02733*m,  0.02468*m,  0.02243*m,  0.02003*m,  0.01824*m,  0.01666*m,  0.01527*m,  0.01403*m,  0.01295*m,  0.01197*m,  0.01113*m,  0.01037*m,  0.00966*m,  0.00906*m,  0.00853*m,  0.00806*m,  0.00763*m,  0.00723*m,  0.00688*m,  0.00656*m,  0.00627*m,  0.00601*m,  0.00576*m,  0.00553*m,  0.00532*m,  0.00512*m,  0.00495*m,  0.00478*m,  0.00462*m,  0.00449*m,  0.00436*m,  0.00424*m,  0.00412*m,  0.00401*m,  0.00391*m,  0.00381*m,  0.00371*m,  0.00362*m,  0.00354*m,  0.00346*m,  0.00338*m,  0.00331*m,  0.00324*m,  0.00317*m,  0.00310*m,  0.00303*m,  0.00297*m,  0.00291*m,  0.00285*m,  0.00280*m,  0.00274*m,  0.00268*m,  0.00263*m,  0.00258*m,  0.00253*m,  0.00248*m,  0.00244*m,  0.00239*m,  0.00235*m,  0.00231*m,  0.00228*m,  0.00224*m,  0.00221*m,  0.00218*m,  0.00215*m,  0.00210*m,  0.00207*m,  0.00204*m,  0.00202*m,  0.00199*m,  0.00196*m,  0.00194*m,  0.00191*m,  0.00189*m,  0.00186*m,  0.00183*m,  0.00181*m,  0.00178*m,  0.00175*m,  0.00171*m,  0.00168*m,  0.00164*m,  0.00161*m,  0.00156*m,  0.00152*m,  0.00148*m,  0.00143*m,  0.00138*m,  0.00132*m,  0.00126*m,  0.00121*m,  0.00115*m,  0.00108*m,  0.00102*m,  0.00095*m,  0.00088*m,  0.00077*m,  0.00070*m,  0.00062*m,  0.00055*m,  0.00048*m,  0.000001*m, 0.000001*m, 0.000001*m};
-	MPTscint->AddProperty("ABSLENGTH", scintABSEnergy, scintABSLength, 502);
+    // Table for Air
+    G4MaterialPropertiesTable *pAirTable = new G4MaterialPropertiesTable();
+    pAirTable->AddProperty("RINDEX", "Air");
+    Air->SetMaterialPropertiesTable(pAirTable);
 
-    // Refraction index
-    G4double scintRefIndexEnergy[18] = {1.55*eV, 1.79505*eV, 2.10499*eV, 2.27077*eV, 2.55111*eV, 2.84498*eV, 3.06361*eV, 4.13281*eV, 6.20*eV, 6.526*eV, 6.889*eV, 7.294*eV, 7.75*eV, 8.267*eV, 8.857*eV, 9.538*eV, 10.33*eV, 15.5*eV};
-    G4double Pscintrindex = 1.52;
-    G4double scintRefIndex[18] = {Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex, Pscintrindex};
-	MPTscint->AddProperty("RINDEX", scintRefIndexEnergy, scintRefIndex, 18);
+    // Table for SiPMGlass
+    G4MaterialPropertiesTable *pSiPMGlassTable = new G4MaterialPropertiesTable();
+    std::vector<G4double> pSiPMGlassPhotonMomentum = {2.0 * eV, 3.0 * eV, 4.0 * eV};
+    std::vector<G4double> pSiPMGlasRIndex = {1.5, 1.5, 1.5};
+    pSiPMGlassTable->AddProperty("RINDEX", pSiPMGlassPhotonMomentum, pSiPMGlasRIndex);
+    SiPMGlass->SetMaterialPropertiesTable(pSiPMGlassTable);
 
-    // Reemission? I don't know what process this is
+    // Table for CladdingPMMA
+    G4MaterialPropertiesTable *pCladdingPMMATable = new G4MaterialPropertiesTable();
+    std::vector<G4double> pCladdingPMMAPhotonMomentum = {2.0 * eV, 3.0 * eV, 4.0 * eV};
+    std::vector<G4double> pCladdingPMMARIndex = {1.49, 1.49, 1.49};
+    pCladdingPMMATable->AddProperty("RINDEX", pCladdingPMMAPhotonMomentum, pCladdingPMMARIndex);
+    CladdingPMMA->SetMaterialPropertiesTable(pCladdingPMMATable);
+
+    // Table for FiberPolystyrene
+    G4MaterialPropertiesTable *pFiberPolystyreneTable = new G4MaterialPropertiesTable();
+    std::vector<G4double> pFiberPolystyrenePhotonMomentum = {2.0 * eV, 3.0 * eV, 4.0 * eV};
+    std::vector<G4double> pFiberPolystyreneRIndex = {1.60, 1.60, 1.60};
+    pFiberPolystyreneTable->AddProperty("RINDEX", pFiberPolystyrenePhotonMomentum, pFiberPolystyreneRIndex);
     /*
-    G4double scintReemEnergy[28] = {1.55000*eV, 1.73987*eV, 2.15315*eV, 2.42867*eV, 2.45963*eV, 2.49129*eV, 2.52368*eV, 2.55682*eV, 2.59075*eV, 2.62547*eV, 2.66104*eV, 2.69747*eV, 2.73481*eV, 2.77308*eV, 2.81231*eV, 2.85255*eV, 2.89384*eV, 2.93621*eV, 2.97972*eV, 3.02439*eV, 3.07030*eV, 3.21588*eV, 3.80628*eV, 5.87347*eV, 6.20000*eV, 7.75000*eV, 10.33*eV, 15.5*eV};
-    G4double scintReem[28] = {0, 0, 0.0587, 0.1141, 0.1259, 0.1215, 0.116, 0.1372, 0.1344, 0.1409, 0.1417, 0.1712, 0.1936, 0.1969, 0.2203, 0.2354, 0.3004, 0.4165, 0.6353, 0.8022, 0.8004, 0.8006, 0.8, 0.45, 0.42, 0.40, 0.40, 0.40};
+    std::vector<G4double> pFiberPolystyreneAbsPhotonMomentum = {};
+    std::vector<G4double> pFiberPolystyreneAbsFactor = {};
+    read_csv(fiber_abs, pFiberPolystyreneAbsPhotonMomentum, pFiberPolystyreneAbsFactor);
+    pFiberPolystyreneTable->AddProperty("WLSABSLENGTH", pFiberPolystyreneAbsPhotonMomentum, pFiberPolystyreneAbsFactor);
+    std::vector<G4double> pFiberPolystyreneEmiPhotonMomentum = {};
+    std::vector<G4double> pFiberPolystyreneEmiFactor = {};
+    read_csv(fiber_emi, pFiberPolystyreneEmiPhotonMomentum, pFiberPolystyreneEmiFactor);
+    pFiberPolystyreneTable->AddProperty("WLSCOMPONENT", pFiberPolystyreneEmiPhotonMomentum, pFiberPolystyreneEmiFactor);
     */
-
-    // Rayleigh scattering
-    G4double scintRayEnergy[11] = {1.55*eV, 1.7714*eV, 2.102*eV, 2.255*eV, 2.531*eV, 2.884*eV, 3.024*eV, 4.133*eV, 6.20*eV, 10.33*eV, 15.5*eV};
-    G4double scintRayLength[11] = {500.0*m, 300.0*m, 170.0*m, 100.0*m, 62.0*m, 42.0*m, 30.0*m, 7.6*m, 0.85*m, 0.85*m, 0.85*m};
-    MPTscint->AddProperty("RAYLEIGH", scintRayEnergy, scintRayLength, 11);
-
-    // Scintillation
-    G4double scintComEnergy[275] = {1.550000*eV, 2.066401*eV, 2.069851*eV, 2.073312*eV, 2.076791*eV, 2.080272*eV, 2.083771*eV, 2.087279*eV, 2.090801*eV, 2.094329*eV, 2.097869*eV, 2.101431*eV, 2.104992*eV, 2.108571*eV, 2.112170*eV, 2.115770*eV, 2.119390*eV, 2.123019*eV, 2.126660*eV, 2.130310*eV, 2.133979*eV, 2.137658*eV, 2.141350*eV, 2.145062*eV, 2.148771*eV, 2.152501*eV, 2.156252*eV, 2.160000*eV, 2.163769*eV, 2.167559*eV, 2.171351*eV, 2.175160*eV, 2.178978*eV, 2.182822*eV, 2.186671*eV, 2.190530*eV, 2.194411*eV, 2.198301*eV, 2.202209*eV, 2.206119*eV, 2.210059*eV, 2.214001*eV, 2.217961*eV, 2.221940*eV, 2.225928*eV, 2.229931*eV, 2.233948*eV, 2.237980*eV, 2.242031*eV, 2.246092*eV, 2.250172*eV, 2.254259*eV, 2.258360*eV, 2.262489*eV, 2.266620*eV, 2.270771*eV, 2.274941*eV, 2.279118*eV, 2.283319*eV, 2.287532*eV, 2.291759*eV, 2.295999*eV, 2.300262*eV, 2.304541*eV, 2.308828*eV, 2.313139*eV, 2.317458*eV, 2.321802*eV, 2.326162*eV, 2.330529*eV, 2.334922*eV, 2.339318*eV, 2.343749*eV, 2.348191*eV, 2.352642*eV, 2.357110*eV, 2.361599*eV, 2.366110*eV, 2.370629*eV, 2.375179*eV, 2.379741*eV, 2.384308*eV, 2.388911*eV, 2.393522*eV, 2.398151*eV, 2.402789*eV, 2.407458*eV, 2.412142*eV, 2.416848*eV, 2.421572*eV, 2.426311*eV, 2.431058*eV, 2.435838*eV, 2.440628*eV, 2.445451*eV, 2.450278*eV, 2.455130*eV, 2.460000*eV, 2.464890*eV, 2.469800*eV, 2.474729*eV, 2.479678*eV, 2.484651*eV, 2.489640*eV, 2.494649*eV, 2.499683*eV, 2.504732*eV, 2.509801*eV, 2.514892*eV, 2.520003*eV, 2.525139*eV, 2.530292*eV, 2.535461*eV, 2.540661*eV, 2.545882*eV, 2.551120*eV, 2.556380*eV, 2.561661*eV, 2.566958*eV, 2.572289*eV, 2.577630*eV, 2.583000*eV, 2.588402*eV, 2.593811*eV, 2.599248*eV, 2.604708*eV, 2.610191*eV, 2.615703*eV, 2.621232*eV, 2.626779*eV, 2.632361*eV, 2.637961*eV, 2.643591*eV, 2.649239*eV, 2.654911*eV, 2.660607*eV, 2.666328*eV, 2.672068*eV, 2.677839*eV, 2.683640*eV, 2.689461*eV, 2.695312*eV, 2.701178*eV, 2.707081*eV, 2.712998*eV, 2.718952*eV, 2.724927*eV, 2.730929*eV, 2.736962*eV, 2.743011*eV, 2.749098*eV, 2.755200*eV, 2.761342*eV, 2.767499*eV, 2.773702*eV, 2.779908*eV, 2.786160*eV, 2.792441*eV, 2.798737*eV, 2.805068*eV, 2.811428*eV, 2.817823*eV, 2.824241*eV, 2.830688*eV, 2.837172*eV, 2.843671*eV, 2.850208*eV, 2.856781*eV, 2.863378*eV, 2.869998*eV, 2.876663*eV, 2.883352*eV, 2.890072*eV, 2.896831*eV, 2.903607*eV, 2.910429*eV, 2.917283*eV, 2.924163*eV, 2.931068*eV, 2.938013*eV, 2.944990*eV, 2.952001*eV, 2.959053*eV, 2.966131*eV, 2.973243*eV, 2.980390*eV, 2.987570*eV, 2.994793*eV, 3.002043*eV, 3.009329*eV, 3.016650*eV, 3.023999*eV, 3.031399*eV, 3.038828*eV, 3.046286*eV, 3.053804*eV, 3.061343*eV, 3.068920*eV, 3.076534*eV, 3.084178*eV, 3.091884*eV, 3.099613*eV, 3.107372*eV, 3.115179*eV, 3.123032*eV, 3.130910*eV, 3.138843*eV, 3.146809*eV, 3.154807*eV, 3.162862*eV, 3.170950*eV, 3.179080*eV, 3.187251*eV, 3.195473*eV, 3.203729*eV, 3.212027*eV, 3.220369*eV, 3.228763*eV, 3.237192*eV, 3.245657*eV, 3.254183*eV, 3.262737*eV, 3.271353*eV, 3.280007*eV, 3.288706*eV, 3.297451*eV, 3.306252*eV, 3.315091*eV, 3.323969*eV, 3.332912*eV, 3.341886*eV, 3.350917*eV, 3.360006*eV, 3.369144*eV, 3.378323*eV, 3.387552*eV, 3.396832*eV, 3.406163*eV, 3.415536*eV, 3.424979*eV, 3.434465*eV, 3.444014*eV, 3.453596*eV, 3.463252*eV, 3.472952*eV, 3.482696*eV, 3.492505*eV, 3.502380*eV, 3.512300*eV, 3.522277*eV, 3.532311*eV, 3.542412*eV, 3.552561*eV, 3.562758*eV, 3.573034*eV, 3.583359*eV, 3.593745*eV, 3.604190*eV, 3.614697*eV, 3.625275*eV, 3.635905*eV, 3.646587*eV, 3.657353*eV, 3.668172*eV, 3.679056*eV, 3.690015*eV, 3.701017*eV, 3.712097*eV, 3.723254*eV, 3.734456*eV, 3.745748*eV, 3.757098*eV, 6.200000*eV, 10.33*eV, 15.5*eV};
-	G4double scintComponent[275] = {0.000000, 0.007298, 0.007011, 0.007932, 0.008065, 0.007699, 0.006620, 0.007727, 0.007464, 0.007931, 0.006825, 0.007623, 0.006487, 0.007494, 0.007604, 0.007250, 0.007187, 0.008465, 0.007539, 0.007951, 0.007393, 0.008746, 0.008358, 0.008536, 0.008132, 0.009147, 0.009598, 0.008566, 0.008370, 0.009756, 0.007964, 0.008557, 0.009199, 0.009928, 0.008394, 0.009174, 0.009142, 0.009985, 0.009611, 0.009985, 0.011081, 0.010671, 0.010177, 0.012099, 0.010819, 0.011596, 0.012298, 0.012099, 0.012604, 0.013004, 0.013502, 0.012587, 0.014589, 0.015733, 0.015105, 0.014145, 0.015762, 0.015455, 0.015944, 0.015391, 0.016797, 0.018667, 0.018206, 0.018382, 0.020014, 0.019940, 0.021778, 0.021521, 0.023801, 0.024522, 0.024905, 0.025821, 0.028128, 0.026988, 0.029616, 0.028540, 0.029964, 0.031531, 0.034344, 0.033769, 0.036688, 0.037003, 0.038282, 0.039943, 0.042146, 0.043553, 0.044054, 0.046702, 0.045442, 0.049577, 0.053079, 0.050783, 0.056636, 0.056936, 0.058559, 0.061420, 0.064514, 0.065756, 0.068394, 0.073655, 0.074814, 0.080707, 0.083768, 0.087875, 0.089284, 0.095072, 0.099422, 0.107914, 0.112227, 0.118243, 0.122406, 0.125939, 0.131992, 0.136012, 0.140968, 0.147579, 0.156020, 0.158363, 0.167771, 0.168055, 0.175895, 0.179084, 0.185346, 0.193068, 0.198061, 0.202359, 0.206894, 0.212571, 0.218799, 0.223242, 0.229322, 0.239725, 0.250068, 0.257243, 0.264742, 0.281645, 0.294740, 0.309784, 0.322450, 0.343039, 0.363025, 0.375340, 0.400378, 0.421838, 0.435316, 0.452269, 0.475444, 0.489341, 0.505680, 0.524780, 0.530979, 0.542752, 0.552351, 0.562429, 0.567725, 0.572789, 0.578060, 0.588238, 0.587622, 0.584193, 0.593162, 0.601844, 0.613819, 0.628391, 0.642112, 0.656654, 0.673388, 0.704065, 0.727850, 0.764664, 0.791312, 0.832467, 0.870620, 0.894459, 0.929799, 0.955303, 0.977617, 0.987266, 0.999449, 1.000000, 0.994073, 0.971962, 0.958778, 0.934527, 0.902721, 0.870857, 0.838456, 0.805928, 0.785872, 0.756622, 0.733803, 0.724502, 0.711707, 0.722673, 0.723408, 0.739724, 0.761128, 0.784760, 0.803470, 0.818395, 0.834321, 0.828638, 0.812963, 0.788427, 0.761730, 0.705279, 0.642877, 0.582818, 0.508845, 0.435086, 0.372081, 0.304945, 0.248959, 0.200416, 0.156939, 0.128059, 0.102210, 0.082023, 0.062593, 0.051869, 0.042981, 0.035078, 0.028940, 0.024279, 0.020112, 0.016616, 0.016298, 0.014177, 0.012852, 0.012006, 0.011478, 0.009994, 0.009320, 0.008654, 0.008841, 0.008425, 0.008513, 0.008608, 0.007599, 0.008116, 0.007355, 0.006986, 0.006304, 0.005700, 0.005496, 0.004889, 0.004423, 0.003786, 0.003303, 0.003402, 0.003424, 0.002978, 0.002702, 0.002367, 0.002698, 0.002239, 0.002125, 0.002578, 0.002259, 0.002102, 0.002050, 0.002311, 0.001994, 0.001809, 0.001690, 0.001965, 0.001909, 0.002218, 0.001887, 0.001981, 0.002153, 0.002269, 0.000000, 0.000000, 0.000000};
-	MPTscint->AddConstProperty("SCINTILLATIONYIELD", scintYield);
-    MPTscint->AddConstProperty("RESOLUTIONSCALE",0.0);
-    MPTscint->AddProperty("SCINTILLATIONCOMPONENT1", scintComEnergy, scintComponent, 275);
-    MPTscint->AddConstProperty("SCINTILLATIONYIELD1", 1.0);
-    MPTscint->AddConstProperty("SCINTILLATIONTIMECONSTANT1", 1.50*ns); // This may be wrong, because I don't understand "ReemissionFASTTIMECONSTANT"
-
-    LAB->SetMaterialPropertiesTable(MPTscint);
-    // LAB->GetIonisation()->SetBirksConstant(0.125*mm/MeV);
-
-    /*************Table of PMMA*************/
-
-    G4MaterialPropertiesTable* mptWLSfiber = new G4MaterialPropertiesTable();
-
-    // Refraction index
+    // Guang Luo's code
     G4double photonEnergy[] =
         {2.00*eV,2.03*eV,2.06*eV,2.09*eV,2.12*eV,
         2.15*eV,2.18*eV,2.21*eV,2.24*eV,2.27*eV,
@@ -195,17 +213,6 @@ void MVDetectorConstruction::DefineMaterialTables()
         3.35*eV,3.38*eV,3.41*eV,3.44*eV,3.47*eV,
         3.50*eV,3.53*eV,3.56*eV,3.59*eV,3.62*eV,
         3.65*eV,3.69*eV,3.72*eV,3.75*eV,6.20*eV};
-    G4double refractiveIndexWLSfiber[] =
-        { 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60,
-        1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60,
-        1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60,
-        1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60,
-        1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60,
-        1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60};
-    const G4int nEntries = sizeof(photonEnergy)/sizeof(G4double);
-    mptWLSfiber->AddProperty("RINDEX",photonEnergy,refractiveIndexWLSfiber,nEntries);
-
-    // Wavelength shifting
     G4double absWLSfiber[] =
         {2.40*m,2.00*m,2.00*m,1.90*m,1.80*m,1.70*m,1.60*m,1.50*m,1.45*m,1.40*m,
         1.39*m,1.36*m,1.35*m,1.34*m,1.33*m,1.32*m,1.30*m,1.20*m,1.19*m,1.10*m,
@@ -220,807 +227,513 @@ void MVDetectorConstruction::DefineMaterialTables()
         15.0, 5.00, 3.50, 2.00, 1.05, 0.50, 0.40, 0.30, 0.20, 0.10,
         0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05,
         0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05};
-    mptWLSfiber->AddProperty("WLSABSLENGTH",photonEnergy,absWLSfiber,nEntries);
-    mptWLSfiber->AddProperty("WLSCOMPONENT",photonEnergy,emissionFib,nEntries);
-    mptWLSfiber->AddConstProperty("WLSTIMECONSTANT", 0.5*ns);
+    pFiberPolystyreneTable->AddProperty("WLSABSLENGTH",photonEnergy,absWLSfiber,60);
+    pFiberPolystyreneTable->AddProperty("WLSCOMPONENT",photonEnergy,emissionFib,60);
+    pFiberPolystyreneTable->AddConstProperty("WLSTIMECONSTANT", 2.7 * ns);
+    FiberPolystyrene->SetMaterialPropertiesTable(pFiberPolystyreneTable);
 
-    PMMA->SetMaterialPropertiesTable(mptWLSfiber);
-
-    /*************Table of Pethylene_1*************/
-
-    G4MaterialPropertiesTable* mptClad_1 = new G4MaterialPropertiesTable();
-
-    G4double refractiveIndexClad_1[] =
-        { 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42,
-        1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42,
-        1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42,
-        1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42,
-        1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42,
-        1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42};
-    
-    G4double absClad[] =
-        {20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,
-        20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,
-        20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,
-        20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,
-        20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,
-        20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m,20.0*m};
-
-    mptClad_1->AddProperty("RINDEX",photonEnergy,refractiveIndexClad_1,nEntries);
-    mptClad_1->AddProperty("ABSLENGTH",photonEnergy,absClad,nEntries);
-
-    Pethylene_1->SetMaterialPropertiesTable(mptClad_1);
-
-    /*************Table of Pethylene_2*************/
-
-    G4MaterialPropertiesTable* mptClad_2 = new G4MaterialPropertiesTable();
-
-    G4double refractiveIndexClad_2[] =
-        { 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49,
-        1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49,
-        1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49,
-        1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49,
-        1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49,
-        1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49};
-
-    mptClad_2->AddProperty("RINDEX",photonEnergy,refractiveIndexClad_2,nEntries);
-    mptClad_2->AddProperty("ABSLENGTH",photonEnergy,absClad,nEntries);
-
-    Pethylene_2->SetMaterialPropertiesTable(mptClad_2);
-
-    /*************Table of groove_mat*************/
-    G4MaterialPropertiesTable* mptGroove_mat = new G4MaterialPropertiesTable();
-
-    G4double refractiveIndexGroove_mat[60];
-    for(int i = 0; i < 60; i++) {refractiveIndexGroove_mat[i] = 1.56;}
-
-    mptGroove_mat->AddProperty("RINDEX",photonEnergy,refractiveIndexGroove_mat,nEntries);
-    mptGroove_mat->AddProperty("ABSLENGTH",photonEnergy,absClad,nEntries);
-
-    groove_mat->SetMaterialPropertiesTable(mptGroove_mat);
-
+    // Table for GrooveGlue
+    G4MaterialPropertiesTable *pGrooveGlueTable = new G4MaterialPropertiesTable();
+    std::vector<G4double> pGrooveGluePhotonMomentum = {2.0 * eV, 3.0 * eV, 4.0 * eV};
+    std::vector<G4double> pGrooveGlueRIndex = {1.53, 1.53, 1.53};
+    pGrooveGlueTable->AddProperty("RINDEX", pGrooveGluePhotonMomentum, pGrooveGlueRIndex);
+    GrooveGlue->SetMaterialPropertiesTable(pGrooveGlueTable);
 }
 
 void MVDetectorConstruction::DefineOpticalSurfaces()
 {
     // Surface between LAB and teflon, if border definition is used; if skin definition is used,
     // this surface is still used, but not "op_teflon_air_surface".
-    op_LAB_teflon_surface = new G4OpticalSurface(
-        "op_LAB_teflon_surface", unified, groundfrontpainted, dielectric_dielectric
-    );
-    G4MaterialPropertiesTable* LAB_teflon_table = new G4MaterialPropertiesTable();
-    std::vector<G4double> LAB_teflon_energy = {2.8*eV, 2.9*eV, 3.0*eV};
-    std::vector<G4double> LAB_teflon_reflectivity = {0.85,0.85,0.85};
-    LAB_teflon_table->AddProperty("REFLECTIVITY", LAB_teflon_energy, LAB_teflon_reflectivity);
-    op_LAB_teflon_surface->SetMaterialPropertiesTable(LAB_teflon_table);
-
-    // Surface between air and teflon
-    op_teflon_air_surface = new G4OpticalSurface(
-        "op_teflon_air_surface", unified, groundfrontpainted, dielectric_dielectric
-    );
-    G4MaterialPropertiesTable* teflon_air_table = new G4MaterialPropertiesTable();
-    std::vector<G4double> teflon_air_energy = {2.8*eV, 2.9*eV, 3.0*eV};
-    std::vector<G4double> teflon_air_reflectivity = {0.85, 0.85, 0.85};
-    teflon_air_table->AddProperty("REFLECTIVITY", teflon_air_energy, teflon_air_reflectivity);
-    op_teflon_air_surface->SetMaterialPropertiesTable(LAB_teflon_table);
+    AluminumSurface = new G4OpticalSurface(
+        "AluminumSurface", unified, groundfrontpainted, dielectric_dielectric);
+    G4MaterialPropertiesTable *AluminumSurfaceTable = new G4MaterialPropertiesTable();
+    std::vector<G4double> AluminumSurfacePhotonMomentum = {2.0 * eV, 3.0 * eV, 4.0 * eV};
+    std::vector<G4double> AluminumSurfaceReflectivity = {0.85, 0.85, 0.85};
+    AluminumSurfaceTable->AddProperty("REFLECTIVITY", AluminumSurfacePhotonMomentum, AluminumSurfaceReflectivity);
+    AluminumSurface->SetMaterialPropertiesTable(AluminumSurfaceTable);
 }
 
-G4VPhysicalVolume* MVDetectorConstruction::ConstructDetector() const
+G4VPhysicalVolume *MVDetectorConstruction::ConstructDetector() const
 {
-    G4bool checkOverlaps = true;
+    bool check_overlap = true;
 
-    // Experimental Hall
-    G4Box* experimentalHall_box = new G4Box("World", expHall_x, expHall_y, expHall_z);
-    G4LogicalVolume* experimentalHall_log = new G4LogicalVolume(experimentalHall_box, air, "World");
-    G4VPhysicalVolume* experimentalHall_phys = new G4PVPlacement(0, G4ThreeVector(0*mm,0*mm,0*mm), experimentalHall_log, "World", NULL, false, 0);
+    // World
+    G4Box *WorldBox = new G4Box("WorldBox", worldX, worldY, worldZ);
+    G4LogicalVolume *WorldLogicalVolume = new G4LogicalVolume(WorldBox, Air, "WorldLogicalVolume");
+    G4VPhysicalVolume *World = new G4PVPlacement(0, G4ThreeVector(), WorldLogicalVolume, "World", NULL, false, 0);
 
-    // Outer teflon relection layer (shell) and the plastic scintillator (Pscint) in the middle (made of LAB)
-    G4Box* whole_solid = new G4Box("whole_solid",0.5*pscint_x+teflon_depth,0.5*pscint_y+teflon_depth,0.5*pscint_z+teflon_depth);
-    G4Box* pscint_solid = new G4Box("pscint_solid",0.5*pscint_x,0.5*pscint_y,0.5*pscint_z);
-    G4SubtractionSolid* shell_solid = new G4SubtractionSolid("shell_solid", whole_solid, pscint_solid);
-    G4Box* SiPM_window_solid = new G4Box("SiPM_window_solid", 0.5*SiPM_length, 0.5*SiPM_width, 0.5*teflon_depth);
-    G4SubtractionSolid* shell_solid_with_window_1 = new G4SubtractionSolid(
-        "shell_solid_with_window_1",
-        shell_solid,
-        SiPM_window_solid,
-        G4Translate3D(G4ThreeVector(0, pscint_y/2-SiPM_width/2, pscint_z/2+teflon_depth/2))
-    );
-    G4SubtractionSolid* shell_solid_with_window_2 = new G4SubtractionSolid(
-        "shell_solid_with_window_1",
-        shell_solid_with_window_1,
-        SiPM_window_solid,
-        G4Translate3D(G4ThreeVector(0, pscint_y/2-SiPM_width/2, -pscint_z/2-teflon_depth/2))
-    );
-    G4LogicalVolume* shell_log = new G4LogicalVolume(shell_solid_with_window_2,teflon,"shell_log",0,0,0);
-    new G4PVPlacement(0,G4ThreeVector(),shell_log,"shell_phys",experimentalHall_log,false,0,checkOverlaps);
+    // The entire box
+    G4Box *WholePSBox = new G4Box("WholePSBox", 0.5 * wholeX, 0.5 * wholeY, 0.5 * wholeZ);
+    G4LogicalVolume *WholePSBoxLogicalVolume = new G4LogicalVolume(WholePSBox, PSAluminum, "WholePSLogicalVolume");
+    new G4PVPlacement(0, G4ThreeVector(), WholePSBoxLogicalVolume, "WholePS", WorldLogicalVolume, false, 0, check_overlap);
 
-    // SiPM on both sides
-    G4Box* SiPM_solid = new G4Box("SiPM_solid", 0.5*SiPM_length, 0.5*SiPM_width, 0.5*SiPM_depth);
-    G4LogicalVolume* SiPM_0_log = new G4LogicalVolume(SiPM_solid, glass, "SiPM_0_log");
-    G4LogicalVolume* SiPM_1_log = new G4LogicalVolume(SiPM_solid, glass, "SiPM_1_log");
-    new G4PVPlacement(0, G4ThreeVector(0, pscint_y/2-SiPM_width/2, pscint_z/2+0.5*SiPM_depth), SiPM_0_log, "SiPM_0_phys", experimentalHall_log, false, 0, checkOverlaps);
-    new G4PVPlacement(0, G4ThreeVector(0, pscint_y/2-SiPM_width/2, -pscint_z/2-0.5*SiPM_depth), SiPM_1_log, "SiPM_1_phys", experimentalHall_log, false, 1, checkOverlaps);
-    
-    G4LogicalVolume* pscint_log = new G4LogicalVolume(pscint_solid, LAB, "pscint_log");
-    new G4PVPlacement(0,G4ThreeVector(),pscint_log,"pscint_phys",experimentalHall_log,false,0,checkOverlaps);
+    // Inside the shell
+    G4Box *InteriorBox = new G4Box("InteriorBox", 0.5 * wholeX - shellThickness, 0.5 * wholeY - shellThickness + reflectionThickness, 0.5 * wholeZ - shellThickness + reflectionThickness);
+    G4LogicalVolume *InteriorLogicalVolume = new G4LogicalVolume(InteriorBox, Air, "InteriorLogicalVolume");
+    new G4PVPlacement(0, G4ThreeVector(), InteriorLogicalVolume, "Interior", WholePSBoxLogicalVolume, false, 0, check_overlap);
 
-    /* This is the old way of defining grooves and fibers
-    ** The grooves consists of a straight part and two bending part, with radius 750mm
-    ** The fibers are of similar shape.
-    */
+    // Reflective layer
+    G4Box* ReflectionLayerBox = new G4Box("ReflectionBox", 0.5 * PScintX + reflectionThickness, 0.5 * PScintY + reflectionThickness, 0.5 * PScintZ + reflectionThickness);
+    G4Box* ReflectionLayerHoleBox = new G4Box("ReflectionHoleBox", 0.5 * reflectionThickness, 0.5 * SiPMY, 0.5 * SiPMZ);
+    G4SubtractionSolid* ReflectionLayerSolid_0 = new G4SubtractionSolid("ReflectionSolid_0", ReflectionLayerBox, ReflectionLayerHoleBox, 
+                                                                        G4Translate3D(G4ThreeVector(-0.5 * (PScintX + reflectionThickness), 0, PScintZ / 2 - SiPMZ / 2)));
+    G4SubtractionSolid* ReflectionLayerSolid_1 = new G4SubtractionSolid("ReflectionSolid_1", ReflectionLayerSolid_0, ReflectionLayerHoleBox,
+                                                                        G4Translate3D(G4ThreeVector(0.5 * (PScintX + reflectionThickness), 0, PScintZ / 2 - SiPMZ / 2)));
+    G4LogicalVolume *ReflectionLayerLogicalVolume = new G4LogicalVolume(ReflectionLayerSolid_1, PSAluminum, "ReflectionLogicalVolume");
+    new G4PVPlacement(0, G4ThreeVector(PScintXTranslation, 0, 0), ReflectionLayerLogicalVolume, "ReflectionLayer", InteriorLogicalVolume, false, 0, check_overlap);
 
-    /*
-    // Groove for fiber
+    // PS part
+    G4Box *PScintBox = new G4Box("PScintBox", 0.5 * PScintX, 0.5 * PScintY, 0.5 * PScintZ);
+    G4LogicalVolume *PScintLogicalVolume = new G4LogicalVolume(PScintBox, PSPolystyrene, "PScintLogicalVolume");
+    new G4PVPlacement(0, G4ThreeVector(), PScintLogicalVolume,
+                      "PScint", ReflectionLayerLogicalVolume, false, 0, check_overlap);
 
-    // G4SubtractionSolid* pscint_subtraction_solid;
-    G4IntersectionSolid* temp = NULL;
-    G4UnionSolid* groove_solid = NULL;
-    
-    for(int groove_index = 0; groove_index < fiber_count; groove_index++)
+    // SiPMs
+    G4Box *SiPMBox = new G4Box("SiPMBox", 0.5 * SiPMX, 0.5 * SiPMY, 0.5 * SiPMZ);
+    G4LogicalVolume *SiPMLogicalVolume_0 = new G4LogicalVolume(SiPMBox, SiPMGlass, "SiPMLogicalVolume_0");
+    G4LogicalVolume *SiPMLogicalVolume_1 = new G4LogicalVolume(SiPMBox, SiPMGlass, "SiPMLogicalVolume_1");
+    if (psType == 1)
     {
-        G4double straight_groove_x_position = pscint_x/2 - pscint_x/(fiber_count+1)*(groove_index+1);
-        G4double bend_groove_end_x_position = SiPM_length/2 - SiPM_length/(fiber_count/2+1)*(groove_index%(fiber_count/2)+1);
-        G4bool is_upper_groove = groove_index < fiber_count / 2;
-        G4double delta_x = std::abs(straight_groove_x_position - bend_groove_end_x_position);
-        G4double bend_center_angle = std::acos(
-            ((fiber_bend_r - delta_x) + std::sqrt((fiber_bend_r - delta_x)*(fiber_bend_r - delta_x)-4*fiber_bend_r*groove_width/2))
-            /2/(fiber_bend_r-groove_width/2)
-        );
-        G4double straight_groove_length = pscint_z - 2*std::sin(bend_center_angle)*fiber_bend_r;
-
-        G4Box* straight_groove = new G4Box("straight_groove_"+std::to_string(groove_index), groove_width/2, groove_depth/2, straight_groove_length/2+0.01*mm);
-        G4Tubs* bend_groove = new G4Tubs("bend_groove_"+std::to_string(groove_index), fiber_bend_r-groove_width/2, fiber_bend_r+groove_width/2, groove_depth/2, 0, bend_center_angle);
-
-        G4RotationMatrix* bend_groove_rot_upper = new G4RotationMatrix();
-        bend_groove_rot_upper->rotateX(90*degree);
-        G4RotationMatrix* bend_groove_rot_lower = new G4RotationMatrix();
-        bend_groove_rot_lower->rotateX(-90*degree);
-        G4ThreeVector bend_groove_translate_upper(-fiber_bend_r, 0, straight_groove_length/2);
-        G4ThreeVector bend_groove_translate_lower(-fiber_bend_r, 0, -straight_groove_length/2);
-        G4Transform3D straight_groove_transform = G4Transform3D();
-        G4Transform3D bend_groove_transform_upper(*bend_groove_rot_upper, bend_groove_translate_upper);
-        G4Transform3D bend_groove_transform_lower(*bend_groove_rot_lower, bend_groove_translate_lower);
-            
-        G4UnionSolid* groove_union_solid_upper = new G4UnionSolid("groove_union_solid_upper"+std::to_string(groove_index), straight_groove, bend_groove, bend_groove_transform_upper);
-        G4UnionSolid* groove_union_solid = new G4UnionSolid("groove_union_solid"+std::to_string(groove_index), groove_union_solid_upper, bend_groove, bend_groove_transform_lower);
-        
-        G4RotationMatrix* groove_rot = new G4RotationMatrix();
-        groove_rot->rotateZ(180*(1-is_upper_groove)*degree);
-        G4Transform3D groove_transform(*groove_rot, G4ThreeVector(straight_groove_x_position,pscint_y/2-groove_depth/2,0));
-
-        G4IntersectionSolid* single_groove_solid = new G4IntersectionSolid("groove_solid_"+std::to_string(groove_index), pscint_solid, groove_union_solid, groove_transform);
-        
-        if(groove_index == 0) temp = single_groove_solid;
-        else if(groove_index == 1) groove_solid = new G4UnionSolid("groove_solid", temp, single_groove_solid);
-        else groove_solid = new G4UnionSolid("groove_solid", groove_solid, single_groove_solid);
+        new G4PVPlacement(0, G4ThreeVector(PScintXTranslation - SiPMX / 2 - PScintX / 2, 0, PScintZ / 2 - SiPMZ / 2),
+                          SiPMLogicalVolume_0, "SiPM_0", InteriorLogicalVolume, false, 0, check_overlap);
+        new G4PVPlacement(0, G4ThreeVector(PScintXTranslation + SiPMX / 2 + PScintX / 2, 0, PScintZ / 2 - SiPMZ / 2),
+                          SiPMLogicalVolume_1, "SiPM_1", InteriorLogicalVolume, false, 0, check_overlap);
+    }
+    else
+    {
+        new G4PVPlacement(0, G4ThreeVector(PScintXTranslation - SiPMX / 2 - PScintX / 2, 0, PScintZ / 2 - SiPMZ / 2),
+                          SiPMLogicalVolume_0, "SiPM_0", InteriorLogicalVolume, false, 0, check_overlap);
     }
 
-    G4LogicalVolume* groove_log = new G4LogicalVolume(groove_solid, LAB, "groove_log");
-    new G4PVPlacement(0, G4ThreeVector(), groove_log, "groove_phys", pscint_log, false, 0, checkOverlaps);
-    
-    for(int fiber_index = 0; fiber_index < fiber_count; fiber_index++)
+    // Grooves for fibers
+    G4VSolid *GrooveSolid = GetGroove();
+    G4LogicalVolume *GrooveLogicalVolume = new G4LogicalVolume(GrooveSolid, GrooveGlue, "GrooveLogicalVolume");
+    new G4PVPlacement(G4TranslateZ3D(PScintZ / 2 - grooveDepth / 2), GrooveLogicalVolume, "Groove",
+                      PScintLogicalVolume, false, 0, check_overlap);
+
+    // Fiber cladding
+    G4VSolid *FiberCladdingSolid = GetFiberPart(fiberDiameter);
+    G4LogicalVolume *FiberCladdingLogicalVolume = new G4LogicalVolume(FiberCladdingSolid, CladdingPMMA, "FiberCladdingLogicalVolume");
+    new G4PVPlacement(0, G4ThreeVector(), FiberCladdingLogicalVolume, "FiberCladding", GrooveLogicalVolume, false, 0, check_overlap);
+
+    // Fiber core
+    G4VSolid *FiberCoreSolid = GetFiberPart(fiberDiameter - 2 * claddingDepth);
+    G4LogicalVolume *FiberCoreLogicalVolume = new G4LogicalVolume(FiberCoreSolid, FiberPolystyrene, "FiberCoreLogicalVolume");
+    new G4PVPlacement(0, G4ThreeVector(), FiberCoreLogicalVolume, "FiberCore", FiberCladdingLogicalVolume, false, 0, check_overlap);
+
+    // Reflective layer
+    new G4LogicalSkinSurface("AluminumSurface", ReflectionLayerLogicalVolume, AluminumSurface);
+
+    return World;
+}
+
+G4VSolid *MVDetectorConstruction::GetGroove() const
+{
+    switch (psType)
     {
-        // Outer cladding
-        G4IntersectionSolid* cladding_1_solid = GetFiberPart("fiber_outer_cladding_solid_"+std::to_string(fiber_index), fiber_d, pscint_solid, fiber_index);
-        G4LogicalVolume* cladding_1_log = new G4LogicalVolume(cladding_1_solid, Pethylene_1, "fiber_outer_cladding_log_"+std::to_string(fiber_index));
-        new G4PVPlacement(0,G4ThreeVector(),cladding_1_log, "fiber_outer_cladding_phys", groove_log, false, fiber_index, checkOverlaps);
-    
-        // Inner cladding
-        G4IntersectionSolid* cladding_2_solid = GetFiberPart("fiber_inner_cladding_solid_"+std::to_string(fiber_index), fiber_d - 2*cladding_depth_1, pscint_solid, fiber_index);        
-        G4LogicalVolume* cladding_2_log = new G4LogicalVolume(cladding_2_solid, Pethylene_2, "fiber_inner_cladding_log_"+std::to_string(fiber_index));
-        new G4PVPlacement(0,G4ThreeVector(),cladding_2_log, "fiber_inner_cladding_phys", cladding_1_log, false, fiber_index, checkOverlaps);
-
-        // Core
-        G4IntersectionSolid* fiber_core_solid = GetFiberPart("fiber_core_solid_"+std::to_string(fiber_index), fiber_d - 2*cladding_depth_1 - 2*cladding_depth_2, pscint_solid, fiber_index);        
-        G4LogicalVolume* fiber_core_log = new G4LogicalVolume(fiber_core_solid, PMMA, "fiber_core_log_"+std::to_string(fiber_index));
-        new G4PVPlacement(0,G4ThreeVector(),fiber_core_log, "fiber_core_phys", cladding_2_log, false, fiber_index, checkOverlaps);    
+    case 1:
+        return GetGrooveBending();
+    case 2:
+        return GetGrooveUTurn();
+    case 0:
+        return GetGrooveStraight();
+    default:
+        throw std::runtime_error("MVDetectorConstruction::GetGroove: Invalid PSType provided!");
     }
-    */
+}
 
-    /* This is the new way of defining grooves and fibers, the same as the real design
-    ** The grooves consist of three straight parts
-    ** The fibers consist of two straight parts and two(or one) bending part(s)
-    ** Really a headache...
-    */
-
-    
-    /*
-    G4Box* unmerged_pscint_part = new G4Box(
-        "unmerged_pscint_part",
-        pscint_x/2,
-        pscint_y/2,
-        pscint_z/2
-    );
-    */
-    
-    G4MultiUnion* groove_solid = new G4MultiUnion();
+G4VSolid *MVDetectorConstruction::GetGrooveBending() const
+{
+    G4MultiUnion *grooveSolid = new G4MultiUnion("grooveSolid");
 
     // Merged groove
-    G4Trd* merged_groove_solid = new G4Trd(
-        "merged_groove_solid",
-        unmerged_total_x/2,
-        merged_groove_x/2,
-        groove_depth/2,
-        groove_depth/2,
-        merged_groove_z/2
-    );
+    G4Trd *mergedGrooveSolid = new G4Trd(
+        "mergedGrooveSolid",
+        unmergedTotalY / 2,
+        mergedGrooveY / 2,
+        grooveDepth / 2,
+        grooveDepth / 2,
+        mergedGrooveX / 2);
 
-    groove_solid->AddNode(merged_groove_solid, G4TranslateZ3D(pscint_z/2-merged_groove_z/2));
-    groove_solid->AddNode(merged_groove_solid, G4Transform3D(
-        (new G4RotationMatrix())->rotateX(180*degree), 
-        G4ThreeVector(0, 0, -pscint_z/2+merged_groove_z/2)
-    ));
-    
-    for(int groove_index = 0; groove_index < fiber_count/2; ++groove_index)
-    {   
-        G4Box* straight_groove_solid = new G4Box(
-            "straight_groove_solid_"+std::to_string(groove_index), 
-            groove_width/2, 
-            groove_depth/2,
-            straight_groove_length[groove_index]/2
-        );
-        G4Box* oblique_groove_solid = new G4Box(
-            "oblique_groove_solid"+std::to_string(groove_index),
-            groove_width/2, 
-            groove_depth/2,
-            oblique_groove_length[groove_index]/2
-        );
+    grooveSolid->AddNode(mergedGrooveSolid, G4Transform3D(
+                                                (new G4RotationMatrix())->rotateX(90 * degree).rotateZ(90 * degree),
+                                                G4ThreeVector(PScintX / 2 - mergedGrooveX / 2, 0, 0)));
+    grooveSolid->AddNode(mergedGrooveSolid, G4Transform3D(
+                                                (new G4RotationMatrix())->rotateX(90 * degree).rotateZ(-90 * degree),
+                                                G4ThreeVector(-PScintX / 2 + mergedGrooveX / 2, 0, 0)));
 
-        G4Transform3D oblique_transform_plusZ = G4Transform3D(
-            (new G4RotationMatrix())->rotateY(-oblique_groove_angle[groove_index]),
-            G4ThreeVector(
-                0.5*groove_width-0.5*oblique_groove_length[groove_index]*std::sin(oblique_groove_angle[groove_index])-0.5*groove_width*std::cos(oblique_groove_angle[groove_index]),
-                0,
-                0.5*straight_groove_length[groove_index]+0.5*oblique_groove_length[groove_index]*std::cos(oblique_groove_angle[groove_index])-0.5*groove_width*std::sin(oblique_groove_angle[groove_index])
-            )
-        );
-
-        G4Transform3D oblique_transform_minusZ = G4Transform3D(
-            (new G4RotationMatrix())->rotateY(oblique_groove_angle[groove_index]),
-            G4ThreeVector(
-                0.5*groove_width-0.5*oblique_groove_length[groove_index]*std::sin(oblique_groove_angle[groove_index])-0.5*groove_width*std::cos(oblique_groove_angle[groove_index]),
-                0,
-                -0.5*straight_groove_length[groove_index]-0.5*oblique_groove_length[groove_index]*std::cos(oblique_groove_angle[groove_index])+0.5*groove_width*std::sin(oblique_groove_angle[groove_index])
-            )
-        );
-
-        G4UnionSolid* groove_only_plusZ = new G4UnionSolid(
-            "groove_only_plusZ_" + std::to_string(groove_index),
-            straight_groove_solid,
-            oblique_groove_solid, 
-            oblique_transform_plusZ
-        );
-        G4UnionSolid* groove_plusZ_and_minusZ = new G4UnionSolid(
-            "groove_plusZ_and_minusZ" + std::to_string(groove_index),
-            groove_only_plusZ,
-            oblique_groove_solid,
-            oblique_transform_minusZ
-        );
-        /*
-        G4IntersectionSolid* groove_unmerged = new G4IntersectionSolid(
-            "groove_unmerged_" + std::to_string(groove_index),
-            unmerged_pscint_part,
-            groove_plusZ_and_minusZ,
-            G4TranslateX3D((fiber_count/2-0.5-groove_index)*(x_interval_between_grooves+groove_width))
-        );
-        */
-        
-
-        groove_solid->AddNode(
-            groove_plusZ_and_minusZ,
-            G4TranslateX3D((fiber_count/2-0.5-groove_index)*(x_interval_between_grooves+groove_width))
-        );
-
-        groove_solid->AddNode(
-            groove_plusZ_and_minusZ,
-            G4Transform3D(
-                (new G4RotationMatrix())->rotateZ(180*degree),
-                G4ThreeVector(-(fiber_count/2-0.5-groove_index)*(x_interval_between_grooves+groove_width), 0, 0)
-            )
-        );
-    }
-
-    groove_solid->Voxelize();
-
-    G4LogicalVolume* groove_log = new G4LogicalVolume(
-        groove_solid,
-        groove_mat,
-        "groove_log"
-    );
-
-    G4PVPlacement* groove_phys = new G4PVPlacement(
-        G4TranslateY3D(pscint_y/2-groove_depth/2),
-        groove_log,
-        "groove_phys",
-        pscint_log,
-        false,
-        0,
-        checkOverlaps
-    );
-
-    // Fibers
-    
-    
-    for(int fiber_index = 0; fiber_index < fiber_count/2; ++fiber_index)
+    for (int grooveIndex = 0; grooveIndex < fiberCount / 2; ++grooveIndex)
     {
-        G4MultiUnion* fiber_outer_cladding_solid = GetFiberPart("fiber_outer_cladding_solid_" + std::to_string(fiber_index), fiber_d, pscint_solid, fiber_index);
-        G4MultiUnion* fiber_inner_cladding_solid = GetFiberPart("fiber_inner_cladding_solid_" + std::to_string(fiber_index), fiber_d-2*cladding_depth_1, pscint_solid, fiber_index);
-        G4MultiUnion* fiber_core_solid = GetFiberPart("fiber_core_solid_" + std::to_string(fiber_index), fiber_d-2*cladding_depth_1-2*cladding_depth_2, pscint_solid, fiber_index);
+        G4Box *straightGrooveSolid = new G4Box(
+            "straightGrooveSolid" + std::to_string(grooveIndex),
+            straightGrooveLength[grooveIndex] / 2,
+            grooveWidth / 2,
+            grooveDepth / 2);
+        G4Box *obliqueGrooveSolid = new G4Box(
+            "obliqueGrooveSolid" + std::to_string(grooveIndex),
+            obliqueGrooveLength[grooveIndex] / 2,
+            grooveWidth / 2,
+            grooveDepth / 2);
 
-        G4LogicalVolume* fiber_outer_cladding_log_1 = new G4LogicalVolume(
-            fiber_outer_cladding_solid,
-            Pethylene_1,
-            "fiber_outer_cladding_log_1_"+std::to_string(fiber_index)
-        );
-        G4LogicalVolume* fiber_outer_cladding_log_2 = new G4LogicalVolume(
-            fiber_outer_cladding_solid,
-            Pethylene_1,
-            "fiber_outer_cladding_log_2"+std::to_string(fiber_index)
-        );
-        G4LogicalVolume* fiber_inner_cladding_log_1 = new G4LogicalVolume(
-            fiber_inner_cladding_solid,
-            Pethylene_2,
-            "fiber_inner_cladding_log_1_"+std::to_string(fiber_index)
-        );
-        G4LogicalVolume* fiber_inner_cladding_log_2 = new G4LogicalVolume(
-            fiber_inner_cladding_solid,
-            Pethylene_2,
-            "fiber_inner_cladding_log_2_"+std::to_string(fiber_index)
-        );
-        G4LogicalVolume* fiber_core_log_1 = new G4LogicalVolume(
-            fiber_core_solid,
-            PMMA,
-            "fiber_core_log_"+std::to_string(fiber_index)
-        );
-        G4LogicalVolume* fiber_core_log_2 = new G4LogicalVolume(
-            fiber_core_solid,
-            PMMA,
-            "fiber_core_log_"+std::to_string(fiber_index)
-        );
+        G4Transform3D obliqueTransformPosX = G4Transform3D(
+            (new G4RotationMatrix())->rotateZ(-obliqueGrooveAngle[grooveIndex]),
+            G4ThreeVector(
+                0.5 * straightGrooveLength[grooveIndex] + 0.5 * obliqueGrooveLength[grooveIndex] * std::cos(obliqueGrooveAngle[grooveIndex]) - 0.5 * grooveWidth * std::sin(obliqueGrooveAngle[grooveIndex]),
+                0.5 * grooveWidth - 0.5 * obliqueGrooveLength[grooveIndex] * std::sin(obliqueGrooveAngle[grooveIndex]) - 0.5 * grooveWidth * std::cos(obliqueGrooveAngle[grooveIndex]),
+                0));
 
-        G4PVPlacement* fiber_outer_cladding_phys_1 = new G4PVPlacement(
-            G4Transform3D(),
-            "fiber_outer_cladding_phys_" + std::to_string(fiber_index),
-            fiber_outer_cladding_log_1,
-            groove_phys,
-            false,
-            fiber_index,
-            checkOverlaps
-        );
+        G4Transform3D obliqueTransformNegX = G4Transform3D(
+            (new G4RotationMatrix())->rotateZ(obliqueGrooveAngle[grooveIndex]),
+            G4ThreeVector(
+                -0.5 * straightGrooveLength[grooveIndex] - 0.5 * obliqueGrooveLength[grooveIndex] * std::cos(obliqueGrooveAngle[grooveIndex]) + 0.5 * grooveWidth * std::sin(obliqueGrooveAngle[grooveIndex]),
+                0.5 * grooveWidth - 0.5 * obliqueGrooveLength[grooveIndex] * std::sin(obliqueGrooveAngle[grooveIndex]) - 0.5 * grooveWidth * std::cos(obliqueGrooveAngle[grooveIndex]),
+                0));
 
-        G4PVPlacement* fiber_outer_cladding_phys_2 = new G4PVPlacement(
+        G4UnionSolid *grooveOnlyPosZ = new G4UnionSolid(
+            "grooveOnlyPosZ" + std::to_string(grooveIndex),
+            straightGrooveSolid,
+            obliqueGrooveSolid,
+            obliqueTransformPosX);
+        G4UnionSolid *groovePosZAndNegZ = new G4UnionSolid(
+            "groovePosZAndNegZ" + std::to_string(grooveIndex),
+            grooveOnlyPosZ,
+            obliqueGrooveSolid,
+            obliqueTransformNegX);
+
+        grooveSolid->AddNode(
+            groovePosZAndNegZ,
+            G4TranslateY3D((fiberCount / 2 - 0.5 - grooveIndex) * (grooveYInterval + grooveWidth)));
+
+        grooveSolid->AddNode(
+            groovePosZAndNegZ,
             G4Transform3D(
-                (new G4RotationMatrix())->rotateZ(180*degree),
-                G4ThreeVector(0, -fiber_d, 0)
-            ),
-            "fiber_outer_cladding_phys_" + std::to_string(fiber_count-1-fiber_index),
-            fiber_outer_cladding_log_2,
-            groove_phys,
-            false,
-            fiber_count-1-fiber_index,
-            checkOverlaps
-        );
-
-        G4PVPlacement* fiber_inner_cladding_phys_1 = new G4PVPlacement(
-            G4Transform3D(),
-            "fiber_inner_cladding_phys_" + std::to_string(fiber_index),
-            fiber_inner_cladding_log_1,
-            fiber_outer_cladding_phys_1,
-            false,
-            fiber_index,
-            checkOverlaps
-        );
-
-        G4PVPlacement* fiber_inner_cladding_phys_2 = new G4PVPlacement(
-            G4Transform3D(),
-            "fiber_inner_cladding_phys_" + std::to_string(fiber_count-1-fiber_index),
-            fiber_inner_cladding_log_2,
-            fiber_outer_cladding_phys_2,
-            false,
-            fiber_count-1-fiber_index,
-            checkOverlaps
-        );
-        
-        new G4PVPlacement(
-            G4Transform3D(),
-            "fiber_core_phys_" + std::to_string(fiber_index),
-            fiber_core_log_1,
-            fiber_inner_cladding_phys_1,
-            false,
-            fiber_index,
-            checkOverlaps
-        );
-
-        new G4PVPlacement(
-            G4Transform3D(),
-            "fiber_core_phys_" + std::to_string(fiber_count-1-fiber_index),
-            fiber_core_log_2,
-            fiber_inner_cladding_phys_2,
-            false,
-            fiber_count-1-fiber_index,
-            checkOverlaps
-        );
+                (new G4RotationMatrix())->rotateX(180 * degree),
+                G4ThreeVector(0, -(fiberCount / 2 - 0.5 - grooveIndex) * (grooveYInterval + grooveWidth), 0)));
     }
 
-    // Optical surfaces
+    grooveSolid->Voxelize();
+    return grooveSolid;
+}
 
-    // The skin definition
-    new G4LogicalSkinSurface("teflon_surface", shell_log, op_LAB_teflon_surface);
+G4VSolid *MVDetectorConstruction::GetGrooveUTurn() const
+{
+    G4MultiUnion *grooveSolid = new G4MultiUnion("grooveSolid");
+    G4Box *poolBox = new G4Box("poolBox", uturnPoolX / 2, PScintY / 2, grooveDepth / 2);
+    grooveSolid->AddNode(poolBox, G4TranslateX3D(PScintX / 2 - uturnPoolX / 2));
 
-    // Or the border definition
-    /*
-    new G4LogicalBorderSurface(
-        "LAB_teflon_surface", pscint_phys, shell_phys, op_LAB_teflon_surface
-    );
+    for (int grooveIndex = 0; grooveIndex < fiberCount * 2; ++grooveIndex)
+    {
+        G4Box *singleFiberGrooveBox = new G4Box(G4String("singleFiberGrooveBox") + std::to_string(grooveIndex), (PScintX - uturnPoolX) / 2, grooveWidth / 2, grooveDepth / 2);
+        grooveSolid->AddNode(singleFiberGrooveBox, G4Translate3D(-uturnPoolX / 2, grooveYInterval * (fiberCount - 0.5 - grooveIndex) + grooveWidth * (fiberCount - 1 - grooveIndex), 0));
+    }
 
-    new G4LogicalBorderSurface(
-        "teflon_air_surface", groove_phys, shell_phys, op_teflon_air_surface
-    );
-    */
-    return experimentalHall_phys;
+    grooveSolid->Voxelize();
+    return grooveSolid;
+}
+
+G4VSolid *MVDetectorConstruction::GetGrooveStraight() const
+{
+    G4MultiUnion *grooveSolid = new G4MultiUnion("grooveSolid");
+    for (int grooveIndex = 0; grooveIndex < fiberCount; ++grooveIndex)
+    {
+        G4Box *singleFiberGrooveBox = new G4Box(G4String("singleFiberGrooveBox") + std::to_string(grooveIndex), PScintX / 2, grooveWidth / 2, grooveDepth / 2);
+        grooveSolid->AddNode(singleFiberGrooveBox, G4TranslateY3D(grooveYInterval * (fiberCount / 2 - 0.5 - grooveIndex) + grooveWidth * (fiberCount / 2 - 1 - grooveIndex)));
+    }
+
+    grooveSolid->Voxelize();
+    return grooveSolid;
 }
 
 void MVDetectorConstruction::CalculateParameters()
 {
-    // Input the parameters from design
-    assert(fiber_count == 4 || fiber_count == 6);
-    if(fiber_count == 4)
-    {
-        // Four fiber configuration
-        straight_groove_length.push_back(460.00*mm);
-        straight_groove_length.push_back(500.00*mm);
-        assert(straight_groove_length.size() == fiber_count/2);
-
-        merged_groove_z = 15.00*mm;
-        merged_groove_x = 4.00*mm;
-    }
-    else
-    {
-        // Six fiber configuration
-        straight_groove_length.push_back(440.00*mm);
-        straight_groove_length.push_back(460.00*mm);
-        straight_groove_length.push_back(500.00*mm);
-        assert(straight_groove_length.size() == fiber_count/2);
-
-        merged_groove_z = 22.00*mm;
-        merged_groove_x = 5.00*mm;
-    }
-
     // Calculate parameters for grooves
-    x_interval_between_grooves = (pscint_x - fiber_count*groove_width)/(fiber_count+1);
-    unmerged_total_x = merged_groove_z/(pscint_z/2-straight_groove_length[0]/2)*((fiber_count-1)*x_interval_between_grooves+fiber_count*groove_width-merged_groove_x)+merged_groove_x;
-    
-    for(int groove_index = 0; groove_index < fiber_count/2; ++groove_index)
+    PScintY = wholeY - 2 * shellThickness;
+    PScintZ = wholeZ - 2 * shellThickness;
+    switch (psType)
     {
-        G4double starting_z = straight_groove_length[groove_index]/2;
-        G4double ending_z = pscint_z/2;
-        G4double delta_z = ending_z - starting_z;
-
-        G4double delta_x;
-        if(groove_index == 0)
+    case 1:
+        PScintX = wholeX - 2 * shellThickness - 2 * uninstrumentedX;
+        PScintXTranslation = 0;
+        break;
+    case 2:
+        PScintX = wholeX - 2 * shellThickness - uninstrumentedX;
+        PScintXTranslation = 0.5 * uninstrumentedX;
+        break;
+    case 0:
+        PScintX = wholeX - 2 * shellThickness - 2 * uninstrumentedX;
+        PScintXTranslation = 0;
+        break;
+    default:
+        throw std::runtime_error("MVDetectorConstruction::CalculateParameters: PS type invalid or not implemented!");
+        break;
+    }
+    if (psType == 1)
+    {
+        assert(fiberCount == 4 || fiberCount == 6);
+        if (fiberCount == 4)
         {
-            G4double starting_x = (fiber_count/2-0.5-groove_index)*x_interval_between_grooves + (fiber_count/2-groove_index)*groove_width;
-            G4double ending_x = merged_groove_x/(fiber_count-1.0)*(fiber_count/2-0.5-groove_index);
-            delta_x = starting_x - ending_x;
-            oblique_groove_angle.push_back(std::atan(delta_x/delta_z));
+            // Four fiber configuration
+            straightGrooveLength.push_back(460.00 / 1000 * wholeX);
+            straightGrooveLength.push_back(500.00 / 1000 * wholeX);
+            assert(int(straightGrooveLength.size()) == fiberCount / 2);
+
+            mergedGrooveX = 15.00 * mm;
+            mergedGrooveY = 4.00 * mm;
         }
         else
         {
-            G4double x1 = (unmerged_total_x - 2*groove_width/std::cos(oblique_groove_angle[0]))/(fiber_count-2)*(fiber_count/2-groove_index-1);
-            G4double x2 = (fiber_count/2-0.5-groove_index)*x_interval_between_grooves + (fiber_count/2-groove_index)*groove_width;
-            G4double delta_z_prime = pscint_z/2-merged_groove_z-straight_groove_length[groove_index]/2;
-            oblique_groove_angle.push_back(std::atan((x2-x1)/delta_z_prime) + std::asin(-groove_width/std::sqrt(delta_z_prime*delta_z_prime+(x2-x1)*(x2-x1))));
+            // Six fiber configuration
+            straightGrooveLength.push_back(440.00 / 1000 * wholeX);
+            straightGrooveLength.push_back(460.00 / 1000 * wholeX);
+            straightGrooveLength.push_back(500.00 / 1000 * wholeX);
+            assert(int(straightGrooveLength.size()) == fiberCount / 2);
+
+            mergedGrooveX = 22.00 * mm;
+            mergedGrooveY = 5.00 * mm;
         }
-        oblique_groove_length.push_back(delta_z/std::cos(oblique_groove_angle[groove_index]));
+        grooveYInterval = (PScintY - fiberCount * grooveWidth) / (fiberCount + 1);
+        unmergedTotalY = mergedGrooveX / (PScintX / 2 - straightGrooveLength[0] / 2) * ((fiberCount - 1) * grooveYInterval + fiberCount * grooveWidth - mergedGrooveY) + mergedGrooveY;
+        for (int grooveIndex = 0; grooveIndex < fiberCount / 2; ++grooveIndex)
+        {
+            G4double startingX = straightGrooveLength[grooveIndex] / 2;
+            G4double endingX = PScintX / 2;
+            G4double deltaX = endingX - startingX;
+
+            G4double deltaY;
+            if (grooveIndex == 0)
+            {
+                G4double startingY = (fiberCount / 2 - 0.5 - grooveIndex) * grooveYInterval + (fiberCount / 2 - grooveIndex) * grooveWidth;
+                G4double endingY = mergedGrooveY / 2;
+                deltaY = startingY - endingY;
+                obliqueGrooveAngle.push_back(std::atan(deltaY / deltaX));
+            }
+            else
+            {
+
+                G4double lowerRightY = (unmergedTotalY - 2 * grooveWidth / std::cos(obliqueGrooveAngle[0])) / (fiberCount - 2) * (fiberCount / 2 - grooveIndex - 1);
+                G4double upperLeftY = (fiberCount / 2 - 0.5 - grooveIndex) * grooveYInterval + (fiberCount / 2 - grooveIndex) * grooveWidth;
+                G4double deltaXPrime = PScintX / 2 - mergedGrooveX - straightGrooveLength[grooveIndex] / 2;
+                G4double deltaYPrime = upperLeftY - lowerRightY;
+                
+                obliqueGrooveAngle.push_back(
+                    std::atan(deltaYPrime / deltaXPrime) +
+                    std::asin(-grooveWidth / std::sqrt(deltaXPrime * deltaXPrime + deltaYPrime * deltaYPrime)));
+            }
+            obliqueGrooveLength.push_back(deltaX / std::cos(obliqueGrooveAngle[grooveIndex]));
+        }
+    }
+    else if (psType == 2)
+    {
+        uturnPoolX = 7 * cm;
+        uturnRadius = 6 * cm;
+        grooveYInterval = uturnRadius * 2 / fiberCount - grooveWidth;
+        if ((grooveYInterval + grooveWidth) * (fiberCount * 2 - 1) > PScintY - grooveWidth)
+        {
+            // G4cout << grooveYInterval/cm << fiberCount << PScintY/cm << G4endl;
+            throw std::runtime_error("PScint: Too many fibers or PscintY too small!");
+        }
+    }
+    else if (psType == 0)
+    {
+        grooveYInterval = (PScintY - grooveWidth * fiberCount) / (fiberCount + 1);
     }
 
     // Calculate parameters for fibers
-
-    for(int fiber_index = 0; fiber_index < fiber_count/2; ++fiber_index)
+    if (psType == 1)
     {
-        fiber_radius_1.push_back((groove_width-fiber_d)/(1-std::cos(oblique_groove_angle[fiber_index]/2))+fiber_d/2);
-        fiber_angle_1.push_back(oblique_groove_angle[fiber_index]);
-        fiber_straight_1_length.push_back(straight_groove_length[fiber_index]-2*groove_width*std::tan(oblique_groove_angle[fiber_index]/2)-2*(fiber_radius_1[fiber_index]-0.5*fiber_d)*std::sin(oblique_groove_angle[fiber_index]/2));
-        if(fiber_index == 0)
+        for (int fiberIndex = 0; fiberIndex < fiberCount / 2; ++fiberIndex)
         {
-            fiber_straight_2_length.push_back(
-                (pscint_z/2-straight_groove_length[fiber_index]/2
-                -(fiber_radius_1[fiber_index]-fiber_d/2)
-                *(std::sin(oblique_groove_angle[fiber_index])-std::sin(oblique_groove_angle[fiber_index]/2))
-                +groove_width*std::tan(oblique_groove_angle[fiber_index]/2))
-                /std::cos(oblique_groove_angle[fiber_index])
-            );
-        }
-        else
-        {
-            fiber_straight_2_length.push_back(
-                (pscint_z/2-straight_groove_length[fiber_index]/2-merged_groove_z
-                -(fiber_radius_1[fiber_index]-fiber_d/2)
-                *(std::sin(oblique_groove_angle[fiber_index])-std::sin(oblique_groove_angle[fiber_index]/2))
-                +groove_width*std::tan(oblique_groove_angle[fiber_index]/2))
-                /std::cos(oblique_groove_angle[fiber_index])
-            );
-            
-            G4double theta1 = oblique_groove_angle[fiber_index];
-            G4double r1 = fiber_radius_1[fiber_index];
-            G4double l2 = fiber_straight_2_length[fiber_index];
-            G4double x1 =  (fiber_count/2 - 0.5 - fiber_index)*x_interval_between_grooves
-                          +(fiber_count/2 - 1 - fiber_index)*groove_width
-                          -r1*(std::cos(theta1/2)-std::cos(theta1))
-                          -l2*std::sin(theta1);
-            G4double x2 =  merged_groove_x/2 - groove_width/std::cos(theta1)
-                           -(merged_groove_x - groove_width/std::cos(theta1))/(fiber_count/2-1)*fiber_index;
-            G4double x = x1 - x2;
-            G4double z = merged_groove_z;
+            // shortcuts
+            G4double halfTheta = obliqueGrooveAngle[fiberIndex] / 2.;
+            G4double theta = obliqueGrooveAngle[fiberIndex];
+            G4double df = fiberDiameter;
+            G4double dg = grooveWidth;
+            G4double r; // equivalent to ConnectingFiberPartRotRadius[fiberIndex]
 
-            G4double r2 = (x*x+z*z)/(2*x*std::cos(theta1)-2*z*std::sin(theta1));
-            G4double theta2 =  90*degree-theta1
-                              -std::asin(std::cos(theta1)-x/r2);
-            
-            fiber_radius_2.push_back(r2+fiber_d/2);
-            fiber_angle_2.push_back(theta2);
+            r = (dg - df / 2. * (1 + cos(halfTheta))) / (1 - cos(halfTheta));
+            ConnectingFiberPartRotRadius.push_back(r);
+            StraightFiberPartLength.push_back(straightGrooveLength[fiberIndex] - 2 * (r + df / 2.) * tan(halfTheta));
+            StraightFiberPartTranslationY.push_back(grooveYInterval * (fiberCount / 2 - 0.5 - fiberIndex) + grooveWidth * (fiberCount / 2 - fiberIndex) - fiberDiameter / 2);
+            ObliqueFiberPartLength.push_back(obliqueGrooveLength[fiberIndex] - (r + df / 2) * tan(halfTheta) - mergedGrooveX / cos(theta));
+            ObliqueFiberPartTranslationX.push_back(StraightFiberPartLength[fiberIndex] / 2 + (r + df / 2) * sin(theta) -
+                                                   (-ObliqueFiberPartLength[fiberIndex] / 2 * cos(theta) + df / 2 * sin(theta)));
+            ObliqueFiberPartTranslationY.push_back(StraightFiberPartTranslationY[fiberIndex] - r + (r + df / 2) * cos(theta) -
+                                                   (ObliqueFiberPartLength[fiberIndex] / 2 * sin(theta) + df / 2 * cos(theta)));
+
+            G4double SiPMFiberXCenterLeft = PScintX / 2. - mergedGrooveX - df / 2. * sin(theta);
+            G4double SiPMFiberXCenterRight = PScintX / 2.;
+            G4double dx = SiPMFiberXCenterRight - SiPMFiberXCenterLeft;
+            G4double SiPMFiberYCenterLeft;
+            G4double SiPMFiberYCenterRight = mergedGrooveY / (fiberCount / 2. + 1) * (fiberCount / 4. - fiberIndex - 0.5);
+            G4cout << "SiPMFiberYCenterRight: " << SiPMFiberYCenterRight/mm << "mm" << G4endl;
+            G4double dy;
+            if (fiberIndex == 0)
+            {
+                SiPMFiberYCenterLeft = unmergedTotalY / 2. - df / 2. * cos(theta);
+            }
+            else
+            {
+                G4double grooveLowerRightY = (unmergedTotalY - 2. * grooveWidth / std::cos(obliqueGrooveAngle[0])) / (fiberCount - 2) * (fiberCount / 2. - fiberIndex - 1.);
+                SiPMFiberYCenterLeft = grooveLowerRightY + dg / cos(theta) - df / 2. * cos(theta);
+            }
+            dy = SiPMFiberYCenterLeft - SiPMFiberYCenterRight;
+            G4double r0, r1, phi;
+            for (phi = 0.001 * degree; phi < 90 * degree; phi += 0.0001 * degree)
+            {
+                G4double det = (sin(theta + phi) - sin(theta)) * (1 - cos(theta + phi)) - sin(theta + phi) * (cos(theta) - cos(theta + phi));
+                r0 = ((1 - cos(theta + phi)) * dx - sin(theta + phi) * dy) / det;
+                r1 = ((sin(theta + phi) - sin(theta)) * dy - (cos(theta) - cos(theta + phi)) * dx) / det;
+                assert(abs((sin(theta + phi) - sin(theta)) * r0 + sin(theta + phi) * r1 - dx) < 1e-8);
+                assert(abs((cos(theta) - cos(theta + phi)) * r0 + (1 - cos(theta + phi)) * r1 - dy) < 1e-8);
+                // G4cout << phi/degree << " " << r0 << " " << r1 << G4endl;
+                if (r0 > 3 * cm && r1 > 3 * cm)
+                {
+                    G4cout << phi / degree << " degree is ok" << G4endl;
+                    break;
+                }
+            }
+            if (phi > 90 * degree)
+            {
+                throw std::runtime_error("MVDetectorConstruction::CalculateParameters: no phi is possible for fiber " + std::to_string(fiberIndex));
+            }
+            SiPMFiberPartAngle.push_back(phi);
+            SiPMFiberPartRotRadius_0.push_back(r0);
+            SiPMFiberPartRotRadius_1.push_back(r1);
+            SiPMFiberPartTranslationX_0.push_back(SiPMFiberXCenterLeft - r0 * sin(theta));
+            SiPMFiberPartTranslationY_0.push_back(SiPMFiberYCenterLeft - r0 * cos(theta));
+            SiPMFiberPartTranslationX_1.push_back(SiPMFiberXCenterRight);
+            SiPMFiberPartTranslationY_1.push_back(SiPMFiberYCenterRight + r1);
         }
     }
 
+    // length check
+    assert(StraightFiberPartLength.size() == fiberCount / 2);
+    assert(StraightFiberPartTranslationY.size() == fiberCount / 2);
+    assert(ObliqueFiberPartTranslationX.size() == fiberCount / 2);
+    assert(ObliqueFiberPartTranslationY.size() == fiberCount / 2);
+    assert(ObliqueFiberPartLength.size() == fiberCount / 2);
+    assert(ConnectingFiberPartRotRadius.size() == fiberCount / 2);
+    assert(SiPMFiberPartRotRadius_0.size() == fiberCount / 2);
+    assert(SiPMFiberPartRotRadius_1.size() == fiberCount / 2);
+    assert(SiPMFiberPartAngle.size() == fiberCount / 2);
+    assert(SiPMFiberPartTranslationX_0.size() == fiberCount / 2);
+    assert(SiPMFiberPartTranslationY_0.size() == fiberCount / 2);
+    assert(SiPMFiberPartTranslationX_1.size() == fiberCount / 2);
+    assert(SiPMFiberPartTranslationY_1.size() == fiberCount / 2);
 }
 
-G4MultiUnion* MVDetectorConstruction::GetFiberPart(const G4String &name, G4double diameter, G4Box* pscint_solid, G4int fiber_index) const
+G4VSolid *MVDetectorConstruction::GetFiberPart(G4double diameter) const
 {
-    // counter so that names are unique
-    static G4int id = 0;
+    if (psType != 1)
+        throw std::runtime_error("MVDetectorConstruction::GetFiberPart: PS Type not implemented!");
 
+    // Counter so that names are unique
+    static int id = 0;
+
+    G4MultiUnion *FiberParts = new G4MultiUnion("FiberParts" + std::to_string(id));
+    for (int fiberIndex = 0; fiberIndex < fiberCount / 2; ++fiberIndex)
+    {
+        // Straight part, in the middle
+        G4Tubs *StraightFiberPart = new G4Tubs("StraightFiberPart" + std::to_string(fiberIndex) + std::to_string(id),
+                                               0, diameter / 2, StraightFiberPartLength[fiberIndex] / 2 + 0.1 * mm, 0, 360 * degree);
+        FiberParts->AddNode(StraightFiberPart, G4Transform3D((new G4RotationMatrix())->rotateY(90 * degree),
+                                                             G4ThreeVector(0, StraightFiberPartTranslationY[fiberIndex],
+                                                                           FiberDepthUpper)));
+        FiberParts->AddNode(StraightFiberPart, G4Transform3D((new G4RotationMatrix())->rotateY(90 * degree),
+                                                             G4ThreeVector(0, -StraightFiberPartTranslationY[fiberIndex],
+                                                                           FiberDepthLower)));
+        // Oblique part, on both sides
+        G4Tubs *ObliqueFiberPart = new G4Tubs("ObliqueFiberPart" + std::to_string(fiberIndex) + std::to_string(id),
+                                              0, diameter / 2, ObliqueFiberPartLength[fiberIndex] / 2 + 0.1 * mm, 0, 360 * degree);
+        FiberParts->AddNode(ObliqueFiberPart, G4Transform3D((new G4RotationMatrix())->rotateY(90 * degree).rotateZ(-obliqueGrooveAngle[fiberIndex]),
+                                                            G4ThreeVector(ObliqueFiberPartTranslationX[fiberIndex],
+                                                                          ObliqueFiberPartTranslationY[fiberIndex],
+                                                                          FiberDepthUpper)));
+        FiberParts->AddNode(ObliqueFiberPart, G4Transform3D((new G4RotationMatrix())->rotateY(90 * degree).rotateZ(obliqueGrooveAngle[fiberIndex]),
+                                                            G4ThreeVector(-ObliqueFiberPartTranslationX[fiberIndex],
+                                                                          ObliqueFiberPartTranslationY[fiberIndex],
+                                                                          FiberDepthUpper)));
+        FiberParts->AddNode(ObliqueFiberPart, G4Transform3D((new G4RotationMatrix())->rotateY(90 * degree).rotateZ(obliqueGrooveAngle[fiberIndex]),
+                                                            G4ThreeVector(ObliqueFiberPartTranslationX[fiberIndex],
+                                                                          -ObliqueFiberPartTranslationY[fiberIndex],
+                                                                          FiberDepthLower)));
+        FiberParts->AddNode(ObliqueFiberPart, G4Transform3D((new G4RotationMatrix())->rotateY(90 * degree).rotateZ(-obliqueGrooveAngle[fiberIndex]),
+                                                            G4ThreeVector(-ObliqueFiberPartTranslationX[fiberIndex],
+                                                                          -ObliqueFiberPartTranslationY[fiberIndex],
+                                                                          FiberDepthLower)));
+
+        // Connecting parts, on both sides
+        G4Torus *ConnectingFiberPart = new G4Torus("ConnectingFiberPart" + std::to_string(fiberIndex) + std::to_string(id),
+                                                   0, diameter / 2, ConnectingFiberPartRotRadius[fiberIndex], 0, obliqueGrooveAngle[fiberIndex] + 0.1 * degree);
+        FiberParts->AddNode(ConnectingFiberPart, G4Transform3D((new G4RotationMatrix())->rotateZ(90 * degree - obliqueGrooveAngle[fiberIndex]),
+                                                               G4ThreeVector(StraightFiberPartLength[fiberIndex] / 2,
+                                                                             StraightFiberPartTranslationY[fiberIndex] - ConnectingFiberPartRotRadius[fiberIndex],
+                                                                             FiberDepthUpper)));
+        FiberParts->AddNode(ConnectingFiberPart, G4Transform3D((new G4RotationMatrix())->rotateZ(90 * degree),
+                                                               G4ThreeVector(-StraightFiberPartLength[fiberIndex] / 2,
+                                                                             StraightFiberPartTranslationY[fiberIndex] - ConnectingFiberPartRotRadius[fiberIndex],
+                                                                             FiberDepthUpper)));
+        FiberParts->AddNode(ConnectingFiberPart, G4Transform3D((new G4RotationMatrix())->rotateZ(-90 * degree),
+                                                               G4ThreeVector(StraightFiberPartLength[fiberIndex] / 2,
+                                                                             -StraightFiberPartTranslationY[fiberIndex] + ConnectingFiberPartRotRadius[fiberIndex],
+                                                                             FiberDepthLower)));
+        FiberParts->AddNode(ConnectingFiberPart, G4Transform3D((new G4RotationMatrix())->rotateZ(-90 * degree - obliqueGrooveAngle[fiberIndex]),
+                                                               G4ThreeVector(-StraightFiberPartLength[fiberIndex] / 2,
+                                                                             -StraightFiberPartTranslationY[fiberIndex] + ConnectingFiberPartRotRadius[fiberIndex],
+                                                                             FiberDepthLower)));
+
+        // SiPM fiber part, on both sides
+        G4Torus *SiPMFiberPart_0 = new G4Torus("SiPMFiberPart_0" + std::to_string(fiberIndex) + std::to_string(id),
+                                               0, diameter / 2, SiPMFiberPartRotRadius_0[fiberIndex], 0, SiPMFiberPartAngle[fiberIndex] + 0.1 * degree);
+        G4Torus *SiPMFiberPart_1 = new G4Torus("SiPMFiberPart_1" + std::to_string(fiberIndex) + std::to_string(id),
+                                               0, diameter / 2, SiPMFiberPartRotRadius_1[fiberIndex], 0, SiPMFiberPartAngle[fiberIndex] + obliqueGrooveAngle[fiberIndex]);
+        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(90 * degree - obliqueGrooveAngle[fiberIndex] - SiPMFiberPartAngle[fiberIndex]),
+                                                           G4ThreeVector(SiPMFiberPartTranslationX_0[fiberIndex],
+                                                                         SiPMFiberPartTranslationY_0[fiberIndex],
+                                                                         FiberDepthUpper)));
+        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(-90 * degree - SiPMFiberPartAngle[fiberIndex] - obliqueGrooveAngle[fiberIndex]),
+                                                           G4ThreeVector(SiPMFiberPartTranslationX_1[fiberIndex],
+                                                                         SiPMFiberPartTranslationY_1[fiberIndex],
+                                                                         FiberDepthUpper)));
+        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(90 * degree + obliqueGrooveAngle[fiberIndex]),
+                                                           G4ThreeVector(-SiPMFiberPartTranslationX_0[fiberIndex],
+                                                                         SiPMFiberPartTranslationY_0[fiberIndex],
+                                                                         FiberDepthUpper)));
+        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(-90 * degree),
+                                                           G4ThreeVector(-SiPMFiberPartTranslationX_1[fiberIndex],
+                                                                         SiPMFiberPartTranslationY_1[fiberIndex],
+                                                                         FiberDepthLower)));
+        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(-90 * degree + obliqueGrooveAngle[fiberIndex]),
+                                                           G4ThreeVector(SiPMFiberPartTranslationX_0[fiberIndex],
+                                                                         -SiPMFiberPartTranslationY_0[fiberIndex],
+                                                                         FiberDepthLower)));
+        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(90 * degree),
+                                                           G4ThreeVector(SiPMFiberPartTranslationX_1[fiberIndex],
+                                                                         -SiPMFiberPartTranslationY_1[fiberIndex],
+                                                                         FiberDepthLower)));
+        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(-90 * degree - obliqueGrooveAngle[fiberIndex] - SiPMFiberPartAngle[fiberIndex]),
+                                                           G4ThreeVector(-SiPMFiberPartTranslationX_0[fiberIndex],
+                                                                         -SiPMFiberPartTranslationY_0[fiberIndex],
+                                                                         FiberDepthLower)));
+        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(90 * degree - SiPMFiberPartAngle[fiberIndex] - obliqueGrooveAngle[fiberIndex]),
+                                                           G4ThreeVector(-SiPMFiberPartTranslationX_1[fiberIndex],
+                                                                         -SiPMFiberPartTranslationY_1[fiberIndex],
+                                                                         FiberDepthLower)));
+    }
+
+    FiberParts->Voxelize();
+
+    // Finally intersect with the whole PScint solid to avoid overlapping
     /*
-    // parameter calculation
-    G4double straight_fiber_x_position = pscint_x/2 - pscint_x/(fiber_count+1)*(fiber_index+1);
-    G4double bend_fiber_end_x_position = SiPM_length/2 - SiPM_length/(fiber_count/2+1)*(fiber_index%(fiber_count/2)+1);
-    G4bool is_upper_fiber = fiber_index < fiber_count / 2;
-    G4double delta_x = std::abs(straight_fiber_x_position - bend_fiber_end_x_position);
-    G4double bend_center_angle = std::acos(
-        ((fiber_bend_r - delta_x) + std::sqrt((fiber_bend_r - delta_x)*(fiber_bend_r - delta_x)-4*fiber_bend_r*fiber_d/2))
-        /2/(fiber_bend_r-fiber_d/2)
-    );
-    G4double straight_fiber_length = pscint_z - 2*std::sin(bend_center_angle)*fiber_bend_r;
-
-    // basis geometry
-    G4Tubs* straight_fiber = new G4Tubs(
-        "straight_fiber_"+std::to_string(id)+std::to_string(fiber_index),
-        0, diameter/2, straight_fiber_length/2+0.01*mm, 0, 2*M_PI
-    );
-    G4Torus* bend_fiber = new G4Torus(
-        "bend_fiber_"+std::to_string(id)+std::to_string(fiber_index), 
-        0, diameter/2, fiber_bend_r, 0, bend_center_angle
-    );
-
-    // transformation calculation
-    G4RotationMatrix* bend_fiber_rot_upper = new G4RotationMatrix();
-    bend_fiber_rot_upper->rotateX(90*degree);
-    G4RotationMatrix* bend_fiber_rot_lower = new G4RotationMatrix();
-    bend_fiber_rot_lower->rotateX(-90*degree);
-    G4ThreeVector bend_fiber_translate_upper(-fiber_bend_r, 0, straight_fiber_length/2);
-    G4ThreeVector bend_fiber_translate_lower(-fiber_bend_r, 0, -straight_fiber_length/2);
-    G4Transform3D straight_fiber_transform = G4Transform3D();
-    G4Transform3D bend_fiber_transform_upper(*bend_fiber_rot_upper, bend_fiber_translate_upper);
-    G4Transform3D bend_fiber_transform_lower(*bend_fiber_rot_lower, bend_fiber_translate_lower);
-    
-    // union three parts into one
-    G4MultiUnion* fiber_union_solid = new G4MultiUnion("fiber_union_solid_"+std::to_string(id)+std::to_string(fiber_index));
-    fiber_union_solid->AddNode(straight_fiber, straight_fiber_transform);
-    fiber_union_solid->AddNode(bend_fiber, bend_fiber_transform_upper);
-    fiber_union_solid->AddNode(bend_fiber, bend_fiber_transform_lower);
-    fiber_union_solid->Voxelize();
-    
-    // intersect with pscint
-    G4RotationMatrix* fiber_rot = new G4RotationMatrix();
-    fiber_rot->rotateZ(180*(1-is_upper_fiber)*degree);
-    G4Transform3D fiber_transform(
-        *fiber_rot,
-        G4ThreeVector(
-            straight_fiber_x_position,
-            pscint_y/2-(is_upper_fiber?fiber_depth_upper:fiber_depth_lower),
-            0
-        )
-    );
-
-    id++;
-    return new G4IntersectionSolid(name, pscint_solid, fiber_union_solid, fiber_transform);
+    G4VSolid *PScintBox = G4SolidStore::GetInstance()->GetSolid("PScintBox");
+    G4IntersectionSolid *FinalSolid = new G4IntersectionSolid("FinalParts" + std::to_string(id), PScintBox, FiberParts);
     */
-
-    G4Tubs* straight_fiber_1_solid = new G4Tubs(
-        "straight_fiber_1_solid_" + std::to_string(fiber_index) + std::to_string(id),
-        0,
-        diameter/2,
-        fiber_straight_1_length[fiber_index]/2 + 0.1*mm,
-        0,
-        360*degree
-    );
-    G4Torus* bending_fiber_1_solid = new G4Torus(
-        "bending_fiber_1_solid_" + std::to_string(fiber_index) + std::to_string(id),
-        0,
-        diameter/2,
-        fiber_radius_1[fiber_index],
-        0,
-        fiber_angle_1[fiber_index]
-    );
-    G4Tubs* straight_fiber_2_solid = new G4Tubs(
-        "straight_fiber_2_solid_" + std::to_string(fiber_index) + std::to_string(id),
-        0,
-        diameter/2,
-        fiber_straight_2_length[fiber_index]/2 + 0.1*mm,
-        0,
-        360*degree
-    );
-
-    G4MultiUnion* fiber_union_solid = new G4MultiUnion(name);
-    fiber_union_solid->AddNode(straight_fiber_1_solid, G4TranslateX3D(
-         (fiber_count/2-0.5-fiber_index)*x_interval_between_grooves 
-        +(fiber_count/2-fiber_index)*groove_width - fiber_d/2
-    ));
-    fiber_union_solid->AddNode(bending_fiber_1_solid, G4Transform3D(
-        (new G4RotationMatrix())->rotateX(90*degree),
-        G4ThreeVector(
-            (fiber_count/2-0.5-fiber_index)*x_interval_between_grooves 
-                + (fiber_count/2-fiber_index)*groove_width 
-                - fiber_d/2 - fiber_radius_1[fiber_index], 
-            0,
-            fiber_straight_1_length[fiber_index]/2
-        )
-    ));
-    fiber_union_solid->AddNode(bending_fiber_1_solid, G4Transform3D(
-        (new G4RotationMatrix())->rotateX(-90*degree),
-        G4ThreeVector(
-            (fiber_count/2-0.5-fiber_index)*x_interval_between_grooves 
-                + (fiber_count/2-fiber_index)*groove_width
-                - fiber_d/2 - fiber_radius_1[fiber_index], 
-            0,
-            -fiber_straight_1_length[fiber_index]/2
-        )
-    ));
-    if(fiber_index == 0)
-    {
-        G4IntersectionSolid* fiber_last_part_1 = new G4IntersectionSolid(
-            "fiber_last_part_1_" + std::to_string(fiber_index) + std::to_string(id),
-            pscint_solid,
-            straight_fiber_2_solid,
-            G4Transform3D(
-                (new G4RotationMatrix())->rotateY(oblique_groove_angle[fiber_index]),
-                G4ThreeVector(
-                    (fiber_count/2-fiber_index-0.5)*x_interval_between_grooves
-                        +(fiber_count/2-1-fiber_index)*groove_width
-                        -(fiber_radius_1[fiber_index]-fiber_d/2)
-                        *(std::cos(oblique_groove_angle[fiber_index]/2)-std::cos(oblique_groove_angle[fiber_index]))
-                        +fiber_d/2*std::cos(oblique_groove_angle[fiber_index])
-                        -fiber_straight_2_length[fiber_index]/2*std::sin(oblique_groove_angle[fiber_index]),
-                    0, // TODO: ADD FIBER DEPTH
-                    -(fiber_radius_1[fiber_index]-fiber_d/2)*std::sin(oblique_groove_angle[fiber_index])
-                        -fiber_straight_1_length[fiber_index]/2
-                        -fiber_d/2*std::sin(oblique_groove_angle[fiber_index])
-                        -fiber_straight_2_length[fiber_index]/2*std::cos(oblique_groove_angle[fiber_index])
-                )
-            )
-        );
-        fiber_union_solid->AddNode(fiber_last_part_1, G4Transform3D());
-        G4IntersectionSolid* fiber_last_part_2 = new G4IntersectionSolid(
-            "fiber_last_part_2_" + std::to_string(fiber_index) + std::to_string(id),
-            pscint_solid,
-            straight_fiber_2_solid,
-            G4Transform3D(
-                (new G4RotationMatrix())->rotateY(-oblique_groove_angle[fiber_index]),
-                G4ThreeVector(
-                    (fiber_count/2-fiber_index-0.5)*x_interval_between_grooves
-                        +(fiber_count/2-1-fiber_index)*groove_width
-                        -(fiber_radius_1[fiber_index]-fiber_d/2)
-                        *(std::cos(oblique_groove_angle[fiber_index]/2)-std::cos(oblique_groove_angle[fiber_index]))
-                        +fiber_d/2*std::cos(oblique_groove_angle[fiber_index])
-                        -fiber_straight_2_length[fiber_index]/2*std::sin(oblique_groove_angle[fiber_index]),
-                    0, // TODO: ADD FIBER DEPTH
-                    (fiber_radius_1[fiber_index]-fiber_d/2)*std::sin(oblique_groove_angle[fiber_index])
-                        +fiber_straight_1_length[fiber_index]/2
-                        +fiber_d/2*std::sin(oblique_groove_angle[fiber_index])
-                        +fiber_straight_2_length[fiber_index]/2*std::cos(oblique_groove_angle[fiber_index])
-                )
-            )
-        );
-        fiber_union_solid->AddNode(fiber_last_part_2, G4Transform3D());
-    }
-    else
-    {
-        fiber_union_solid->AddNode(straight_fiber_2_solid, G4Transform3D(
-            (new G4RotationMatrix())->rotateY(oblique_groove_angle[fiber_index]),
-            G4ThreeVector(
-                (fiber_count/2-fiber_index-0.5)*x_interval_between_grooves
-                    +(fiber_count/2-1-fiber_index)*groove_width
-                    -(fiber_radius_1[fiber_index]-fiber_d/2)
-                    *(std::cos(oblique_groove_angle[fiber_index]/2)-std::cos(oblique_groove_angle[fiber_index]))
-                    +fiber_d/2*std::cos(oblique_groove_angle[fiber_index])
-                    -fiber_straight_2_length[fiber_index]/2*std::sin(oblique_groove_angle[fiber_index]),
-                0, // TODO: ADD FIBER DEPTH
-                -(fiber_radius_1[fiber_index]-fiber_d/2)*std::sin(oblique_groove_angle[fiber_index])
-                    -fiber_straight_1_length[fiber_index]/2
-                    -fiber_d/2*std::sin(oblique_groove_angle[fiber_index])
-                    -fiber_straight_2_length[fiber_index]/2*std::cos(oblique_groove_angle[fiber_index])
-            )
-        ));
-        fiber_union_solid->AddNode(straight_fiber_2_solid, G4Transform3D(
-            (new G4RotationMatrix())->rotateY(-oblique_groove_angle[fiber_index]),
-            G4ThreeVector(
-                (fiber_count/2-fiber_index-0.5)*x_interval_between_grooves
-                    +(fiber_count/2-1-fiber_index)*groove_width
-                    -(fiber_radius_1[fiber_index]-fiber_d/2)
-                    *(std::cos(oblique_groove_angle[fiber_index]/2)-std::cos(oblique_groove_angle[fiber_index]))
-                    +fiber_d/2*std::cos(oblique_groove_angle[fiber_index])
-                    -fiber_straight_2_length[fiber_index]/2*std::sin(oblique_groove_angle[fiber_index]),
-                0, // TODO: ADD FIBER DEPTH
-                (fiber_radius_1[fiber_index]-fiber_d/2)*std::sin(oblique_groove_angle[fiber_index])
-                    +fiber_straight_1_length[fiber_index]/2
-                    +fiber_d/2*std::sin(oblique_groove_angle[fiber_index])
-                    +fiber_straight_2_length[fiber_index]/2*std::cos(oblique_groove_angle[fiber_index])
-            )
-        ));
-
-        G4double theta1 = oblique_groove_angle[fiber_index];
-        G4double r1 = fiber_radius_1[fiber_index];
-        G4double l2 = fiber_straight_2_length[fiber_index];
-        G4double x1 =  (fiber_count/2 - 0.5 - fiber_index)*x_interval_between_grooves
-                        +(fiber_count/2 - 1 - fiber_index)*groove_width
-                        -r1*(std::cos(theta1/2)-std::cos(theta1))
-                        -l2*std::sin(theta1);
-        G4double theta2 = fiber_angle_2[fiber_index-1];
-        G4double r2 = fiber_radius_2[fiber_index-1]-fiber_d/2;
-
-        G4Torus* bending_fiber_2_solid = new G4Torus(
-            "bending_fiber_2_solid_" + std::to_string(fiber_index) + std::to_string(id),
-            0,
-            diameter/2,
-            r2+fiber_d/2,
-            0,
-            theta2
-        );
-
-        G4RotationMatrix* rot_1 = new G4RotationMatrix();
-        rot_1->rotateX(90*degree);
-        rot_1->rotateY(-theta1);
-
-        G4RotationMatrix* rot_2 = new G4RotationMatrix();
-        rot_2->rotateX(-90*degree);
-        rot_2->rotateY(theta1);
-        
-        G4IntersectionSolid* fiber_last_part_1 = new G4IntersectionSolid(
-            "fiber_last_part_1_" + std::to_string(fiber_index) + std::to_string(id),
-            pscint_solid,
-            bending_fiber_2_solid,
-            G4Transform3D(
-                *rot_1,
-                G4ThreeVector(
-                    x1 - r2*std::cos(theta1),
-                    0, 
-                    pscint_z/2-merged_groove_z-r2*std::sin(theta1)
-                )
-            )
-        );
-        
-        fiber_union_solid->AddNode(fiber_last_part_1, G4Transform3D());
-
-        G4IntersectionSolid* fiber_last_part_2 = new G4IntersectionSolid(
-            "fiber_last_part_2_" + std::to_string(fiber_index) + std::to_string(id),
-            pscint_solid,
-            bending_fiber_2_solid,
-            G4Transform3D(
-                *rot_2,
-                G4ThreeVector(
-                    x1 - r2*std::cos(theta1),
-                    0, 
-                    -pscint_z/2+merged_groove_z+r2*std::sin(theta1)
-                )
-            )
-        );
-        fiber_union_solid->AddNode(fiber_last_part_2, G4Transform3D());
-    }
-
-    fiber_union_solid->Voxelize();
-    return fiber_union_solid;
+    //return FinalSolid;
+    ++id;
+    return FiberParts;
 }
 
-G4VPhysicalVolume* MVDetectorConstruction::Construct()
+G4VPhysicalVolume *MVDetectorConstruction::Construct()
 {
     DefineMaterials();
     DefineMaterialTables();
@@ -1034,21 +747,24 @@ void MVDetectorConstruction::ConstructSDandField()
     // Sensitive detectors
 
     G4String SiPM_name = "SiPM";
-    
+
     // Filter for optical photon
-    G4SDParticleFilter* photon_filter =
-        new G4SDParticleFilter("photon_filter","opticalphoton");
+    G4SDParticleFilter *photon_filter =
+        new G4SDParticleFilter("photon_filter", "opticalphoton");
 
     // Use SiPMSD as the sensitive detector
-    SiPMSD* SiPMSD_0  = new SiPMSD(SiPM_name+"_0", "collection_0", XY_minus);
+    SiPMSD *SiPMSD_0 = new SiPMSD(SiPM_name + "_0", "collection_0", YZ_plus);
     SiPMSD_0->SetFilter(photon_filter);
     G4SDManager::GetSDMpointer()->AddNewDetector(SiPMSD_0);
-    SetSensitiveDetector("SiPM_0_log", SiPMSD_0);
+    SetSensitiveDetector("SiPMLogicalVolume_0", SiPMSD_0);
 
-    SiPMSD* SiPMSD_1  = new SiPMSD(SiPM_name+"_1", "collection_1", XY_plus);
-    SiPMSD_1->SetFilter(photon_filter);
-    G4SDManager::GetSDMpointer()->AddNewDetector(SiPMSD_1);
-    SetSensitiveDetector("SiPM_1_log", SiPMSD_1);
+    if (psType != 2)
+    {
+        SiPMSD *SiPMSD_1 = new SiPMSD(SiPM_name + "_1", "collection_1", YZ_minus);
+        SiPMSD_1->SetFilter(photon_filter);
+        G4SDManager::GetSDMpointer()->AddNewDetector(SiPMSD_1);
+        SetSensitiveDetector("SiPMLogicalVolume_1", SiPMSD_1);
+    }
 
     /*
     // Definition for SiPM_0 (the upper one)
@@ -1070,7 +786,6 @@ void MVDetectorConstruction::ConstructSDandField()
     G4SDManager::GetSDMpointer()->AddNewDetector(SiPM_1);
     SetSensitiveDetector("SiPM_1_log", SiPM_1);
     */
-
 }
 
 void MuonVeto::MVDetectorConstruction::UpdateGeometry()
@@ -1085,16 +800,16 @@ void MuonVeto::MVDetectorConstruction::UpdateGeometry()
 }
 
 void MVDetectorConstruction::SetScintYield(G4double newScintYield)
-{ 
+{
     scintYield = newScintYield;
-    auto MPTScint = LAB->GetMaterialPropertiesTable();
-    MPTScint->RemoveConstProperty("SCINTILLATIONYIELD");
-    MPTScint->AddConstProperty("SCINTILLATIONYIELD", scintYield);
+    auto PSPolystreneTable = PSPolystyrene->GetMaterialPropertiesTable();
+    PSPolystreneTable->RemoveConstProperty("SCINTILLATIONYIELD");
+    PSPolystreneTable->AddConstProperty("SCINTILLATIONYIELD", scintYield);
     G4RunManager::GetRunManager()->GeometryHasBeenModified();
 }
 
 void MVDetectorConstruction::SetFiberCount(G4int newFiberCount)
 {
-    fiber_count = newFiberCount;
+    fiberCount = newFiberCount;
     UpdateGeometry();
 }

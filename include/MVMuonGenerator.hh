@@ -30,6 +30,7 @@ class MVMuonGenerator : public MVGenerator {
     G4double charge_ratio;
     G4double charge_thres;
     G4double theta_low;
+    G4double theta_max;
     G4double E_low;
     G4double E_up;
     G4double shielding_x;

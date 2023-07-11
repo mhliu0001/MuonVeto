@@ -10,14 +10,14 @@ namespace MuonVeto
 void PrintUsage()
 {
     G4cerr << " Usage: " << G4endl;
-    G4cerr << " MuonVeto [--gen generator][-m macro] [-t nThreads] [-o output_file_path] [-p probe_config_file] [-f fiber_count] [-n runID] [-e events_per_run] [-b] [-s] [-r]"
+    G4cerr << " MuonVeto [--gen generator][-m macro] [-t nThreads] [-o output_file_path] [-p probe_config_file] [-c ps_config_file] [-n runID] [-e events_per_run] [-b] [-s] [-r]"
             << G4endl;
     G4cerr << " --gen : Specify generator. Can be \"default\", \"muon\" or \"gamma\". " << G4endl;
     G4cerr << " -m : Specify macro file" << G4endl;
     G4cerr << " -t : Specify number of threads (default: 8)" << G4endl;
     G4cerr << " -o : Specify where the data files are located (default: data)" << G4endl;
     G4cerr << " -p : Use probe mode. A probe config file (.json) must be specified" << G4endl;
-    G4cerr << " -f : Specify fiber count (default: 6; can be 4 or 6)" << G4endl;
+    G4cerr << " -c : Specify configuration file for PS " << G4endl;
     G4cerr << " -n : Specify runID (useful in probe mode, if this is specified in probe mode, only ONE run is generated)" << G4endl;
     G4cerr << " -e : Specify events per run (default: 1000), used in random points (-r)" << G4endl;
     G4cerr << " -b : Use G4 built-in analysis" << G4endl;
@@ -41,7 +41,7 @@ Config ParseConfig(int argc, char** argv)
     config.useBuiltinAnalysis = false;
     config.outputFilePath = "data";
     config.nThreads = 8;
-    config.fiberCount = 6;
+    config.psConfig = "";
     config.runID = -1;
     config.spectrumAnalysis = false;
     config.eventPerRun = 1000;
@@ -123,17 +123,17 @@ Config ParseConfig(int argc, char** argv)
             }
             argN += 2;
         }
-        else if(G4String(argv[argN]) == "-f")
+        else if(G4String(argv[argN]) == "-c")
         {
             if(argN+1 >= argc)
             {
-                throw G4String("Fiber count must be specified after \"-f\"!");
+                throw G4String("A PS config file must be specified after \"-c\"!");
             }
-            if(G4String(argv[argN+1]) != std::to_string(4) && G4String(argv[argN+1]) != std::to_string(6))
+            config.psConfig = argv[argN+1];
+            if(!std::filesystem::is_regular_file(config.psConfig.c_str()))
             {
-                throw G4String(G4String("Fiber count must be 4 or 6, but ") + G4String(argv[argN+1]) + G4String(" is specified!"));
+                throw G4String("PS config file not found! Given path: " + config.psConfig);
             }
-            config.fiberCount = G4UIcommand::ConvertToInt(argv[argN+1]);
             argN += 2;
         }
         else if(G4String(argv[argN]) == "-n")
@@ -188,5 +188,18 @@ Config ParseConfig(int argc, char** argv)
     }
     return config;
 }
-
+void read_csv(std::string path, std::vector<double>& photonMomentum, std::vector<double>& com)
+{
+    std::ifstream psScintComStream(path);
+    std::string line;
+    while(std::getline(psScintComStream, line))
+    {
+        std::string field;
+        std::istringstream lineStream(line);
+        std::getline(lineStream, field, ',');
+        photonMomentum.push_back(CLHEP::h_Planck*CLHEP::c_light/(std::stod(field)*nm));
+        std::getline(lineStream, field);
+        com.push_back(std::stod(field));
+    }
+}
 }

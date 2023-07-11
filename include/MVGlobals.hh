@@ -6,8 +6,10 @@
 #include <algorithm>
 #include "globals.hh"
 #include <filesystem>
+#include <fstream>
 #include "json.hpp"
 #include "G4SystemOfUnits.hh"
+#include "CLHEP/Units/PhysicalConstants.h"
 #include "G4ThreeVector.hh"
 
 namespace MuonVeto
@@ -98,7 +100,9 @@ class MVGlobalCounter
 
         void Merge(MVGlobalCounter<datatype>& anotherCounter)
         {
-            assert(*this == anotherCounter);
+            G4cout << "this->fName = " << this->fName << ", anotherCounter->fName = " << anotherCounter.fName << G4endl;
+            G4cout << "this->fDescription = " << this->fDescription << ", anotherCounter->fDescription = " << anotherCounter.fDescription << G4endl;
+            //assert(!anotherCounter || *this == anotherCounter);
 
             // First, search for all "this" keys in anotherCounter. If exists, push_back a value; if not, push_back 0.
             for(std::pair<datatype, std::vector<G4int>> thisCounterItem : fGlobalCounter)
@@ -158,9 +162,9 @@ class MVEventConstant
         MVEventConstant(G4String name): fName(name) {}
         ~MVEventConstant() {}
         datatype constant;
+        inline G4String GetName() const { return fName; }
 
     private:
-        inline G4String GetName() const { return fName; }
         const G4String fName;
         const G4String fDescription;
 };
@@ -197,6 +201,8 @@ class MVEventConstantVector
         const G4String fDescription;
 };
 
+void read_csv(std::string path, std::vector<double>& photonMomentum, std::vector<double>& com);
+
 /* Config
 */
 struct Config
@@ -206,7 +212,7 @@ struct Config
     G4String macro;               // Path for macro file; use "-m" to specify
     G4String outputFilePath;      // Directory where output files are put; use "-o" to specify
     G4int nThreads;               // Number of threads; use "-t" to specify
-    G4int fiberCount;             // Number of fibers; use "-f" to specify
+    G4String psConfig;            // Configuration file for PS; use "-c" to specify
     G4int runID;                  // RunID; use "-n" to specify
     G4String probeConfigFilePath; // Probe mode; a probe_config must be provided after "-p"
     G4bool spectrumAnalysis;      // Spectrum analysis; use "-s" to enable

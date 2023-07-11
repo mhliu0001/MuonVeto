@@ -9,13 +9,15 @@
 #include "G4SolidStore.hh"
 #include "G4Box.hh"
 #include "G4GeometryTolerance.hh"
+#include "G4OpBoundaryProcess.hh"
+#include "G4ProcessManager.hh"
 
 using namespace MuonVeto;
 
 MVSteppingAction::MVSteppingAction(MVEventAction* eventAction): fEventAction(eventAction)
 {
     auto solidStore = G4SolidStore::GetInstance();
-    G4Box* whole_solid = dynamic_cast<G4Box*>(solidStore->GetSolid("whole_solid"));
+    G4Box* whole_solid = dynamic_cast<G4Box*>(solidStore->GetSolid("WholePSBox"));
     if(!whole_solid)
     {
         throw std::runtime_error("MVSteppingAction: whole_solid not found!");
@@ -91,6 +93,40 @@ void MVSteppingAction::UserSteppingAction(const G4Step* aStep)
 
     if(fEventAction->fConfig.spectrumAnalysis)
         fEventAction->fEnergyRecorder[trackID] = track->GetTotalEnergy();
+    
+    // DEBUG: boundary check
+    /*
+    G4OpBoundaryProcessStatus boundaryStatus = Undefined;
+    static G4ThreadLocal G4OpBoundaryProcess *boundary = nullptr;
+
+    if (!boundary) {
+        auto pm = track->GetDefinition()->GetProcessManager();
+        auto nProcesses = pm->GetProcessListLength();
+        auto pv = pm->GetProcessList();
+        for (auto i = 0; i < nProcesses; ++i) {
+            if ((*pv)[i]->GetProcessName() == "OpBoundary") {
+                boundary = (G4OpBoundaryProcess *)(*pv)[i];
+                break;
+            }
+        }
+    }
+
+    if (track->GetParticleDefinition() != G4OpticalPhoton::OpticalPhotonDefinition())
+        return;
+    
+    auto postPoint = aStep->GetPostStepPoint();
+    auto prePoint = aStep->GetPreStepPoint();
+
+    if (postPoint->GetStepStatus() != fGeomBoundary)
+        return;
+
+    boundaryStatus = boundary->GetStatus();
+
+    if(prePoint->GetPhysicalVolume()->GetName() == "FiberCore" && postPoint->GetPhysicalVolume()->GetName() != "FiberCladding")
+    {
+        G4cout << "From " << prePoint->GetPhysicalVolume()->GetName() << " to " << postPoint->GetPhysicalVolume()->GetName() << G4endl;
+    }
+    */
     /*
     if(!IsStringInList(CPN, fEventAction->fStrList))   fEventAction->fStrList.push_back(CPN);
     if(!IsStringInList(FVPath, fEventAction->fStrList))    fEventAction->fStrList.push_back(FVPath);
