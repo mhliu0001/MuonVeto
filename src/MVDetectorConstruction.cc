@@ -67,12 +67,12 @@ void MVDetectorConstruction::SetDefaults()
     // fiber_depth_upper = 1.5*mm; // Not used in new geometry
     // fiber_depth_lower = 3.0*mm; // Not used in new geometry
     claddingDepth = 0.015 * mm;
-    FiberDepthLower = -grooveDepth / 2 + fiberDiameter / 2 - 0.1 * mm;
-    FiberDepthUpper = grooveDepth / 2 - fiberDiameter / 2 + 0.1 * mm;
 
     // Groove
     grooveDepth = 4.5 * mm;
     grooveWidth = 1.5 * mm;
+    FiberDepthLower = -grooveDepth / 2 + fiberDiameter / 2 + 0.1 * mm;
+    FiberDepthUpper = grooveDepth / 2 - fiberDiameter / 2 - 0.1 * mm;
 
     // SiPM
     SiPMX = 1 * mm;
@@ -687,35 +687,35 @@ G4VSolid *MVDetectorConstruction::GetFiberPart(G4double diameter) const
                                                0, diameter / 2, SiPMFiberPartRotRadius_0[fiberIndex], 0, SiPMFiberPartAngle[fiberIndex] + 0.1 * degree);
         G4Torus *SiPMFiberPart_1 = new G4Torus("SiPMFiberPart_1" + std::to_string(fiberIndex) + std::to_string(id),
                                                0, diameter / 2, SiPMFiberPartRotRadius_1[fiberIndex], 0, SiPMFiberPartAngle[fiberIndex] + obliqueGrooveAngle[fiberIndex]);
-        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(90 * degree - obliqueGrooveAngle[fiberIndex] - SiPMFiberPartAngle[fiberIndex]),
+        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(90.05 * degree - obliqueGrooveAngle[fiberIndex] - SiPMFiberPartAngle[fiberIndex]),
                                                            G4ThreeVector(SiPMFiberPartTranslationX_0[fiberIndex],
                                                                          SiPMFiberPartTranslationY_0[fiberIndex],
                                                                          FiberDepthUpper)));
-        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(-90 * degree - SiPMFiberPartAngle[fiberIndex] - obliqueGrooveAngle[fiberIndex]),
+        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(-90.05 * degree - SiPMFiberPartAngle[fiberIndex] - obliqueGrooveAngle[fiberIndex]),
                                                            G4ThreeVector(SiPMFiberPartTranslationX_1[fiberIndex],
                                                                          SiPMFiberPartTranslationY_1[fiberIndex],
                                                                          FiberDepthUpper)));
-        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(90 * degree + obliqueGrooveAngle[fiberIndex]),
+        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(89.95 * degree + obliqueGrooveAngle[fiberIndex]),
                                                            G4ThreeVector(-SiPMFiberPartTranslationX_0[fiberIndex],
                                                                          SiPMFiberPartTranslationY_0[fiberIndex],
                                                                          FiberDepthUpper)));
-        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(-90 * degree),
+        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(-89.95 * degree),
                                                            G4ThreeVector(-SiPMFiberPartTranslationX_1[fiberIndex],
                                                                          SiPMFiberPartTranslationY_1[fiberIndex],
-                                                                         FiberDepthLower)));
-        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(-90 * degree + obliqueGrooveAngle[fiberIndex]),
+                                                                         FiberDepthUpper)));
+        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(-90.05 * degree + obliqueGrooveAngle[fiberIndex]),
                                                            G4ThreeVector(SiPMFiberPartTranslationX_0[fiberIndex],
                                                                          -SiPMFiberPartTranslationY_0[fiberIndex],
                                                                          FiberDepthLower)));
-        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(90 * degree),
+        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(90.05 * degree),
                                                            G4ThreeVector(SiPMFiberPartTranslationX_1[fiberIndex],
                                                                          -SiPMFiberPartTranslationY_1[fiberIndex],
                                                                          FiberDepthLower)));
-        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(-90 * degree - obliqueGrooveAngle[fiberIndex] - SiPMFiberPartAngle[fiberIndex]),
+        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(-89.95 * degree - obliqueGrooveAngle[fiberIndex] - SiPMFiberPartAngle[fiberIndex]),
                                                            G4ThreeVector(-SiPMFiberPartTranslationX_0[fiberIndex],
                                                                          -SiPMFiberPartTranslationY_0[fiberIndex],
                                                                          FiberDepthLower)));
-        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(90 * degree - SiPMFiberPartAngle[fiberIndex] - obliqueGrooveAngle[fiberIndex]),
+        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(89.95 * degree - SiPMFiberPartAngle[fiberIndex] - obliqueGrooveAngle[fiberIndex]),
                                                            G4ThreeVector(-SiPMFiberPartTranslationX_1[fiberIndex],
                                                                          -SiPMFiberPartTranslationY_1[fiberIndex],
                                                                          FiberDepthLower)));
