@@ -1,0 +1,10 @@
+{
+    "ps_type": 2,
+    "fiber_count": 4,
+    "whole_x": "2000.*mm",
+    "whole_y": "250.*mm",
+    "uninstrumented_x": "100.*mm",
+    "ps_scint": "../config/sp101_scint.csv",
+    "fiber_abs": "../config/bcf92_abs.csv",
+    "fiber_emi": "../config/bcf92_emi.csv"
+}
