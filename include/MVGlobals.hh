@@ -100,8 +100,8 @@ class MVGlobalCounter
 
         void Merge(MVGlobalCounter<datatype>& anotherCounter)
         {
-            G4cout << "this->fName = " << this->fName << ", anotherCounter->fName = " << anotherCounter.fName << G4endl;
-            G4cout << "this->fDescription = " << this->fDescription << ", anotherCounter->fDescription = " << anotherCounter.fDescription << G4endl;
+            // G4cout << "this->fName = " << this->fName << ", anotherCounter->fName = " << anotherCounter.fName << G4endl;
+            // G4cout << "this->fDescription = " << this->fDescription << ", anotherCounter->fDescription = " << anotherCounter.fDescription << G4endl;
             //assert(!anotherCounter || *this == anotherCounter);
 
             // First, search for all "this" keys in anotherCounter. If exists, push_back a value; if not, push_back 0.

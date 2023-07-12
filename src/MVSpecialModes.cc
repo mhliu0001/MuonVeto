@@ -77,7 +77,7 @@ void MuonVeto::RunProbe(Config config)
     UImanager->ApplyCommand("/tracking/verbose 0");
     UImanager->ApplyCommand("/gun/particle alpha");
     UImanager->ApplyCommand("/gun/energy 1 keV");
-    UImanager->ApplyCommand("/detector/scintYield 40000 /keV");
+    UImanager->ApplyCommand("/detector/scintYield 10000 /keV");
     runManager->SetRunIDCounter(config.runID == -1 ? runNumber : config.runID);
 
     G4int local_runID = 0;
@@ -117,7 +117,7 @@ void MuonVeto::RunRandom(Config config)
     UImanager->ApplyCommand("/tracking/verbose 0");
     UImanager->ApplyCommand("/gun/particle alpha");
     UImanager->ApplyCommand("/gun/energy 1 keV");
-    UImanager->ApplyCommand("/detector/scintYield 40000 /keV");
+    UImanager->ApplyCommand("/detector/scintYield 10000 /keV");
     runManager->SetRunIDCounter(config.runID == -1 ? 0 : config.runID);
 
     std::ostringstream commandRunOS;

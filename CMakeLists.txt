@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 project(MuonVetoProject)
 
 find_package(Geant4 REQUIRED ui_all vis_all)
+set(HighFive_DIR "/home/mhliu/Documents/HighFive/share/HighFive/CMake")
+find_package(HighFive REQUIRED)
 
 # CXX_STANDARD may be changed, according to the environment
 set(CMAKE_CXX_STANDARD 17)
@@ -14,6 +16,7 @@ file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*)
 
 add_executable(MuonVeto MuonVeto.cc ${sources} ${headers})
 target_link_libraries(MuonVeto ${Geant4_LIBRARIES} )
+target_link_libraries(MuonVeto HighFive )
 
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/output/)
 

@@ -5,6 +5,7 @@
 #include <filesystem>
 #include "G4SystemOfUnits.hh"
 #include "G4AnalysisManager.hh"
+#include <highfive/H5File.hpp>
 
 namespace MuonVeto
 {
@@ -89,177 +90,200 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
         else
             G4cerr << "Open File \"" << RCFileNameStream.str() << "\" Failed!";
         RCFileStream.close();
-
-        // csv output
-        for(auto runCounter : MTRun->runCounters)
+        
+        if(false)
         {
-            std::stringstream counterDirStream;
-            counterDirStream << optDirStream.str() << "/" << runCounter.GetName();
-            std::filesystem::create_directory(counterDirStream.str());
-
-            for(auto nameAndValue: runCounter.GetGlobalCounter())
+            // csv output
+            for(auto runCounter : MTRun->runCounters)
             {
-                std::stringstream counterFileNameStream;
-                counterFileNameStream << counterDirStream.str() << "/" << nameAndValue.first << ".csv";
-                std::ofstream counterFileStream(counterFileNameStream.str());
-                if(!counterFileStream.is_open())
-                {   
-                    G4cerr << "Open File \"" << counterFileNameStream.str() << "\" Failed!" << G4endl;
-                    continue;
+                std::stringstream counterDirStream;
+                counterDirStream << optDirStream.str() << "/" << runCounter.GetName();
+                std::filesystem::create_directory(counterDirStream.str());
+
+                for(auto nameAndValue: runCounter.GetGlobalCounter())
+                {
+                    std::stringstream counterFileNameStream;
+                    counterFileNameStream << counterDirStream.str() << "/" << nameAndValue.first << ".csv";
+                    std::ofstream counterFileStream(counterFileNameStream.str());
+                    if(!counterFileStream.is_open())
+                    {   
+                        G4cerr << "Open File \"" << counterFileNameStream.str() << "\" Failed!" << G4endl;
+                        continue;
+                    }
+                    counterFileStream << "# " << counterDirStream.str() << ": " << nameAndValue.first <<std::endl;
+                    for(auto value : nameAndValue.second)
+                        counterFileStream << value << std::endl;
+                    counterFileStream.close();
                 }
-                counterFileStream << "# " << counterDirStream.str() << ": " << nameAndValue.first <<std::endl;
-                for(auto value : nameAndValue.second)
-                    counterFileStream << value << std::endl;
-                counterFileStream.close();
             }
-        }
 
-        // GenInfo csv output
-        auto genInfos = MTRun->genInfos;
-        std::stringstream GenDirStream;
-        GenDirStream << optDirStream.str() << "/" << genInfos.GetName();
-        std::filesystem::create_directory(GenDirStream.str());
+            // GenInfo csv output
+            auto genInfos = MTRun->genInfos;
+            std::stringstream GenDirStream;
+            GenDirStream << optDirStream.str() << "/" << genInfos.GetName();
+            std::filesystem::create_directory(GenDirStream.str());
 
-        {
-            std::stringstream GenFileNameStream;
-            GenFileNameStream << GenDirStream.str() << "/" << "phi.csv";
-            std::ofstream GenFileStream(GenFileNameStream.str());
-            if(!GenFileStream.is_open())
-            {   
-                G4cerr << "Open File \"" << GenFileNameStream.str() << "\" Failed!" << G4endl;
-            }
-            else
             {
-                GenFileStream << "# " << GenDirStream.str() << ": " << "phi" << std::endl;
-                for(auto genInfo : genInfos.GetVector())
-                    GenFileStream << genInfo.phi << std::endl;
-                GenFileStream.close();
+                std::stringstream GenFileNameStream;
+                GenFileNameStream << GenDirStream.str() << "/" << "phi.csv";
+                std::ofstream GenFileStream(GenFileNameStream.str());
+                if(!GenFileStream.is_open())
+                {   
+                    G4cerr << "Open File \"" << GenFileNameStream.str() << "\" Failed!" << G4endl;
+                }
+                else
+                {
+                    GenFileStream << "# " << GenDirStream.str() << ": " << "phi" << std::endl;
+                    for(auto genInfo : genInfos.GetVector())
+                        GenFileStream << genInfo.phi << std::endl;
+                    GenFileStream.close();
+                }
             }
-        }
-        {
-            std::stringstream GenFileNameStream;
-            GenFileNameStream << GenDirStream.str() << "/" << "theta.csv";
-            std::ofstream GenFileStream(GenFileNameStream.str());
-            if(!GenFileStream.is_open())
-            {   
-                G4cerr << "Open File \"" << GenFileNameStream.str() << "\" Failed!" << G4endl;
-            }
-            else
             {
-                GenFileStream << "# " << GenDirStream.str() << ": " << "theta" << std::endl;
-                for(auto genInfo : genInfos.GetVector())
-                    GenFileStream << genInfo.theta << std::endl;
-                GenFileStream.close();
+                std::stringstream GenFileNameStream;
+                GenFileNameStream << GenDirStream.str() << "/" << "theta.csv";
+                std::ofstream GenFileStream(GenFileNameStream.str());
+                if(!GenFileStream.is_open())
+                {   
+                    G4cerr << "Open File \"" << GenFileNameStream.str() << "\" Failed!" << G4endl;
+                }
+                else
+                {
+                    GenFileStream << "# " << GenDirStream.str() << ": " << "theta" << std::endl;
+                    for(auto genInfo : genInfos.GetVector())
+                        GenFileStream << genInfo.theta << std::endl;
+                    GenFileStream.close();
+                }
             }
-        }
-        {
-            std::stringstream GenFileNameStream;
-            GenFileNameStream << GenDirStream.str() << "/" << "energy.csv";
-            std::ofstream GenFileStream(GenFileNameStream.str());
-            if(!GenFileStream.is_open())
-            {   
-                G4cerr << "Open File \"" << GenFileNameStream.str() << "\" Failed!" << G4endl;
-            }
-            else
             {
-                GenFileStream << "# " << GenDirStream.str() << ": " << "energy (unit: MeV)" << std::endl;
-                for(auto genInfo : genInfos.GetVector())
-                    GenFileStream << genInfo.energy/MeV << std::endl;
-                GenFileStream.close();
+                std::stringstream GenFileNameStream;
+                GenFileNameStream << GenDirStream.str() << "/" << "energy.csv";
+                std::ofstream GenFileStream(GenFileNameStream.str());
+                if(!GenFileStream.is_open())
+                {   
+                    G4cerr << "Open File \"" << GenFileNameStream.str() << "\" Failed!" << G4endl;
+                }
+                else
+                {
+                    GenFileStream << "# " << GenDirStream.str() << ": " << "energy (unit: MeV)" << std::endl;
+                    for(auto genInfo : genInfos.GetVector())
+                        GenFileStream << genInfo.energy/MeV << std::endl;
+                    GenFileStream.close();
+                }
             }
-        }
-        {
-            std::stringstream GenFileNameStream;
-            GenFileNameStream << GenDirStream.str() << "/" << "name.csv";
-            std::ofstream GenFileStream(GenFileNameStream.str());
-            if(!GenFileStream.is_open())
-            {   
-                G4cerr << "Open File \"" << GenFileNameStream.str() << "\" Failed!" << G4endl;
-            }
-            else
             {
-                GenFileStream << "# " << GenDirStream.str() << ": " << "name" << std::endl;
-                for(auto genInfo : genInfos.GetVector())
-                    GenFileStream << genInfo.name << std::endl;
-                GenFileStream.close();
+                std::stringstream GenFileNameStream;
+                GenFileNameStream << GenDirStream.str() << "/" << "name.csv";
+                std::ofstream GenFileStream(GenFileNameStream.str());
+                if(!GenFileStream.is_open())
+                {   
+                    G4cerr << "Open File \"" << GenFileNameStream.str() << "\" Failed!" << G4endl;
+                }
+                else
+                {
+                    GenFileStream << "# " << GenDirStream.str() << ": " << "name" << std::endl;
+                    for(auto genInfo : genInfos.GetVector())
+                        GenFileStream << genInfo.name << std::endl;
+                    GenFileStream.close();
+                }
             }
-        }
-        {
-            std::stringstream GenFileNameStream;
-            GenFileNameStream << GenDirStream.str() << "/" << "position.csv";
-            std::ofstream GenFileStream(GenFileNameStream.str());
-            if(!GenFileStream.is_open())
-            {   
-                G4cerr << "Open File \"" << GenFileNameStream.str() << "\" Failed!" << G4endl;
-            }
-            else
             {
-                GenFileStream << "# " << GenDirStream.str() << ": " << "position (unit: mm)" << std::endl;
-                for(auto genInfo : genInfos.GetVector())
-                    GenFileStream << genInfo.position.x()/mm << "," << genInfo.position.y()/mm << "," << genInfo.position.z()/mm << std::endl;
-                GenFileStream.close();
+                std::stringstream GenFileNameStream;
+                GenFileNameStream << GenDirStream.str() << "/" << "position.csv";
+                std::ofstream GenFileStream(GenFileNameStream.str());
+                if(!GenFileStream.is_open())
+                {   
+                    G4cerr << "Open File \"" << GenFileNameStream.str() << "\" Failed!" << G4endl;
+                }
+                else
+                {
+                    GenFileStream << "# " << GenDirStream.str() << ": " << "position (unit: mm)" << std::endl;
+                    for(auto genInfo : genInfos.GetVector())
+                        GenFileStream << genInfo.position.x()/mm << "," << genInfo.position.y()/mm << "," << genInfo.position.z()/mm << std::endl;
+                    GenFileStream.close();
+                }
             }
-        }
-        {
-            std::stringstream GenFileNameStream;
-            GenFileNameStream << GenDirStream.str() << "/" << "momentum.csv";
-            std::ofstream GenFileStream(GenFileNameStream.str());
-            if(!GenFileStream.is_open())
-            {   
-                G4cerr << "Open File \"" << GenFileNameStream.str() << "\" Failed!" << G4endl;
-            }
-            else
             {
-                GenFileStream << "# " << GenDirStream.str() << ": " << "momentum direction" << std::endl;
-                for(auto genInfo : genInfos.GetVector())
-                    GenFileStream << genInfo.momentumDir.x() << "," << genInfo.momentumDir.y() << "," << genInfo.momentumDir.z() << std::endl;
-                GenFileStream.close();
+                std::stringstream GenFileNameStream;
+                GenFileNameStream << GenDirStream.str() << "/" << "momentum.csv";
+                std::ofstream GenFileStream(GenFileNameStream.str());
+                if(!GenFileStream.is_open())
+                {   
+                    G4cerr << "Open File \"" << GenFileNameStream.str() << "\" Failed!" << G4endl;
+                }
+                else
+                {
+                    GenFileStream << "# " << GenDirStream.str() << ": " << "momentum direction" << std::endl;
+                    for(auto genInfo : genInfos.GetVector())
+                        GenFileStream << genInfo.momentumDir.x() << "," << genInfo.momentumDir.y() << "," << genInfo.momentumDir.z() << std::endl;
+                    GenFileStream.close();
+                }
             }
-        }
-        
-        // Track length output
-        auto trackLengths = MTRun->trackLengths;
-        std::stringstream TLDirStream;
-        TLDirStream << optDirStream.str() << "/" << trackLengths.GetName();
-        std::filesystem::create_directory(TLDirStream.str());
+            
+            // Track length output
+            auto trackLengths = MTRun->trackLengths;
+            std::stringstream TLDirStream;
+            TLDirStream << optDirStream.str() << "/" << trackLengths.GetName();
+            std::filesystem::create_directory(TLDirStream.str());
 
-        std::stringstream TLFileNameStream;
-        TLFileNameStream << TLDirStream.str() << "/" << "trackLength.csv";
-        std::ofstream TLFileStream(TLFileNameStream.str());
-        if(!TLFileStream.is_open())
-        {   
-            G4cerr << "Open File \"" << TLFileNameStream.str() << "\" Failed!" << G4endl;
+            std::stringstream TLFileNameStream;
+            TLFileNameStream << TLDirStream.str() << "/" << "trackLength.csv";
+            std::ofstream TLFileStream(TLFileNameStream.str());
+            if(!TLFileStream.is_open())
+            {   
+                G4cerr << "Open File \"" << TLFileNameStream.str() << "\" Failed!" << G4endl;
+            }
+            else
+            {
+                TLFileStream << "# " << TLDirStream.str() << ": " << trackLengths.GetDescription() << std::endl;
+                for(auto trackLength : trackLengths.GetVector())
+                    TLFileStream << trackLength << std::endl;
+                TLFileStream.close();
+            }
+
+            // Edeps output
+            auto Edeps = MTRun->Edeps;
+            std::stringstream EDDirStream;
+            EDDirStream << optDirStream.str() << "/" << Edeps.GetName();
+            std::filesystem::create_directory(EDDirStream.str());
+
+            std::stringstream EDFileNameStream;
+            EDFileNameStream << EDDirStream.str() << "/" << "Edep.csv";
+            std::ofstream EDFileStream(EDFileNameStream.str());
+            if(!EDFileStream.is_open())
+            {   
+                G4cerr << "Open File \"" << EDFileNameStream.str() << "\" Failed!" << G4endl;
+            }
+            else
+            {
+                EDFileStream << "# " << EDDirStream.str() << ": " << Edeps.GetDescription() << std::endl;
+                for(auto Edep : Edeps.GetVector())
+                    EDFileStream << Edep << std::endl;
+                EDFileStream.close();
+            }
         }
         else
         {
-            TLFileStream << "# " << TLDirStream.str() << ": " << trackLengths.GetDescription() << std::endl;
-            for(auto trackLength : trackLengths.GetVector())
-                TLFileStream << trackLength << std::endl;
-            TLFileStream.close();
+            using namespace HighFive;
+            std::stringstream h5FileNameStream;
+            h5FileNameStream << optDirStream.str() << "/data.h5";
+            File file(h5FileNameStream.str(), File::Truncate);
+            std::vector<double> x, y, z;
+            std::vector<int> SiPM_0_PE, SiPM_1_PE;
+            for(auto genInfo : MTRun->genInfos.GetVector())
+            {
+                x.push_back(genInfo.position.x());
+                y.push_back(genInfo.position.y());
+                z.push_back(genInfo.position.z());
+            }
+            SiPM_0_PE = MTRun->runCounters[3].GetGlobalCounter().at("SiPM_0");
+            SiPM_1_PE = MTRun->runCounters[3].GetGlobalCounter().at("SiPM_1");
+            file.createDataSet("grp/x", x);
+            file.createDataSet("grp/y", y);
+            file.createDataSet("grp/z", z);
+            file.createDataSet("grp/SiPM_0", SiPM_0_PE);
+            file.createDataSet("grp/SiPM_1", SiPM_1_PE);
         }
-
-        // Edeps output
-        auto Edeps = MTRun->Edeps;
-        std::stringstream EDDirStream;
-        EDDirStream << optDirStream.str() << "/" << Edeps.GetName();
-        std::filesystem::create_directory(EDDirStream.str());
-
-        std::stringstream EDFileNameStream;
-        EDFileNameStream << EDDirStream.str() << "/" << "Edep.csv";
-        std::ofstream EDFileStream(EDFileNameStream.str());
-        if(!EDFileStream.is_open())
-        {   
-            G4cerr << "Open File \"" << EDFileNameStream.str() << "\" Failed!" << G4endl;
-        }
-        else
-        {
-            EDFileStream << "# " << EDDirStream.str() << ": " << Edeps.GetDescription() << std::endl;
-            for(auto Edep : Edeps.GetVector())
-                EDFileStream << Edep << std::endl;
-            EDFileStream.close();
-        }
-
-        
         
         // TODO: Fix spectrum
         /*
