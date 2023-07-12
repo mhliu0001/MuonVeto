@@ -69,7 +69,7 @@ void MVSteppingAction::UserSteppingAction(const G4Step* aStep)
     }
 
     G4double edepStep = aStep->GetTotalEnergyDeposit();
-    if(edepStep > 0)
+    if(edepStep > 0 && particleName != "opticalphoton")
     {
         fEventAction->eventInformation->Edep.constant += edepStep;
     }

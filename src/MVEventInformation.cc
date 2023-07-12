@@ -17,7 +17,12 @@ MVEventInformation::~MVEventInformation()
 }
 
 void MVEventInformation::Print() const
-{
+{   
+    G4cout << ">>> Primary Particle Information:" << G4endl;
+    G4cout << "    Particle: " << genInfo.constant.name << G4endl;
+    G4cout << "    Energy: " << genInfo.constant.energy/MeV << "MeV" << G4endl;
+    G4cout << "    Position: " << genInfo.constant.position << "mm" << G4endl;
+    G4cout << "    Momentum direction: " << genInfo.constant.momentumDir << G4endl;
     for (auto counter : counters)
     {
         G4cout << ">>> " << counter.GetDescription() << ": " << G4endl;
