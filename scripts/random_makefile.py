@@ -8,6 +8,7 @@ if __name__ == "__main__":
     parser.add_argument("-e", type=int, dest='event_per_run', required=True)
     parser.add_argument("-r", type=int, dest='number_of_runs', required=True)
     parser.add_argument("-o", type=str, dest='output_path', required=True)
+    parser.add_argument("-c", type=str, dest='ps_config', required=True)
 
     args = parser.parse_args()
 
@@ -25,4 +26,4 @@ if __name__ == "__main__":
 
         for runNb in range(args.number_of_runs):
             makefile.write(f"./run{runNb}/RunConditions.json: \n")
-            makefile.write(f"\t{muonveto_path} -r -e {args.event_per_run} -o . -t 1 -n {runNb}\n\n")
+            makefile.write(f"\t{muonveto_path} -c {args.ps_config} -r -e {args.event_per_run} -o . -t 1 -n {runNb}\n\n")

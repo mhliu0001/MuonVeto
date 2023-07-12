@@ -66,9 +66,9 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
         }
         
         // Data output
-        G4int fakeRunID = aRun->GetRunID()+(fConfig.runID==-1?0:fConfig.runID);
+        //G4int fakeRunID = aRun->GetRunID()+(fConfig.runID==-1?0:fConfig.runID);
         std::stringstream optDirStream;
-        optDirStream << fConfig.outputFilePath << "/run" << fakeRunID;
+        optDirStream << fConfig.outputFilePath << "/run" << aRun->GetRunID();
         std::filesystem::create_directories(optDirStream.str());
 
         // Analysis
@@ -77,7 +77,7 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
 
         // Run Conditions Output  
         json runConditions;
-        runConditions["RunID"] = fakeRunID;
+        runConditions["RunID"] = aRun->GetRunID();
         runConditions["NumberOfEvents"] = eventCount;
         runConditions["Generator"] = int(fConfig.generator);
         runConditions["RandomPoints"] = fConfig.randomPoints;
