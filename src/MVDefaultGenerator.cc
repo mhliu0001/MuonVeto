@@ -41,7 +41,7 @@ void MVDefaultGenerator::GeneratePrimaries(G4Event *anEvent)
             G4LogicalVolume *pscint_log = G4LogicalVolumeStore::GetInstance()->GetVolume("PScintLogicalVolume");
             G4VPhysicalVolume *pscint_phys = G4PhysicalVolumeStore::GetInstance()->GetVolume("PScint");
             if(pscint_phys)
-                fPscint_x_translate = pscint_phys->GetFrameTranslation().x();
+                fPscint_x_translate = pscint_phys->GetObjectTranslation().x();
             if(pscint_log)
                 fPscint_solid = dynamic_cast<G4Box *>(pscint_log->GetSolid());
         }
@@ -51,7 +51,7 @@ void MVDefaultGenerator::GeneratePrimaries(G4Event *anEvent)
             G4LogicalVolume *groove_log = G4LogicalVolumeStore::GetInstance()->GetVolume("GrooveLogicalVolume");
             G4VPhysicalVolume *groove_phys = G4PhysicalVolumeStore::GetInstance()->GetVolume("Groove");
             if(groove_phys)
-                fGroove_z_translate = groove_phys->GetFrameTranslation().z();
+                fGroove_z_translate = groove_phys->GetObjectTranslation().z();
             if(groove_log)
                 fGroove_solid = groove_log->GetSolid();
         }

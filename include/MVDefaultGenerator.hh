@@ -26,8 +26,8 @@ class MVDefaultGenerator : public MVGenerator
         G4ParticleGun* fParticleGun = nullptr; // G4 particle gun
         G4VSolid* fGroove_solid = nullptr;     // groove solid in detector
         G4Box* fPscint_solid = nullptr;        // pscint solid in detector
-        G4double fPscint_x_translate;          // pscint phys translation(frame translation, not solid transformation)
-        G4double fGroove_z_translate;          // groove phys translation(frame translation, not solid transformation)
+        G4double fPscint_x_translate;          // pscint phys translation(object translation)
+        G4double fGroove_z_translate;          // groove phys translation(object translation)
 };
 
 }
