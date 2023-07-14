@@ -277,12 +277,18 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
                 z.push_back(genInfo.position.z());
             }
             SiPM_0_PE = MTRun->runCounters[3].GetGlobalCounter().at("SiPM_0");
-            SiPM_1_PE = MTRun->runCounters[3].GetGlobalCounter().at("SiPM_1");
+            std::ifstream psConfigStream(fConfig.psConfig);
+            json psConfig = json::parse(psConfigStream);
+            int psType = psConfig["ps_type"];
             file.createDataSet("grp/x", x);
             file.createDataSet("grp/y", y);
             file.createDataSet("grp/z", z);
             file.createDataSet("grp/SiPM_0", SiPM_0_PE);
-            file.createDataSet("grp/SiPM_1", SiPM_1_PE);
+            if(psType != 2)
+            {
+                SiPM_1_PE = MTRun->runCounters[3].GetGlobalCounter().at("SiPM_1");
+                file.createDataSet("grp/SiPM_1", SiPM_1_PE);
+            }
         }
         
         // TODO: Fix spectrum

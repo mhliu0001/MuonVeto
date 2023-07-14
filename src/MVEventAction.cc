@@ -67,12 +67,20 @@ void MVEventAction::EndOfEventAction(const G4Event *event)
     info->genInfo.constant.momentumDir = generator->GetCurrentMomentumDirection();
     
     G4int SiPMCID_0 = SDMan->GetCollectionID("collection_0");
-    G4int SiPMCID_1 = SDMan->GetCollectionID("collection_1");
     G4VHitsCollection *SiPMHC_0 = hce->GetHC(SiPMCID_0);
-    G4VHitsCollection *SiPMHC_1 = hce->GetHC(SiPMCID_1);
     std::map<G4String, G4int> SiPMPhotonCounter;
     SiPMPhotonCounter["SiPM_0"] = SiPMHC_0->GetSize();
-    SiPMPhotonCounter["SiPM_1"] = SiPMHC_1->GetSize();
+
+    std::ifstream psConfigStream(fConfig.psConfig);
+    json psConfig = json::parse(psConfigStream);
+    int psType = psConfig["ps_type"];
+    if (psType != 2)
+    {
+        G4int SiPMCID_1 = SDMan->GetCollectionID("collection_1");
+        G4VHitsCollection *SiPMHC_1 = hce->GetHC(SiPMCID_1);
+        SiPMPhotonCounter["SiPM_1"] = SiPMHC_1->GetSize();
+    }
+    
     info->counters[3].UpdateCounter(SiPMPhotonCounter);
     info->Print();
 
