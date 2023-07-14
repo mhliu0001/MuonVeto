@@ -16,7 +16,7 @@
 
 #/vis/viewer/set/viewpointThetaPhi 300. 90.
 /vis/viewer/set/viewpointVector 0 0 1
-/vis/viewer/set/targetPoint 450 0 0 mm
+#/vis/viewer/set/targetPoint 450 0 0 mm
 
 # Draw coordinate axes:
 #/vis/scene/add/axes 0 0 0 500 mm
@@ -24,6 +24,7 @@
 # Specify style (surface or wireframe):
 #/vis/viewer/set/style surface
 /vis/viewer/set/style cloud
+/vis/viewer/set/numberOfCloudPoints 1000000
 /vis/geometry/set/colour all 0 1 1 1 0.2
 /vis/geometry/set/visibility WorldLogicalVolume 0 false
 /vis/geometry/set/colour PScintLogicalVolume 0 0 0 1 0.1

@@ -201,34 +201,34 @@ void MVDetectorConstruction::DefineMaterialTables()
     */
     // Guang Luo's code
     G4double photonEnergy[] =
-        {2.00*eV,2.03*eV,2.06*eV,2.09*eV,2.12*eV,
-        2.15*eV,2.18*eV,2.21*eV,2.24*eV,2.27*eV,
-        2.30*eV,2.33*eV,2.36*eV,2.39*eV,2.42*eV,
-        2.45*eV,2.48*eV,2.51*eV,2.54*eV,2.57*eV,
-        2.60*eV,2.63*eV,2.66*eV,2.69*eV,2.72*eV,
-        2.75*eV,2.78*eV,2.81*eV,2.84*eV,2.87*eV,
-        2.90*eV,2.93*eV,2.96*eV,2.99*eV,3.02*eV,
-        3.05*eV,3.08*eV,3.11*eV,3.14*eV,3.17*eV,
-        3.20*eV,3.23*eV,3.26*eV,3.29*eV,3.32*eV,
-        3.35*eV,3.38*eV,3.41*eV,3.44*eV,3.47*eV,
-        3.50*eV,3.53*eV,3.56*eV,3.59*eV,3.62*eV,
-        3.65*eV,3.69*eV,3.72*eV,3.75*eV,6.20*eV};
+        {2.00 * eV, 2.03 * eV, 2.06 * eV, 2.09 * eV, 2.12 * eV,
+         2.15 * eV, 2.18 * eV, 2.21 * eV, 2.24 * eV, 2.27 * eV,
+         2.30 * eV, 2.33 * eV, 2.36 * eV, 2.39 * eV, 2.42 * eV,
+         2.45 * eV, 2.48 * eV, 2.51 * eV, 2.54 * eV, 2.57 * eV,
+         2.60 * eV, 2.63 * eV, 2.66 * eV, 2.69 * eV, 2.72 * eV,
+         2.75 * eV, 2.78 * eV, 2.81 * eV, 2.84 * eV, 2.87 * eV,
+         2.90 * eV, 2.93 * eV, 2.96 * eV, 2.99 * eV, 3.02 * eV,
+         3.05 * eV, 3.08 * eV, 3.11 * eV, 3.14 * eV, 3.17 * eV,
+         3.20 * eV, 3.23 * eV, 3.26 * eV, 3.29 * eV, 3.32 * eV,
+         3.35 * eV, 3.38 * eV, 3.41 * eV, 3.44 * eV, 3.47 * eV,
+         3.50 * eV, 3.53 * eV, 3.56 * eV, 3.59 * eV, 3.62 * eV,
+         3.65 * eV, 3.69 * eV, 3.72 * eV, 3.75 * eV, 6.20 * eV};
     G4double absWLSfiber[] =
-        {2.40*m,2.00*m,2.00*m,1.90*m,1.80*m,1.70*m,1.60*m,1.50*m,1.45*m,1.40*m,
-        1.39*m,1.36*m,1.35*m,1.34*m,1.33*m,1.32*m,1.30*m,1.20*m,1.19*m,1.10*m,
-        1.00*m,0.50*m,0.29*m,0.10*m,0.05*m,20.0*mm,10.0*mm,8.30*mm,3.00*mm,2.00*mm,
-        2.0*mm,1.40*mm,1.30*mm,1.20*mm,1.10*mm,0.10*mm, 0.80*mm, 0.90*mm, 1.00*mm, 1.20*mm,
-        1.38*mm,1.8*mm,2.08*mm,3.08*mm,4.80*mm,5.05*mm, 6.02*mm, 7.01*mm, 8.01*mm, 9.01*mm,
-        10.0*mm,11.0*mm,15.0*mm,20.0*mm,25.0*mm,60.0*mm,95.0*mm,1.00*m,2.00*m,5.00*m};
+        {2.40 * m, 2.00 * m, 2.00 * m, 1.90 * m, 1.80 * m, 1.70 * m, 1.60 * m, 1.50 * m, 1.45 * m, 1.40 * m,
+         1.39 * m, 1.36 * m, 1.35 * m, 1.34 * m, 1.33 * m, 1.32 * m, 1.30 * m, 1.20 * m, 1.19 * m, 1.10 * m,
+         1.00 * m, 0.50 * m, 0.29 * m, 0.10 * m, 0.05 * m, 20.0 * mm, 10.0 * mm, 8.30 * mm, 3.00 * mm, 2.00 * mm,
+         2.0 * mm, 1.40 * mm, 1.30 * mm, 1.20 * mm, 1.10 * mm, 0.10 * mm, 0.80 * mm, 0.90 * mm, 1.00 * mm, 1.20 * mm,
+         1.38 * mm, 1.8 * mm, 2.08 * mm, 3.08 * mm, 4.80 * mm, 5.05 * mm, 6.02 * mm, 7.01 * mm, 8.01 * mm, 9.01 * mm,
+         10.0 * mm, 11.0 * mm, 15.0 * mm, 20.0 * mm, 25.0 * mm, 60.0 * mm, 95.0 * mm, 1.00 * m, 2.00 * m, 5.00 * m};
     G4double emissionFib[] =
         {0.05, 0.10, 0.30, 0.50, 0.75, 1.00, 1.50, 1.85, 2.30, 2.75,
-        3.25, 3.80, 4.50, 5.20, 6.00, 7.00, 8.50, 9.50, 11.1, 12.4,
-        12.9, 13.0, 12.8, 12.3, 11.1, 11.0, 12.0, 11.0, 17.0, 16.9,
-        15.0, 5.00, 3.50, 2.00, 1.05, 0.50, 0.40, 0.30, 0.20, 0.10,
-        0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05,
-        0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05};
-    pFiberPolystyreneTable->AddProperty("WLSABSLENGTH",photonEnergy,absWLSfiber,60);
-    pFiberPolystyreneTable->AddProperty("WLSCOMPONENT",photonEnergy,emissionFib,60);
+         3.25, 3.80, 4.50, 5.20, 6.00, 7.00, 8.50, 9.50, 11.1, 12.4,
+         12.9, 13.0, 12.8, 12.3, 11.1, 11.0, 12.0, 11.0, 17.0, 16.9,
+         15.0, 5.00, 3.50, 2.00, 1.05, 0.50, 0.40, 0.30, 0.20, 0.10,
+         0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05,
+         0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05};
+    pFiberPolystyreneTable->AddProperty("WLSABSLENGTH", photonEnergy, absWLSfiber, 60);
+    pFiberPolystyreneTable->AddProperty("WLSCOMPONENT", photonEnergy, emissionFib, 60);
     pFiberPolystyreneTable->AddConstProperty("WLSTIMECONSTANT", 2.7 * ns);
     FiberPolystyrene->SetMaterialPropertiesTable(pFiberPolystyreneTable);
 
@@ -268,58 +268,92 @@ G4VPhysicalVolume *MVDetectorConstruction::ConstructDetector() const
     new G4PVPlacement(0, G4ThreeVector(), WholePSBoxLogicalVolume, "WholePS", WorldLogicalVolume, false, 0, check_overlap);
 
     // Inside the shell
-    G4Box *InteriorBox = new G4Box("InteriorBox", 0.5 * wholeX - shellThickness, 0.5 * wholeY - shellThickness + reflectionThickness, 0.5 * wholeZ - shellThickness + reflectionThickness);
+    G4double InteriorBoxX = 0.5 * wholeX - shellThickness;
+    if(psType == 2)
+        InteriorBoxX = 0.5 * wholeX - shellThickness + reflectionThickness;
+    G4Box *InteriorBox = new G4Box("InteriorBox", InteriorBoxX, 0.5 * wholeY - shellThickness + reflectionThickness, 0.5 * wholeZ - shellThickness + reflectionThickness);
     G4LogicalVolume *InteriorLogicalVolume = new G4LogicalVolume(InteriorBox, Air, "InteriorLogicalVolume");
     new G4PVPlacement(0, G4ThreeVector(), InteriorLogicalVolume, "Interior", WholePSBoxLogicalVolume, false, 0, check_overlap);
 
     // Reflective layer
-    G4Box* ReflectionLayerBox = new G4Box("ReflectionBox", 0.5 * PScintX + reflectionThickness, 0.5 * PScintY + reflectionThickness, 0.5 * PScintZ + reflectionThickness);
-    G4Box* ReflectionLayerHoleBox = new G4Box("ReflectionHoleBox", 0.5 * reflectionThickness, 0.5 * SiPMY, 0.5 * SiPMZ);
-    G4SubtractionSolid* ReflectionLayerSolid_0 = new G4SubtractionSolid("ReflectionSolid_0", ReflectionLayerBox, ReflectionLayerHoleBox, 
-                                                                        G4Translate3D(G4ThreeVector(-0.5 * (PScintX + reflectionThickness), 0, PScintZ / 2 - SiPMZ / 2)));
-    G4SubtractionSolid* ReflectionLayerSolid_1 = new G4SubtractionSolid("ReflectionSolid_1", ReflectionLayerSolid_0, ReflectionLayerHoleBox,
-                                                                        G4Translate3D(G4ThreeVector(0.5 * (PScintX + reflectionThickness), 0, PScintZ / 2 - SiPMZ / 2)));
-    G4LogicalVolume *ReflectionLayerLogicalVolume = new G4LogicalVolume(ReflectionLayerSolid_1, PSAluminum, "ReflectionLogicalVolume");
-    new G4PVPlacement(0, G4ThreeVector(PScintXTranslation, 0, 0), ReflectionLayerLogicalVolume, "ReflectionLayer", InteriorLogicalVolume, false, 0, check_overlap);
+    G4Box *ReflectionLayerBox = new G4Box("ReflectionBox", 0.5 * PScintX + reflectionThickness, 0.5 * PScintY + reflectionThickness, 0.5 * PScintZ + reflectionThickness);
+    G4VSolid *ReflectionLayerSolid = ReflectionLayerBox;
+    if (psType == 1)
+    {
+        G4Box *ReflectionLayerHoleBox = new G4Box("ReflectionHoleBox", 0.5 * reflectionThickness + 0.01*mm, 0.5 * mergedGrooveY, 0.5 * grooveDepth);
+        ReflectionLayerSolid = new G4SubtractionSolid("ReflectionLayerSolid_0", ReflectionLayerSolid, ReflectionLayerHoleBox,
+                                                      G4Translate3D(G4ThreeVector(-0.5 * (PScintX + reflectionThickness) - 0.01*mm, 0, PScintZ / 2 - grooveDepth / 2)));
+        ReflectionLayerSolid = new G4SubtractionSolid("ReflectionLayerSolid_1", ReflectionLayerSolid, ReflectionLayerHoleBox,
+                                                      G4Translate3D(G4ThreeVector(0.5 * (PScintX + reflectionThickness) + 0.01*mm, 0, PScintZ / 2 - grooveDepth / 2)));
+    }
+    else if (psType == 2)
+    {
+        G4Box *ReflectionLayerHoleBox = new G4Box("ReflectionHoleBox", 0.5 * reflectionThickness + 0.01*mm, 0.5 * grooveWidth, 0.5 * grooveDepth);
+        for (int fiberIndex = 0; fiberIndex < 2*fiberCount; ++fiberIndex)
+        {
+            ReflectionLayerSolid = new G4SubtractionSolid("ReflectionLayerSolid_"+std::to_string(fiberIndex), ReflectionLayerSolid, ReflectionLayerHoleBox,
+                                                          G4Translate3D(G4ThreeVector(-0.5 * (PScintX + reflectionThickness) - 0.01*mm, StraightFiberPartTranslationY[fiberIndex], PScintZ / 2 - grooveDepth / 2)));
+        }
+    }
 
     // PS part
-    G4Box *PScintBox = new G4Box("PScintBox", 0.5 * PScintX, 0.5 * PScintY, 0.5 * PScintZ);
-    G4LogicalVolume *PScintLogicalVolume = new G4LogicalVolume(PScintBox, PSPolystyrene, "PScintLogicalVolume");
-    new G4PVPlacement(0, G4ThreeVector(), PScintLogicalVolume,
-                      "PScint", ReflectionLayerLogicalVolume, false, 0, check_overlap);
+    G4VSolid *PScintSolid = new G4Box("PScintBox", 0.5 * PScintX, 0.5 * PScintY, 0.5 * PScintZ);
+
+    // Grooves for fibers
+    G4VSolid *GrooveSolid = GetGroove();
+
+    // Fiber cladding
+    G4VSolid *FiberCladdingSolid = GetFiberPart(fiberDiameter);
+    if (psType == 2)
+    {
+        ReflectionLayerSolid = new G4SubtractionSolid("ReflectionLayerSolid_final", ReflectionLayerSolid, PScintSolid);
+        PScintSolid = new G4SubtractionSolid("PScintSolid", PScintSolid, GrooveSolid, G4TranslateZ3D(PScintZ/2-grooveDepth/2));
+        GrooveSolid = new G4SubtractionSolid("GrooveSolid_0", GrooveSolid, FiberCladdingSolid, G4Translate3D(G4ThreeVector(-PScintXTranslation, 0, - PScintZ / 2 + grooveDepth / 2)));
+    }
+    G4LogicalVolume *ReflectionLayerLogicalVolume = new G4LogicalVolume(ReflectionLayerSolid, PSAluminum, "ReflectionLogicalVolume");
+    G4LogicalVolume *PScintLogicalVolume = new G4LogicalVolume(PScintSolid, PSPolystyrene, "PScintLogicalVolume");
+    G4LogicalVolume *GrooveLogicalVolume = new G4LogicalVolume(GrooveSolid, GrooveGlue, "GrooveLogicalVolume");
+    G4LogicalVolume *FiberCladdingLogicalVolume = new G4LogicalVolume(FiberCladdingSolid, CladdingPMMA, "FiberCladdingLogicalVolume");
+
+    // Fiber core
+    G4VSolid *FiberCoreSolid = GetFiberPart(fiberDiameter - 2 * claddingDepth);
+    G4LogicalVolume *FiberCoreLogicalVolume = new G4LogicalVolume(FiberCoreSolid, FiberPolystyrene, "FiberCoreLogicalVolume");
+
+    // Placement
+    if(psType == 1)
+    {
+        new G4PVPlacement(0, G4ThreeVector(PScintXTranslation, 0, 0), ReflectionLayerLogicalVolume, "ReflectionLayer", InteriorLogicalVolume, false, 0, check_overlap);
+        new G4PVPlacement(0, G4ThreeVector(), PScintLogicalVolume, "PScint", ReflectionLayerLogicalVolume, false, 0, check_overlap);
+        new G4PVPlacement(G4TranslateZ3D(PScintZ / 2 - grooveDepth / 2), GrooveLogicalVolume, "Groove", PScintLogicalVolume, false, 0, check_overlap);
+        new G4PVPlacement(0, G4ThreeVector(), FiberCladdingLogicalVolume, "FiberCladding", GrooveLogicalVolume, false, 0, check_overlap);
+        new G4PVPlacement(0, G4ThreeVector(), FiberCoreLogicalVolume, "FiberCore", FiberCladdingLogicalVolume, false, 0, check_overlap);
+    }
+    else if (psType == 2)
+    {
+        new G4PVPlacement(0, G4ThreeVector(PScintXTranslation, 0, 0), ReflectionLayerLogicalVolume, "ReflectionLayer", InteriorLogicalVolume, false, 0, check_overlap);
+        new G4PVPlacement(0, G4ThreeVector(PScintXTranslation, 0, 0), PScintLogicalVolume, "PScint", InteriorLogicalVolume, false, 0, check_overlap);
+        new G4PVPlacement(0, G4ThreeVector(PScintXTranslation, 0, PScintZ / 2 - grooveDepth / 2), GrooveLogicalVolume, "Groove", InteriorLogicalVolume, false, 0, check_overlap);
+        new G4PVPlacement(0, G4ThreeVector(), FiberCladdingLogicalVolume, "FiberCladding", InteriorLogicalVolume, false, 0, check_overlap);
+        new G4PVPlacement(0, G4ThreeVector(), FiberCoreLogicalVolume, "FiberCore", FiberCladdingLogicalVolume, false, 0, check_overlap);
+    }
+    
 
     // SiPMs
     G4Box *SiPMBox = new G4Box("SiPMBox", 0.5 * SiPMX, 0.5 * SiPMY, 0.5 * SiPMZ);
     G4LogicalVolume *SiPMLogicalVolume_0 = new G4LogicalVolume(SiPMBox, SiPMGlass, "SiPMLogicalVolume_0");
     G4LogicalVolume *SiPMLogicalVolume_1 = new G4LogicalVolume(SiPMBox, SiPMGlass, "SiPMLogicalVolume_1");
-    if (psType == 1)
+    if (psType == 1 || psType == 0)
     {
-        new G4PVPlacement(0, G4ThreeVector(PScintXTranslation - SiPMX / 2 - PScintX / 2, 0, PScintZ / 2 - SiPMZ / 2),
+        new G4PVPlacement(0, G4ThreeVector(PScintXTranslation - SiPMX / 2 - PScintX / 2 - reflectionThickness, 0, PScintZ / 2 - SiPMZ / 2),
                           SiPMLogicalVolume_0, "SiPM_0", InteriorLogicalVolume, false, 0, check_overlap);
-        new G4PVPlacement(0, G4ThreeVector(PScintXTranslation + SiPMX / 2 + PScintX / 2, 0, PScintZ / 2 - SiPMZ / 2),
+        new G4PVPlacement(0, G4ThreeVector(PScintXTranslation + SiPMX / 2 + PScintX / 2 + reflectionThickness, 0, PScintZ / 2 - SiPMZ / 2),
                           SiPMLogicalVolume_1, "SiPM_1", InteriorLogicalVolume, false, 0, check_overlap);
     }
     else
     {
-        new G4PVPlacement(0, G4ThreeVector(PScintXTranslation - SiPMX / 2 - PScintX / 2, 0, PScintZ / 2 - SiPMZ / 2),
+        new G4PVPlacement(0, G4ThreeVector(PScintXTranslation - SiPMX / 2 - PScintX / 2 - SiPMPScintDistance, 0, PScintZ / 2 - SiPMZ / 2),
                           SiPMLogicalVolume_0, "SiPM_0", InteriorLogicalVolume, false, 0, check_overlap);
     }
-
-    // Grooves for fibers
-    G4VSolid *GrooveSolid = GetGroove();
-    G4LogicalVolume *GrooveLogicalVolume = new G4LogicalVolume(GrooveSolid, GrooveGlue, "GrooveLogicalVolume");
-    new G4PVPlacement(G4TranslateZ3D(PScintZ / 2 - grooveDepth / 2), GrooveLogicalVolume, "Groove",
-                      PScintLogicalVolume, false, 0, check_overlap);
-
-    // Fiber cladding
-    G4VSolid *FiberCladdingSolid = GetFiberPart(fiberDiameter);
-    G4LogicalVolume *FiberCladdingLogicalVolume = new G4LogicalVolume(FiberCladdingSolid, CladdingPMMA, "FiberCladdingLogicalVolume");
-    new G4PVPlacement(0, G4ThreeVector(), FiberCladdingLogicalVolume, "FiberCladding", GrooveLogicalVolume, false, 0, check_overlap);
-
-    // Fiber core
-    G4VSolid *FiberCoreSolid = GetFiberPart(fiberDiameter - 2 * claddingDepth);
-    G4LogicalVolume *FiberCoreLogicalVolume = new G4LogicalVolume(FiberCoreSolid, FiberPolystyrene, "FiberCoreLogicalVolume");
-    new G4PVPlacement(0, G4ThreeVector(), FiberCoreLogicalVolume, "FiberCore", FiberCladdingLogicalVolume, false, 0, check_overlap);
 
     // Reflective layer
     new G4LogicalSkinSurface("AluminumSurface", ReflectionLayerLogicalVolume, AluminumSurface);
@@ -424,7 +458,7 @@ G4VSolid *MVDetectorConstruction::GetGrooveUTurn() const
     for (int grooveIndex = 0; grooveIndex < fiberCount * 2; ++grooveIndex)
     {
         G4Box *singleFiberGrooveBox = new G4Box(G4String("singleFiberGrooveBox") + std::to_string(grooveIndex), (PScintX - uturnPoolX) / 2, grooveWidth / 2, grooveDepth / 2);
-        grooveSolid->AddNode(singleFiberGrooveBox, G4Translate3D(-uturnPoolX / 2, grooveYInterval * (fiberCount - 0.5 - grooveIndex) + grooveWidth * (fiberCount - 1 - grooveIndex), 0));
+        grooveSolid->AddNode(singleFiberGrooveBox, G4Translate3D(-uturnPoolX / 2, (grooveYInterval + grooveWidth) * (fiberCount - 0.5 - grooveIndex), 0));
     }
 
     grooveSolid->Voxelize();
@@ -514,7 +548,7 @@ void MVDetectorConstruction::CalculateParameters()
                 G4double upperLeftY = (fiberCount / 2 - 0.5 - grooveIndex) * grooveYInterval + (fiberCount / 2 - grooveIndex) * grooveWidth;
                 G4double deltaXPrime = PScintX / 2 - mergedGrooveX - straightGrooveLength[grooveIndex] / 2;
                 G4double deltaYPrime = upperLeftY - lowerRightY;
-                
+
                 obliqueGrooveAngle.push_back(
                     std::atan(deltaYPrime / deltaXPrime) +
                     std::asin(-grooveWidth / std::sqrt(deltaXPrime * deltaXPrime + deltaYPrime * deltaYPrime)));
@@ -529,9 +563,9 @@ void MVDetectorConstruction::CalculateParameters()
         grooveYInterval = uturnRadius * 2 / fiberCount - grooveWidth;
         if ((grooveYInterval + grooveWidth) * (fiberCount * 2 - 1) > PScintY - grooveWidth)
         {
-            // G4cout << grooveYInterval/cm << fiberCount << PScintY/cm << G4endl;
             throw std::runtime_error("PScint: Too many fibers or PscintY too small!");
         }
+        SiPMPScintDistance = 12 * cm;
     }
     else if (psType == 0)
     {
@@ -565,7 +599,6 @@ void MVDetectorConstruction::CalculateParameters()
             G4double dx = SiPMFiberXCenterRight - SiPMFiberXCenterLeft;
             G4double SiPMFiberYCenterLeft;
             G4double SiPMFiberYCenterRight = mergedGrooveY / (fiberCount / 2. + 1) * (fiberCount / 4. - fiberIndex - 0.5);
-            G4cout << "SiPMFiberYCenterRight: " << SiPMFiberYCenterRight/mm << "mm" << G4endl;
             G4double dy;
             if (fiberIndex == 0)
             {
@@ -585,10 +618,9 @@ void MVDetectorConstruction::CalculateParameters()
                 r1 = ((sin(theta + phi) - sin(theta)) * dy - (cos(theta) - cos(theta + phi)) * dx) / det;
                 assert(abs((sin(theta + phi) - sin(theta)) * r0 + sin(theta + phi) * r1 - dx) < 1e-8);
                 assert(abs((cos(theta) - cos(theta + phi)) * r0 + (1 - cos(theta + phi)) * r1 - dy) < 1e-8);
-                // G4cout << phi/degree << " " << r0 << " " << r1 << G4endl;
                 if (r0 > 3 * cm && r1 > 3 * cm)
                 {
-                    G4cout << phi / degree << " degree is ok" << G4endl;
+                    //G4cout << phi / degree << " degree is ok" << G4endl;
                     break;
                 }
             }
@@ -604,29 +636,67 @@ void MVDetectorConstruction::CalculateParameters()
             SiPMFiberPartTranslationX_1.push_back(SiPMFiberXCenterRight);
             SiPMFiberPartTranslationY_1.push_back(SiPMFiberYCenterRight + r1);
         }
+        // length check
+        assert(StraightFiberPartLength.size() == fiberCount / 2);
+        assert(StraightFiberPartTranslationY.size() == fiberCount / 2);
+        assert(ObliqueFiberPartTranslationX.size() == fiberCount / 2);
+        assert(ObliqueFiberPartTranslationY.size() == fiberCount / 2);
+        assert(ObliqueFiberPartLength.size() == fiberCount / 2);
+        assert(ConnectingFiberPartRotRadius.size() == fiberCount / 2);
+        assert(SiPMFiberPartRotRadius_0.size() == fiberCount / 2);
+        assert(SiPMFiberPartRotRadius_1.size() == fiberCount / 2);
+        assert(SiPMFiberPartAngle.size() == fiberCount / 2);
+        assert(SiPMFiberPartTranslationX_0.size() == fiberCount / 2);
+        assert(SiPMFiberPartTranslationY_0.size() == fiberCount / 2);
+        assert(SiPMFiberPartTranslationX_1.size() == fiberCount / 2);
+        assert(SiPMFiberPartTranslationY_1.size() == fiberCount / 2);
     }
-
-    // length check
-    assert(StraightFiberPartLength.size() == fiberCount / 2);
-    assert(StraightFiberPartTranslationY.size() == fiberCount / 2);
-    assert(ObliqueFiberPartTranslationX.size() == fiberCount / 2);
-    assert(ObliqueFiberPartTranslationY.size() == fiberCount / 2);
-    assert(ObliqueFiberPartLength.size() == fiberCount / 2);
-    assert(ConnectingFiberPartRotRadius.size() == fiberCount / 2);
-    assert(SiPMFiberPartRotRadius_0.size() == fiberCount / 2);
-    assert(SiPMFiberPartRotRadius_1.size() == fiberCount / 2);
-    assert(SiPMFiberPartAngle.size() == fiberCount / 2);
-    assert(SiPMFiberPartTranslationX_0.size() == fiberCount / 2);
-    assert(SiPMFiberPartTranslationY_0.size() == fiberCount / 2);
-    assert(SiPMFiberPartTranslationX_1.size() == fiberCount / 2);
-    assert(SiPMFiberPartTranslationY_1.size() == fiberCount / 2);
+    else if (psType == 2)
+    {
+        StraightFiberPartLength.push_back(PScintX - uturnPoolX);
+        for (int fiberIndex = 0; fiberIndex < fiberCount; ++fiberIndex)
+        {
+            StraightFiberPartTranslationY.push_back((grooveYInterval + grooveWidth) * (fiberCount - 0.5 - fiberIndex));
+            StraightFiberPartTranslationY.push_back((grooveYInterval + grooveWidth) * (-fiberIndex - 0.5));
+            FiberDepth.push_back(PScintZ / 2 - fiberDiameter * (fiberIndex + 0.5));
+            SiPMFiberPartAngle.push_back(atan((StraightFiberPartTranslationY[2*fiberIndex]-SiPMY/6.)/SiPMPScintDistance)*2);
+            SiPMFiberPartRotRadius_0.push_back(SiPMPScintDistance/2/sin(SiPMFiberPartAngle[fiberIndex]));
+            if(SiPMFiberPartRotRadius_0[fiberIndex] < 3*cm)
+            {
+                throw std::runtime_error("MVDetectorConstruction::CalculateParameters: Radius too small for bending fiber!");
+            }
+            //G4cout << SiPMFiberPartRotRadius_0[fiberIndex] << G4endl;
+        }
+        assert(StraightFiberPartLength.size() == 1);
+        assert(StraightFiberPartTranslationY.size() == fiberCount * 2);
+        assert(FiberDepth.size() == fiberCount);
+        assert(SiPMFiberPartAngle.size() == fiberCount);
+        assert(SiPMFiberPartRotRadius_0.size() == fiberCount);
+    }
 }
 
 G4VSolid *MVDetectorConstruction::GetFiberPart(G4double diameter) const
 {
-    if (psType != 1)
+    switch (psType)
+    {
+    case 0:
+        return GetFiberPartStraight(diameter);
+    case 1:
+        return GetFiberPartBending(diameter);
+    case 2:
+        return GetFiberPartUTurn(diameter);
+    default:
         throw std::runtime_error("MVDetectorConstruction::GetFiberPart: PS Type not implemented!");
+    }
+}
 
+G4VSolid *MVDetectorConstruction::GetFiberPartStraight(G4double diameter) const
+{
+    throw std::runtime_error("MVDetectorConstruction::GetFiberPartStraight: Not implemented!");
+}
+
+G4VSolid *MVDetectorConstruction::GetFiberPartBending(G4double diameter) const
+{
     // Counter so that names are unique
     static int id = 0;
 
@@ -687,35 +757,35 @@ G4VSolid *MVDetectorConstruction::GetFiberPart(G4double diameter) const
                                                0, diameter / 2, SiPMFiberPartRotRadius_0[fiberIndex], 0, SiPMFiberPartAngle[fiberIndex] + 0.1 * degree);
         G4Torus *SiPMFiberPart_1 = new G4Torus("SiPMFiberPart_1" + std::to_string(fiberIndex) + std::to_string(id),
                                                0, diameter / 2, SiPMFiberPartRotRadius_1[fiberIndex], 0, SiPMFiberPartAngle[fiberIndex] + obliqueGrooveAngle[fiberIndex]);
-        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(90.05 * degree - obliqueGrooveAngle[fiberIndex] - SiPMFiberPartAngle[fiberIndex]),
+        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(90. * degree - obliqueGrooveAngle[fiberIndex] - SiPMFiberPartAngle[fiberIndex]),
                                                            G4ThreeVector(SiPMFiberPartTranslationX_0[fiberIndex],
                                                                          SiPMFiberPartTranslationY_0[fiberIndex],
                                                                          FiberDepthUpper)));
-        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(-90.05 * degree - SiPMFiberPartAngle[fiberIndex] - obliqueGrooveAngle[fiberIndex]),
+        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(-90 * degree - SiPMFiberPartAngle[fiberIndex] - obliqueGrooveAngle[fiberIndex]),
                                                            G4ThreeVector(SiPMFiberPartTranslationX_1[fiberIndex],
                                                                          SiPMFiberPartTranslationY_1[fiberIndex],
                                                                          FiberDepthUpper)));
-        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(89.95 * degree + obliqueGrooveAngle[fiberIndex]),
+        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(90. * degree + obliqueGrooveAngle[fiberIndex]),
                                                            G4ThreeVector(-SiPMFiberPartTranslationX_0[fiberIndex],
                                                                          SiPMFiberPartTranslationY_0[fiberIndex],
                                                                          FiberDepthUpper)));
-        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(-89.95 * degree),
+        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(-90. * degree),
                                                            G4ThreeVector(-SiPMFiberPartTranslationX_1[fiberIndex],
                                                                          SiPMFiberPartTranslationY_1[fiberIndex],
                                                                          FiberDepthUpper)));
-        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(-90.05 * degree + obliqueGrooveAngle[fiberIndex]),
+        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(-90. * degree + obliqueGrooveAngle[fiberIndex]),
                                                            G4ThreeVector(SiPMFiberPartTranslationX_0[fiberIndex],
                                                                          -SiPMFiberPartTranslationY_0[fiberIndex],
                                                                          FiberDepthLower)));
-        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(90.05 * degree),
+        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(90. * degree),
                                                            G4ThreeVector(SiPMFiberPartTranslationX_1[fiberIndex],
                                                                          -SiPMFiberPartTranslationY_1[fiberIndex],
                                                                          FiberDepthLower)));
-        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(-89.95 * degree - obliqueGrooveAngle[fiberIndex] - SiPMFiberPartAngle[fiberIndex]),
+        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(-90. * degree - obliqueGrooveAngle[fiberIndex] - SiPMFiberPartAngle[fiberIndex]),
                                                            G4ThreeVector(-SiPMFiberPartTranslationX_0[fiberIndex],
                                                                          -SiPMFiberPartTranslationY_0[fiberIndex],
                                                                          FiberDepthLower)));
-        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(89.95 * degree - SiPMFiberPartAngle[fiberIndex] - obliqueGrooveAngle[fiberIndex]),
+        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(90. * degree - SiPMFiberPartAngle[fiberIndex] - obliqueGrooveAngle[fiberIndex]),
                                                            G4ThreeVector(-SiPMFiberPartTranslationX_1[fiberIndex],
                                                                          -SiPMFiberPartTranslationY_1[fiberIndex],
                                                                          FiberDepthLower)));
@@ -728,8 +798,58 @@ G4VSolid *MVDetectorConstruction::GetFiberPart(G4double diameter) const
     G4VSolid *PScintBox = G4SolidStore::GetInstance()->GetSolid("PScintBox");
     G4IntersectionSolid *FinalSolid = new G4IntersectionSolid("FinalParts" + std::to_string(id), PScintBox, FiberParts);
     */
-    //return FinalSolid;
+    // return FinalSolid;
     ++id;
+    return FiberParts;
+}
+
+G4VSolid *MVDetectorConstruction::GetFiberPartUTurn(G4double diameter) const
+{
+    static int id = 0;
+
+    G4MultiUnion *FiberParts = new G4MultiUnion("FiberParts" + std::to_string(id));
+
+    for (int fiberIndex = 0; fiberIndex < fiberCount; ++fiberIndex)
+    {
+        G4Tubs *StraightFiberPart = new G4Tubs("StraightFiberPart" + std::to_string(fiberIndex) + std::to_string(id),
+                                               0, diameter / 2, StraightFiberPartLength[0] / 2 + 0.1 * mm, 0, 360 * degree);
+        FiberParts->AddNode(StraightFiberPart, G4Transform3D((new G4RotationMatrix())->rotateY(90 * degree),
+                                                             G4ThreeVector(-uturnPoolX / 2 + PScintXTranslation, StraightFiberPartTranslationY[2 * fiberIndex],
+                                                                           FiberDepth[fiberIndex])));
+        FiberParts->AddNode(StraightFiberPart, G4Transform3D((new G4RotationMatrix())->rotateY(90 * degree),
+                                                             G4ThreeVector(-uturnPoolX / 2 + PScintXTranslation, StraightFiberPartTranslationY[2 * fiberIndex + 1],
+                                                                           FiberDepth[fiberIndex])));
+        
+        G4Torus *UTurnFiberPart = new G4Torus("UTurnFiberPart" + std::to_string(fiberIndex) + std::to_string(id),
+                                              0, diameter / 2, uturnRadius, 0 * degree, 180 * degree);
+        FiberParts->AddNode(UTurnFiberPart, G4Transform3D((new G4RotationMatrix)->rotateZ(-90*degree),
+                                                          G4ThreeVector(PScintX / 2 - uturnPoolX + PScintXTranslation,
+                                                                        0.5 * (StraightFiberPartTranslationY[2 * fiberIndex] + StraightFiberPartTranslationY[2 * fiberIndex + 1]),
+                                                                        FiberDepth[fiberIndex])));
+        G4Torus *SiPMFiberPart_0 = new G4Torus("SiPMFiberPart_0" + std::to_string(fiberIndex) + std::to_string(id),
+                                               0, diameter / 2, SiPMFiberPartRotRadius_0[fiberIndex], 0, SiPMFiberPartAngle[fiberIndex]);
+        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(90*degree),
+                                                           G4ThreeVector(-PScintX/2 + PScintXTranslation,
+                                                                         StraightFiberPartTranslationY[2*fiberIndex] - SiPMFiberPartRotRadius_0[fiberIndex],
+                                                                         FiberDepth[fiberIndex])));
+        FiberParts->AddNode(SiPMFiberPart_0, G4Transform3D((new G4RotationMatrix())->rotateZ(-90*degree),
+                                                           G4ThreeVector(-PScintX/2 + PScintXTranslation - SiPMPScintDistance,
+                                                                         SiPMY / 6. + SiPMFiberPartRotRadius_0[fiberIndex],
+                                                                         FiberDepth[fiberIndex])));
+        G4Torus *SiPMFiberPart_1 = new G4Torus("SiPMFiberPart_1" + std::to_string(fiberIndex) + std::to_string(id),
+                                               0, diameter / 2, SiPMFiberPartRotRadius_0[fiberCount-fiberIndex-1], 0, SiPMFiberPartAngle[fiberCount-fiberIndex-1]);
+        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(-90*degree-SiPMFiberPartAngle[fiberCount-fiberIndex-1]),
+                                                           G4ThreeVector(-PScintX/2 + PScintXTranslation,
+                                                                         StraightFiberPartTranslationY[2*fiberIndex+1] + SiPMFiberPartRotRadius_0[fiberCount-fiberIndex-1],
+                                                                         FiberDepth[fiberIndex])));
+        FiberParts->AddNode(SiPMFiberPart_1, G4Transform3D((new G4RotationMatrix())->rotateZ(90*degree-SiPMFiberPartAngle[fiberCount-fiberIndex-1]),
+                                                           G4ThreeVector(-PScintX/2 + PScintXTranslation - SiPMPScintDistance,
+                                                                         -SiPMY / 6. - SiPMFiberPartRotRadius_0[fiberCount-fiberIndex-1],
+                                                                         FiberDepth[fiberIndex])));
+    }
+
+    FiberParts->Voxelize();
+
     return FiberParts;
 }
 
@@ -745,7 +865,6 @@ G4VPhysicalVolume *MVDetectorConstruction::Construct()
 void MVDetectorConstruction::ConstructSDandField()
 {
     // Sensitive detectors
-
     G4String SiPM_name = "SiPM";
 
     // Filter for optical photon

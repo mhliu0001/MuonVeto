@@ -79,6 +79,7 @@ class MVDetectorConstruction : public G4VUserDetectorConstruction
         G4double SiPMX;
         G4double SiPMY;
         G4double SiPMZ;
+        G4double SiPMPScintDistance;
         
         // CSV file path
         std::string ps_scint;
@@ -110,6 +111,7 @@ class MVDetectorConstruction : public G4VUserDetectorConstruction
         /* Parameters for fibers */
         std::vector<G4double> StraightFiberPartLength; // full length of middle fiber straight part (along z direction)
         std::vector<G4double> StraightFiberPartTranslationY; // bending radius of first bending part
+        std::vector<G4double> FiberDepth;
         std::vector<G4double> ObliqueFiberPartTranslationX; // bending angle of first bending part
         std::vector<G4double> ObliqueFiberPartTranslationY; // full length of oblique straight fiber
         std::vector<G4double> ObliqueFiberPartLength;
@@ -159,9 +161,9 @@ class MVDetectorConstruction : public G4VUserDetectorConstruction
 
         // Solid construction of fiber part
         G4VSolid* GetFiberPart(G4double diameter) const;
-        G4VSolid* GetFiberPartBending() const;
-        G4VSolid* GetFiberPartUTurn() const;
-        G4VSolid* GetFiberPartStraight() const;
+        G4VSolid* GetFiberPartBending(G4double diameter) const;
+        G4VSolid* GetFiberPartUTurn(G4double diameter) const;
+        G4VSolid* GetFiberPartStraight(G4double diameter) const;
 };
 
 }
