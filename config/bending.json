@@ -2,7 +2,7 @@
     "ps_type": 1,
     "fiber_count": 6,
     "whole_x": "1000.*mm",
-    "whole_y": "150.*mm",
+    "whole_y": "100.*mm",
     "uninstrumented_x": "25.*mm",
     "ps_scint": "../config/sp101_scint.csv",
     "fiber_abs": "../config/bcf92_abs.csv",
