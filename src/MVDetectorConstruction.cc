@@ -108,8 +108,9 @@ void MVDetectorConstruction::DefineMaterials()
     // Definition of PSPolystyrene, used in plastic scintillators
     // http://relics.org.cn:9092/lib/exe/fetch.php?media=montecarlo:psmuonveto:sp101.pdf
     PSPolystyrene = new G4Material("PSPolystyrene", 1.023 * g / cm3, 2, kStateSolid);
-    PSPolystyrene->AddElement(C, 0.5);
-    PSPolystyrene->AddElement(H, 0.5); //(C8H8)n
+    PSPolystyrene->AddElement(C, 8);
+    PSPolystyrene->AddElement(H, 8); //(C8H8)n
+    // PSPolystyrene = man->FindOrBuildMaterial("G4_POLYSTYRENE");
 
     // Definition of PSAluminum, used in plastic scintillator reflective layers
     PSAluminum = new G4Material("PSAluminum", 2.699 * g / cm3, 1, kStateSolid);
