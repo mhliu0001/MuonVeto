@@ -57,7 +57,7 @@ int main(int argc, char** argv)
     // Physics list
     auto* physicsList = new FTFP_BERT;
     auto* opticalPhysics = new G4OpticalPhysics();
-    physicsList->RegisterPhysics(opticalPhysics);
+    //physicsList->RegisterPhysics(opticalPhysics);
     runManager->SetUserInitialization(physicsList);
 
     //auto* opticalPara = G4OpticalParameters::Instance();

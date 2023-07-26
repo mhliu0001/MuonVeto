@@ -91,7 +91,7 @@ void MVRunAction::EndOfRunAction(const G4Run *aRun)
             G4cerr << "Open File \"" << RCFileNameStream.str() << "\" Failed!";
         RCFileStream.close();
         
-        if(false)
+        if(true)
         {
             // csv output
             for(auto runCounter : MTRun->runCounters)
