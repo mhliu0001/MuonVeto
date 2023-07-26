@@ -30,6 +30,7 @@
 #include "BambooUtils.hh"
 #include <string>
 #include <cmath>
+#include <algorithm>
 
 using namespace MuonVeto;
 
@@ -93,6 +94,8 @@ void MVDetectorConstruction::SetDefaults()
     ps_scint = psConfig["ps_scint"];
     fiber_abs = psConfig["fiber_abs"];
     fiber_emi = psConfig["fiber_emi"];
+    FiberPolystyreneMinWLSAbsLength = BambooUtils::evaluate(psConfig["min_wls_abs_length"]);
+    FiberPolystyreneMaxWLSAbsLength = BambooUtils::evaluate(psConfig["max_wls_abs_length"]);
 }
 
 void MVDetectorConstruction::DefineMaterials()
@@ -156,6 +159,8 @@ void MVDetectorConstruction::DefineMaterialTables()
     std::vector<G4double> pPSPolystyreneComPhotonMomentum = {};
     std::vector<G4double> pPSPolystyreneComFactor = {};
     read_csv(ps_scint, pPSPolystyreneComPhotonMomentum, pPSPolystyreneComFactor);
+    std::reverse(pPSPolystyreneComPhotonMomentum.begin(), pPSPolystyreneComPhotonMomentum.end());
+    std::reverse(pPSPolystyreneComFactor.begin(), pPSPolystyreneComFactor.end());
     pPSPolystyreneTable->AddProperty("SCINTILLATIONCOMPONENT1", pPSPolystyreneComPhotonMomentum, pPSPolystyreneComFactor);
     PSPolystyrene->SetMaterialPropertiesTable(pPSPolystyreneTable);
 
@@ -190,17 +195,40 @@ void MVDetectorConstruction::DefineMaterialTables()
     std::vector<G4double> pFiberPolystyrenePhotonMomentum = {2.0 * eV, 3.0 * eV, 4.0 * eV};
     std::vector<G4double> pFiberPolystyreneRIndex = {1.60, 1.60, 1.60};
     pFiberPolystyreneTable->AddProperty("RINDEX", pFiberPolystyrenePhotonMomentum, pFiberPolystyreneRIndex);
-    /*
+
     std::vector<G4double> pFiberPolystyreneAbsPhotonMomentum = {};
     std::vector<G4double> pFiberPolystyreneAbsFactor = {};
     read_csv(fiber_abs, pFiberPolystyreneAbsPhotonMomentum, pFiberPolystyreneAbsFactor);
-    pFiberPolystyreneTable->AddProperty("WLSABSLENGTH", pFiberPolystyreneAbsPhotonMomentum, pFiberPolystyreneAbsFactor);
+    std::vector<G4double> pFiberPolystyreneAbsLength = {};
+    for (size_t i = 0; i < pFiberPolystyreneAbsFactor.size(); ++i)
+    {
+        pFiberPolystyreneAbsLength.push_back(FiberPolystyreneMinWLSAbsLength / pFiberPolystyreneAbsFactor.at(i));
+    }
+    G4double photonEnergyStep = pFiberPolystyreneAbsPhotonMomentum[0] - pFiberPolystyreneAbsPhotonMomentum[1];
+    pFiberPolystyreneAbsPhotonMomentum.insert(
+        pFiberPolystyreneAbsPhotonMomentum.begin(),
+        pFiberPolystyreneAbsPhotonMomentum[0] + photonEnergyStep);
+    pFiberPolystyreneAbsLength.insert(
+        pFiberPolystyreneAbsLength.begin(),
+        FiberPolystyreneMaxWLSAbsLength
+    );
+    pFiberPolystyreneAbsPhotonMomentum.push_back(pFiberPolystyreneAbsPhotonMomentum.back() - photonEnergyStep);
+    pFiberPolystyreneAbsLength.push_back(FiberPolystyreneMaxWLSAbsLength);
+    std::reverse(pFiberPolystyreneAbsPhotonMomentum.begin(), pFiberPolystyreneAbsPhotonMomentum.end());
+    std::reverse(pFiberPolystyreneAbsLength.begin(), pFiberPolystyreneAbsLength.end());
+    pFiberPolystyreneTable->AddProperty("WLSABSLENGTH", pFiberPolystyreneAbsPhotonMomentum, pFiberPolystyreneAbsLength);
+
     std::vector<G4double> pFiberPolystyreneEmiPhotonMomentum = {};
     std::vector<G4double> pFiberPolystyreneEmiFactor = {};
     read_csv(fiber_emi, pFiberPolystyreneEmiPhotonMomentum, pFiberPolystyreneEmiFactor);
+    std::reverse(pFiberPolystyreneEmiPhotonMomentum.begin(), pFiberPolystyreneEmiPhotonMomentum.end());
+    std::reverse(pFiberPolystyreneEmiFactor.begin(), pFiberPolystyreneEmiFactor.end());
     pFiberPolystyreneTable->AddProperty("WLSCOMPONENT", pFiberPolystyreneEmiPhotonMomentum, pFiberPolystyreneEmiFactor);
-    */
+
+    pFiberPolystyreneTable->AddProperty("ABSLENGTH", {2.0*eV, 3.0*eV, 4.0*eV}, {3.5*m, 3.5*m, 3.5*m});
+
     // Guang Luo's code
+    /*
     G4double photonEnergy[] =
         {2.00 * eV, 2.03 * eV, 2.06 * eV, 2.09 * eV, 2.12 * eV,
          2.15 * eV, 2.18 * eV, 2.21 * eV, 2.24 * eV, 2.27 * eV,
@@ -230,6 +258,7 @@ void MVDetectorConstruction::DefineMaterialTables()
          0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05};
     pFiberPolystyreneTable->AddProperty("WLSABSLENGTH", photonEnergy, absWLSfiber, 60);
     pFiberPolystyreneTable->AddProperty("WLSCOMPONENT", photonEnergy, emissionFib, 60);
+    */
     pFiberPolystyreneTable->AddConstProperty("WLSTIMECONSTANT", 2.7 * ns);
     FiberPolystyrene->SetMaterialPropertiesTable(pFiberPolystyreneTable);
 

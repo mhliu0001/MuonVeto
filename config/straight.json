@@ -6,5 +6,7 @@
     "uninstrumented_x": "100.*mm",
     "ps_scint": "./sp101_scint.csv",
     "fiber_abs": "./bcf92_abs.csv",
-    "fiber_emi": "./bcf92_emi.csv"
+    "fiber_emi": "./bcf92_emi.csv",
+    "min_wls_abs_length": "1*mm",
+    "max_wls_abs_length": "1000*m"
 }

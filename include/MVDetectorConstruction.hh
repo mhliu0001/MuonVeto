@@ -135,6 +135,8 @@ class MVDetectorConstruction : public G4VUserDetectorConstruction
 
         // Material Properties
         G4double scintYield;
+        G4double FiberPolystyreneMinWLSAbsLength;
+        G4double FiberPolystyreneMaxWLSAbsLength;
 
         // Optical surface
         G4OpticalSurface* AluminumSurface;
